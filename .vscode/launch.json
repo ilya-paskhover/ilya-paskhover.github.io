@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Jekyll: Serve",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bundle exec jekyll serve --livereload",
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "Server address: (https?://[^\\s]+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Jekyll: Install Dependencies",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bundle install",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
