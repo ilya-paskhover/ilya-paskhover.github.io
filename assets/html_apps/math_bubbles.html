@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Bubbles</title>
+    <style>
+        /* --- CSS Styles --- */
+        :root {
+            --primary: #6C63FF;
+            --secondary: #FF6584;
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #ffffff;
+            --bubble-main-grad: linear-gradient(135deg, #43cea2, #185a9d);
+            --bubble-opt-grad: linear-gradient(135deg, var(--primary), #3f3d56);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header & HUD */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            background: linear-gradient(to right, #fff, #a5a5a5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .timer-box {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Game Container */
+        #game-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* Bubbles */
+        .bubble {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: default;
+            position: relative;
+        }
+
+        /* Shine effect on bubbles */
+        .bubble::after {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 25%;
+            height: 15%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(-45deg);
+        }
+
+        /* Main Value Bubble */
+        #main-bubble {
+            width: 140px;
+            height: 140px;
+            background: var(--bubble-main-grad);
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            animation: float 3s ease-in-out infinite;
+            z-index: 2;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Option Container */
+        .options {
+            display: flex;
+            gap: 40px;
+            perspective: 1000px;
+        }
+
+        /* Option Bubbles */
+        .option-bubble {
+            width: 110px;
+            height: 110px;
+            background: var(--bubble-opt-grad);
+            font-size: 1.8rem;
+            cursor: pointer;
+            animation: float 4s ease-in-out infinite reverse;
+        }
+
+        .option-bubble:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        .option-bubble:active {
+            transform: scale(0.9) !important;
+        }
+
+        /* Visual Feedback for Clicks */
+        .pop-anim {
+            animation: pop 0.3s forwards;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Start Screen / Game Over Overlay */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: linear-gradient(90deg, var(--primary), #8e84ff);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 99, 255, 0.6);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* Share Button Specifics */
+        #share-btn {
+            background: linear-gradient(90deg, #1da1f2, #0e71c8); /* Twitter/Social Blue */
+            box-shadow: 0 4px 15px rgba(29, 161, 242, 0.4);
+            margin-left: 10px;
+            display: inline-block;
+        }
+        #share-btn:hover {
+            box-shadow: 0 6px 20px rgba(29, 161, 242, 0.6);
+        }
+
+        /* Leaderboard */
+        #leaderboard-section {
+            width: 90%;
+            max-width: 400px;
+            background: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 20px;
+            margin-top: 25px;
+            text-align: center;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th {
+            text-align: left;
+            color: #aaa;
+            font-size: 0.9rem;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        td {
+            padding: 12px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        td:last-child {
+            text-align: right;
+            font-weight: bold;
+            color: #43cea2;
+        }
+
+        #player-name {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            margin-top: 15px;
+            font-size: 1rem;
+            text-align: center;
+            width: 70%;
+            outline: none;
+        }
+        
+        #player-name:focus {
+            border-color: var(--primary);
+        }
+
+        /* Animation Keyframes */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .hidden { display: none !important; }
+        
+        /* Volume Toggle */
+        .sound-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        .sound-toggle:hover { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sound Toggle Icon -->
+    <div class="sound-toggle" onclick="toggleSound()" title="Toggle Sound">
+        <svg id="sound-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+    </div>
+
+    <header>
+        <h1>Math Bubbles</h1>
+        <div class="timer-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span id="time-display">30</span>s
+        </div>
+    </header>
+
+    <div id="game-container">
+        <!-- Main Number -->
+        <div id="main-bubble" class="bubble">0</div>
+
+        <!-- Choices -->
+        <div class="options">
+            <div id="opt1" class="bubble option-bubble" onclick="selectOption(0)">?</div>
+            <div id="opt2" class="bubble option-bubble" onclick="selectOption(1)">?</div>
+        </div>
+
+        <!-- Overlay for Start/Game Over -->
+        <div id="overlay">
+            <h1 id="overlay-title" style="font-size: 3rem; margin-bottom: 10px;">Ready?</h1>
+            <p id="final-score-display" class="hidden" style="font-size: 1.5rem; color: #ddd;">Final Result: 0</p>
+            
+            <div id="input-area" class="hidden" style="text-align: center;">
+                <input type="text" id="player-name" placeholder="Enter Name" maxlength="12" autocomplete="off">
+                <br>
+                <!-- Container for buttons to sit side-by-side on mobile -->
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="saveScore()">Save Score</button>
+                    <button id="share-btn" onclick="shareScore()">Share 🔗</button>
+                </div>
+            </div>
+
+            <button id="start-btn" onclick="startGame()">Start Game</button>
+
+            <!-- Leaderboard inside overlay -->
+            <div id="leaderboard-section">
+                <h3>TOP SCORES</h3>
+                <table id="leaderboard-table">
+                    <!-- Rows injected by JS -->
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Audio System (Web Audio API) ---
+        let audioCtx = null;
+        let isSoundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!isSoundEnabled || !audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'pop') {
+                // High pitched "bloop"
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(500 + Math.random() * 200, now); // slightly random pitch
+                oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+                
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.15);
+            } 
+            else if (type === 'gameover') {
+                // Descending tone
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(400, now);
+                oscillator.frequency.linearRampToValueAtTime(100, now + 0.8);
+                
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.8);
+            }
+            else if (type === 'tick') {
+                // Soft tick for last few seconds
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, now);
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                oscillator.start(now);
+                oscillator.stop(now + 0.05);
+            }
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (isSoundEnabled) {
+                icon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
+                icon.style.opacity = 1;
+            } else {
+                icon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
+                icon.style.opacity = 0.5;
+            }
+        }
+
+        // --- Game State ---
+        let currentNumber = 0;
+        let timeLeft = 30;
+        let timerInterval;
+        let isPlaying = false;
+        let options = []; 
+
+        // --- DOM Elements ---
+        const mainBubble = document.getElementById('main-bubble');
+        const opt1Btn = document.getElementById('opt1');
+        const opt2Btn = document.getElementById('opt2');
+        const timeDisplay = document.getElementById('time-display');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('start-btn');
+        const overlayTitle = document.getElementById('overlay-title');
+        const finalScoreDisplay = document.getElementById('final-score-display');
+        const inputArea = document.getElementById('input-area');
+        const leaderboardSection = document.getElementById('leaderboard-section');
+        const leaderboardTable = document.getElementById('leaderboard-table');
+
+        // --- Initialization ---
+        loadLeaderboard();
+
+        // --- Game Logic ---
+
+        function startGame() {
+            initAudio(); // Ensure audio context is ready
+            
+            // Reset Variables
+            currentNumber = Math.floor(Math.random() * 10) + 1; 
+            timeLeft = 30;
+            isPlaying = true;
+            
+            // UI Updates
+            overlay.classList.add('hidden');
+            finalScoreDisplay.classList.add('hidden');
+            inputArea.classList.add('hidden');
+            startBtn.classList.add('hidden');
+            leaderboardSection.classList.add('hidden');
+            
+            updateDisplay();
+            generateOptions();
+            
+            // Start Timer
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+
+                // Warning ticks for last 5 seconds
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    timeDisplay.style.color = "#ff4757";
+                    playSound('tick');
+                } else {
+                    timeDisplay.style.color = "var(--secondary)";
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function generateOptions() {
+            options = [];
+            
+            // Logic to prevent overflow and ensure playability
+            // If number is large, reduce multiplication probability
+            let allowMultiply = currentNumber < 50000; 
+
+            for(let i=0; i<2; i++) {
+                let opType = Math.random();
+                let val, symbol, func;
+
+                if (allowMultiply && opType > 0.65) { 
+                    // Multiplication (*2 or *3)
+                    val = Math.floor(Math.random() * 2) + 2; 
+                    symbol = `×${val}`;
+                    func = (n) => n * val;
+                } else if (opType > 0.35) {
+                    // Addition (+1 to +50, scales with current number size)
+                    let range = currentNumber > 100 ? 50 : 20;
+                    val = Math.floor(Math.random() * range) + 1;
+                    symbol = `+${val}`;
+                    func = (n) => n + val;
+                } else {
+                    // Subtraction
+                    val = Math.floor(Math.random() * 20) + 1;
+                    // Avoid negative results
+                    if (currentNumber - val < 0) {
+                         val = Math.floor(Math.random() * 20) + 1;
+                         symbol = `+${val}`;
+                         func = (n) => n + val;
+                    } else {
+                        symbol = `-${val}`;
+                        func = (n) => n - val;
+                    }
+                }
+                options.push({ symbol, func });
+            }
+
+            opt1Btn.textContent = options[0].symbol;
+            opt2Btn.textContent = options[1].symbol;
+        }
+
+        function selectOption(index) {
+            if (!isPlaying) return;
+
+            playSound('pop');
+
+            // Apply math
+            currentNumber = options[index].func(currentNumber);
+            
+            // Animation trigger
+            mainBubble.classList.remove('pop-anim');
+            void mainBubble.offsetWidth; // trigger reflow
+            mainBubble.classList.add('pop-anim');
+
+            updateDisplay();
+            generateOptions();
+        }
+
+        function updateDisplay() {
+            mainBubble.textContent = currentNumber.toLocaleString(); 
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            isPlaying = false;
+            playSound('gameover');
+
+            // Show Overlay
+            overlay.classList.remove('hidden');
+            overlayTitle.textContent = "Time's Up!";
+            finalScoreDisplay.textContent = `Final Result: ${currentNumber.toLocaleString()}`;
+            finalScoreDisplay.classList.remove('hidden');
+            inputArea.classList.remove('hidden');
+            leaderboardSection.classList.remove('hidden');
+            
+            // Reset Share button text in case it was clicked previously
+            document.getElementById('share-btn').innerText = "Share 🔗";
+        }
+
+        // --- Sharing Logic ---
+        function shareScore() {
+            const text = `🧠 Math Bubbles \nI scored ${currentNumber.toLocaleString()}! \nCan you beat me?`;
+            
+            // Create a temporary textarea to handle the copy command
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                // Use legacy execCommand for better compatibility in some iframe environments
+                document.execCommand('copy');
+                
+                // Visual Feedback
+                const btn = document.getElementById('share-btn');
+                btn.innerText = "Copied!";
+                btn.style.background = "linear-gradient(90deg, #43cea2, #185a9d)"; // Greenish
+                
+                setTimeout(() => {
+                    btn.innerText = "Share 🔗";
+                    btn.style.background = ""; // Revert to CSS default
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Unable to copy', err);
+                alert("Could not copy to clipboard automatically.");
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // --- Leaderboard Logic ---
+
+        function saveScore() {
+            const nameInput = document.getElementById('player-name');
+            const name = nameInput.value.trim() || "Anonymous";
+
+            let leaderboard = JSON.parse(localStorage.getItem('mathBubblesLeaderboard')) || [];
+
+            leaderboard.push({ name: name, score: currentNumber });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 5); // Keep top 5
+
+            localStorage.setItem('mathBubblesLeaderboard', JSON.stringify(leaderboard));
+
+            nameInput.value = "";
+            loadLeaderboard();
+            
+            inputArea.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            startBtn.textContent = "Play Again";
+        }
+
+        function loadLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('mathBubblesLeaderboard')) || [];
+            leaderboardTable.innerHTML = `
+                <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Result</th>
+                </tr>
+            `;
+
+            if (leaderboard.length === 0) {
+                leaderboardTable.innerHTML += `<tr><td colspan="3" style="text-align:center; opacity:0.5;">No scores yet</td></tr>`;
+            }
+
+            leaderboard.forEach((entry, index) => {
+                // Highlight top rank
+                const color = index === 0 ? '#FFD700' : '#fff';
+                const row = `
+                    <tr style="color: ${color}">
+                        <td>#${index + 1}</td>
+                        <td>${entry.name}</td>
+                        <td>${entry.score.toLocaleString()}</td>
+                    </tr>
+                `;
+                leaderboardTable.innerHTML += row;
+            });
+        }
+    </script>
+</body>
+</html>
