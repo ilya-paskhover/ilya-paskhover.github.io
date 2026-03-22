@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "About this blog!"
+title:  "About this blog"
 date:   2016-03-17 10:54:57
-categories: jekyll update
+categories: meta
 ---
-This blog is created with [www.nitrous.io](https://www.nitrous.io) (using Jekyll) for adding daily notes when I don't have an access to other devices or just want to share something.
+This blog was originally created in 2016 using Jekyll hosted on GitHub Pages — a place to keep daily notes and share things worth sharing.
 
-Note: for running Jekyll server (wiht jekyll serve --watch) i had to enter 'code/jekyll' directory.
+It sat dormant for several years and was revived in 2026. The goal remains the same: a low-friction place to document projects, experiments, and notes.

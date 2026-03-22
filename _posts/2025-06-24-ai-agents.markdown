@@ -2,6 +2,8 @@
 layout: post
 title:  "AI agents"
 date:   2025-06-24 10:54:57
+categories: projects ai
 ---
-1. [YouTube videos summarizer](https://gemini.google.com/gem/1TxqGF2P6zAIuV9c5rC9PMW7NFHq7XqG7?usp=sharing)
-2. ...
+Experimenting with AI agents — tools that use LLMs to do useful tasks autonomously.
+
+1. [YouTube videos summarizer](https://gemini.google.com/gem/1TxqGF2P6zAIuV9c5rC9PMW7NFHq7XqG7?usp=sharing) — A Gemini Gem that takes a YouTube URL and produces a structured summary of the video content. Useful for long talks and lectures.

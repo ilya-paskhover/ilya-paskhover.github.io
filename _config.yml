@@ -1,12 +1,12 @@
 # Site settings
 title: Ilya Paskhover's blog/projects
+email: ilya.paskhover@gmail.com
 description: > # this means to ignore newlines until "baseurl:"
-  This is an awesome description from _config.yml file.
-  It will appear in my document head meta (for
-  Google search results) and in my feed.xml site description (if I'll add it).
+  Blog and projects by Ilya Paskhover — senior software developer with 15+ years
+  of experience. Posts about AI, software engineering, and side projects.
 baseurl: "" # the subpath of your site, e.g. /blog/
 url: "http://ilya-paskhover.github.io" # the base hostname & protocol for your site
-github_username:  ilya-paskhover
+github_username: ilya-paskhover
 
 # Build settings
 markdown: kramdown
