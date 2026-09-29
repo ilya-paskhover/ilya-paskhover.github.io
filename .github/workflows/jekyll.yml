@@ -2,9 +2,9 @@ name: Build and validate Jekyll site
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   build:
@@ -28,5 +28,6 @@ jobs:
         uses: anishathalye/proof-html@v2
         with:
           directory: ./_site
-          check_external_urls: false
-          check_img_http: true
+          # External links point at LinkedIn, Gemini and Base44, which rate-limit
+          # or block CI runners. Internal links and HTML are still validated.
+          disable_external: true
