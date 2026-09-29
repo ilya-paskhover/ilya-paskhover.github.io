@@ -1,0 +1,46 @@
+name: Build and validate Jekyll site
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Build Jekyll site
+        run: bundle exec jekyll build
+        env:
+          JEKYLL_ENV: production
+
+      # Pages still serves these; they are only kept out of validation.
+      # Google's verification file must keep Google's exact, non-HTML content.
+      # assets/css/style.css comes from the default theme gem; no page links it.
+      - name: Exclude files we don't control from validation
+        run: rm -f ./_site/googlec97749bedfe403e3.html ./_site/assets/css/style.css
+
+      - name: Validate HTML
+        uses: anishathalye/proof-html@v2
+        with:
+          directory: ./_site
+          # math_bubbles.html has an h3 under an h1; the validator flags the skipped level.
+          validator_ignore: '.*skipping [0-9]+ heading levels?\.'
+          # External links point at LinkedIn, Gemini and Base44, which rate-limit
+          # or block CI runners. Internal links and HTML are still validated.
+          disable_external: true
+          # _config.yml `url:` is http://, so every page's canonical and RSS links
+          # are http, and a 2016 post links http://jekyllrb.com.
+          enforce_https: false
+          # The site has no favicon.
+          check_favicon: false
