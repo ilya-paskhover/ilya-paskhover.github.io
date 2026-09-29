@@ -2,8 +2,5 @@
 layout: post
 title:  "Vibe coding apps"
 date:   2025-11-22 10:54:57
-categories: projects vibe-coding
 ---
-"Vibe coding" — using AI assistants to build small apps quickly without worrying too much about the internals. Here are a few I put together.
-
-1. [Math bubbles](/assets/html_apps/math_bubbles.html) — A visual math game where bubbles float up and you pop the ones that match the target answer. Built as a fun way to practice arithmetic.
+1. [math bubble](/assets/html_apps/math_bubbles.html) — You start on a random number and get 30 seconds. Each round offers two operations (`×2`, `×3`, `+N`, `−N`); pick one to apply and get the number as high as you can. Top five scores are kept in the browser.

@@ -31,7 +31,7 @@ Minimum front matter:
 layout: post
 title: "My Post Title"
 date: YYYY-MM-DD HH:MM:SS
-categories: category1 category2
+categories: category1 category2  # note: categories become part of the post URL
 ---
 ```
 
@@ -49,4 +49,4 @@ index.html     Homepage
 
 ## Deployment
 
-Pushes to `main` are automatically deployed via GitHub Pages.
+Pushes to `master` are automatically deployed via GitHub Pages.
