@@ -195,6 +195,8 @@ button.row:active{background:var(--recess)}
 .nm b{display:block;font-size:15px;font-weight:650;line-height:1.25}
 .nm b.who{display:flex;align-items:center;gap:7px}
 .nm .gl{width:18px;height:18px;flex:none;color:var(--muted)}
+.nm b .vol{margin-left:7px;font-size:12px;font-weight:600;font-stretch:88%;color:var(--faint)}
+.listnote{margin:0 2px 7px;font-size:12px;font-weight:600;font-stretch:92%;color:var(--muted)}
 .nm small{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row.lot .nm small{line-height:1.35}
 .val{text-align:right;flex:none;border-radius:6px;padding:2px 5px;margin-right:-5px}
@@ -203,6 +205,8 @@ button.row:active{background:var(--recess)}
 .val small{display:block;font-size:12px;font-weight:650}
 .up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--faint)}
 .spark{flex:none;width:52px;height:22px;overflow:visible}
+/* a 24h volume beside the symbol: give the name column room at 320px */
+@media (max-width:380px){ .row{gap:9px} .spark{width:44px} }
 .flash-up{animation:fu .55s ease-out} .flash-down{animation:fd .55s ease-out}
 @keyframes fu{from{background:color-mix(in srgb,var(--up) 22%,transparent)}to{background:transparent}}
 @keyframes fd{from{background:color-mix(in srgb,var(--down) 22%,transparent)}to{background:transparent}}
@@ -409,6 +413,14 @@ function qtyStr(q){
   if(q>=0.0001) return q.toFixed(6);
   return q.toFixed(8);
 }
+function andList(a){ return a.length>1 ? a.slice(0,-1).join(", ")+" and "+a[a.length-1] : (a[0]||""); }
+/* 24h volume, short: $32.5B, $568M */
+function volStr(v){
+  if(v>=1e9) return "$"+(v/1e9).toFixed(v>=1e10?0:1)+"B";
+  if(v>=1e6) return "$"+Math.round(v/1e6)+"M";
+  if(v>=1e3) return "$"+Math.round(v/1e3)+"K";
+  return "$"+Math.round(v);
+}
 function pctStr(v){ return (v>=0?"+":"")+v.toFixed(2)+"%"; }
 function cls(v){ return v>0.0001?"up":(v<-0.0001?"down":"flat"); }
 
@@ -432,15 +444,29 @@ var COINS = [
   {s:"ETH", n:"Ethereum", p0:2520,   dv:0.0252, corr:0.60, dr:0.000012, c:"#8EA2FF"},
   {s:"SOL", n:"Solana",   p0:102,    dv:0.0367, corr:0.65, dr:0.000015, c:"#57D9C7"},
   {s:"XRP", n:"Ripple",   p0:1.36,   dv:0.0313, corr:0.55, dr:0.000005, c:"#A9BCE0"},
+  /* Added in 1.10.0: fifth by 24h volume among non-stablecoins (search
+     snippets, Oct 2026), so a list sorted by volume without it looked wrong.
+     Measured on Binance daily closes, 1 Oct 2025 to 1 Oct 2026 (365 log
+     returns): sigma 2.70% a day, corr with BTC 0.77. dv is that times 0.94,
+     corr by the same rule as BCH below. The calmest coin after BTC. */
+  {s:"BNB", n:"BNB Chain", p0:771,   dv:0.0254, corr:0.48, dr:0.000008, c:"#D9A6F2"},
   {s:"DOGE",n:"Dogecoin", p0:0.1180, dv:0.0469, corr:0.55, dr:0.000004, c:"#E8C56B"},
-  /* Added in 1.5.0 because the five above move together (corr with BTC 0.79
-     to 0.91), so on most green days nothing was down 1% for the dip quest.
-     Binance daily closes, Oct 2025 to Oct 2026: TON corr with BTC 0.05, the
-     one big uncorrelated coin; BCH 0.64. The five were calibrated on an older
-     window, so dv here is real sigma (TON 4.16%, BCH 4.07%) times their mean
-     game/real ratio over the same year (0.94), not times 0.68. corr keeps the
-     five's model/real ratio of about 0.6 against BTC. */
-  {s:"TON", n:"Toncoin",      p0:1.60, dv:0.0392, corr:0.02, dr:0.000005, c:"#F2A0C4"},
+  /* Added in 1.5.0 because BTC, ETH, SOL, XRP and DOGE move together (corr
+     with BTC 0.79 to 0.91), so on most green days nothing was down 1% for the dip quest.
+     Binance daily closes, 1 Oct 2025 to 1 Oct 2026: BCH sigma 4.07%, corr
+     with BTC 0.64. The five were calibrated on an older window, so dv here is
+     real sigma times their mean game/real ratio over the same year (0.94),
+     not times 0.68. corr keeps the five's model/real ratio of about 0.6
+     against BTC: corr = (0.6 x real)^2 / 0.45. */
+  /* Toncoin was renamed Gram (GRAM) on 15 Jun 2026, swapped 1:1, and
+     Binance ended TONUSDT by 30 Jun: asking for TON left this coin without a
+     live price, walking from 1.60 under a "Live" header (1.10.0). heal()
+     moves TON in old saves to GRAM. Measured (1.10.0) on TONUSDT closes to
+     29 Jun spliced with GRAMUSDT from 2 Jul (the two missing days give no
+     return): sigma 4.23%, corr with BTC 0.53 over 362 returns. The 0.05 it
+     was tuned to before was wrong (TON alone, date-matched, is also 0.53),
+     so it is the least BTC-like coin here, not an uncorrelated one. */
+  {s:"GRAM",n:"Gram (Toncoin)", p0:1.50, dv:0.0397, corr:0.23, dr:0.000005, c:"#F2A0C4"},
   {s:"BCH", n:"Bitcoin Cash", p0:315,  dv:0.0384, corr:0.33, dr:0.000005, c:"#9BD26A"}
 ];
 var SQRT_TPD = Math.sqrt(TICKS_PER_DAY);
@@ -630,7 +656,10 @@ var FEED_MAP = {
   SOL: {binance:"SOLUSDT",  gecko:"solana"},
   XRP: {binance:"XRPUSDT",  gecko:"ripple"},
   DOGE:{binance:"DOGEUSDT", gecko:"dogecoin"},
-  TON: {binance:"TONUSDT",  gecko:"the-open-network"},
+  BNB: {binance:"BNBUSDT",  gecko:"binancecoin"},
+  /* CoinGecko kept its id through the rename (search result, unconfirmed);
+     if it changes, the coin shows "No live price" rather than a made-up one */
+  GRAM:{binance:"GRAMUSDT", gecko:"the-open-network"},
   BCH: {binance:"BCHUSDT",  gecko:"bitcoin-cash"}
 };
 
@@ -638,7 +667,10 @@ var Feed = {
   mode:"live",           /* "live" | "sim"; live by default, the simulator covers any outage */
   provider:"binance",    /* "binance" | "gecko" */
   pollMs:15000,
-  anchors:{},            /* sym -> {p, chg} */
+  anchors:{},            /* sym -> {p, chg, vol}; a coin the last good poll left out has none */
+  day:{},                /* sym -> the provider's prices over the last 24 hours, oldest first */
+  dayAt:0, dayBusy:false,
+  dayMs:300000,          /* the day line is refreshed every 5 minutes, one request per coin */
   status:"off",          /* off | wait | ok | error */
   note:"",
   at:0,
@@ -661,7 +693,7 @@ var Feed = {
     this.fellBack=false;
     /* quests were sized for the other mode: redraw the unfinished ones */
     if(switched && S){ refreshQuests(S, true); save(); render(); }
-    this.anchors={}; this.snapped=false;
+    this.anchors={}; this.snapped=false; this.day={}; this.dayAt=0;
     this.status = mode==="live" ? "wait" : "off";
     this.note="";
     this.persist(); this.start(); paint({});
@@ -680,7 +712,7 @@ var Feed = {
     if(this.provider==="gecko"){
       return "https://api.coingecko.com/api/v3/simple/price?ids="+
              syms.map(function(x){ return x.gecko; }).join(",")+
-             "&vs_currencies=usd&include_24hr_change=true";
+             "&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_last_updated_at=true";
     }
     /* data-api.binance.vision is Binance's host for public market data only:
        same ticker, no account endpoints behind it */
@@ -688,13 +720,18 @@ var Feed = {
            encodeURIComponent(JSON.stringify(syms.map(function(x){ return x.binance; })));
   },
 
+  /* a quote last updated over an hour ago is a dead market (a delisted pair
+     can keep answering with its final price), so it counts as no price */
+  staleMs:3600000,
   parse:function(json){
-    var out={}, i, c;
+    var out={}, i, c, now=Date.now(), self=this;
+    var stale=function(ms){ return isFinite(ms) && ms>0 && now-ms>self.staleMs; };
     if(this.provider==="gecko"){
       for(i=0;i<COINS.length;i++){
         c=COINS[i]; var row=json[FEED_MAP[c.s].gecko];
-        if(row && typeof row.usd==="number" && row.usd>0){
-          out[c.s]={p:row.usd, chg:(typeof row.usd_24h_change==="number"?row.usd_24h_change:null)};
+        if(row && typeof row.usd==="number" && row.usd>0 && !stale(row.last_updated_at*1000)){
+          out[c.s]={p:row.usd, chg:(typeof row.usd_24h_change==="number"?row.usd_24h_change:null),
+                    vol:(typeof row.usd_24h_vol==="number"&&row.usd_24h_vol>=0?row.usd_24h_vol:null)};
         }
       }
     }else{
@@ -702,9 +739,10 @@ var Feed = {
       var by={}; json.forEach(function(r){ if(r&&r.symbol) by[r.symbol]=r; });
       for(i=0;i<COINS.length;i++){
         c=COINS[i]; var r2=by[FEED_MAP[c.s].binance];
-        if(!r2) continue;
-        var pz=parseFloat(r2.lastPrice), ch=parseFloat(r2.priceChangePercent);
-        if(isFinite(pz)&&pz>0) out[c.s]={p:pz, chg:isFinite(ch)?ch:null};
+        if(!r2 || stale(Number(r2.closeTime))) continue;
+        /* quoteVolume is the 24h volume in USDT, so in dollars */
+        var pz=parseFloat(r2.lastPrice), ch=parseFloat(r2.priceChangePercent), qv=parseFloat(r2.quoteVolume);
+        if(isFinite(pz)&&pz>0) out[c.s]={p:pz, chg:isFinite(ch)?ch:null, vol:(isFinite(qv)&&qv>=0)?qv:null};
       }
     }
     return out;
@@ -727,7 +765,11 @@ var Feed = {
         if(!Object.keys(got).length) throw new Error("no prices in the response");
         self.anchors=got; self.status="ok"; self.note=""; self.at=Date.now();
         if(!self.snapped){ self.snap(); self.snapped=true; }
-        paint({});
+        if(Date.now()-self.dayAt > self.dayMs) self.pollDay();
+        /* volumes set the market order: redraw it when the order changes,
+           but never under an open sheet */
+        if(tab==="market" && !sheetCtx && refs._order!==marketOrder().join()) render();
+        else paint({});
       })
       .catch(function(e){
         clearTimeout(kill);
@@ -740,6 +782,51 @@ var Feed = {
         self.note=(e&&e.name==="AbortError") ? "the request timed out" : (e&&e.message)||"request blocked";
         paint({});
       });
+  },
+
+  /* coins the last good poll returned no price for (renamed, delisted, or
+     the provider dropped them): shown as such, never as a made-up price */
+  missing:function(){
+    if(this.mode!=="live" || !this.snapped) return [];
+    var a=this.anchors;
+    return COINS.filter(function(c){ return !a[c.s]; }).map(function(c){ return c.s; });
+  },
+  dayUrl:function(sym){
+    var m=FEED_MAP[sym];
+    if(this.provider==="gecko"){
+      return "https://api.coingecko.com/api/v3/coins/"+m.gecko+"/market_chart?vs_currency=usd&days=1";
+    }
+    return "https://data-api.binance.vision/api/v3/klines?symbol="+m.binance+"&interval=15m&limit=96";
+  },
+  /* prices over the last 24 hours, the window the percentage covers:
+     Binance 15 minute closes, CoinGecko's 5 minute points */
+  parseDay:function(json){
+    var out=[];
+    if(this.provider==="gecko"){
+      if(json && Array.isArray(json.prices)) json.prices.forEach(function(r){ if(Array.isArray(r)) out.push(r[1]); });
+    }else if(Array.isArray(json)){
+      json.forEach(function(r){ if(Array.isArray(r)) out.push(parseFloat(r[4])); });
+    }
+    out=out.filter(function(v){ return typeof v==="number" && isFinite(v) && v>0; });
+    return out.length>=12 ? out : null;
+  },
+  pollDay:function(){
+    if(this.mode!=="live" || this.dayBusy || typeof fetch!=="function") return;
+    var self=this, left=COINS.length, prov=this.provider;
+    this.dayBusy=true; this.dayAt=Date.now();
+    COINS.forEach(function(c){
+      var ctl=(typeof AbortController==="function") ? new AbortController() : null;
+      var kill=setTimeout(function(){ if(ctl) ctl.abort(); }, 8000);
+      fetch(self.dayUrl(c.s), ctl?{signal:ctl.signal}:{})
+        .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+        .then(function(j){
+          if(self.provider!==prov) return;
+          var d=self.parseDay(j);
+          if(d) self.day[c.s]=d; else delete self.day[c.s];
+        })
+        .catch(function(){})   /* no day line for this coin; the price still shows */
+        .then(function(){ clearTimeout(kill); if(--left===0){ self.dayBusy=false; paint({}); } });
+    });
   },
 
   /* First good poll: jump the book to the real prices instead of drifting in. */
@@ -768,8 +855,9 @@ var Feed = {
     if(this.mode!=="live") return "Simulated market";
     var name = this.provider==="gecko" ? "CoinGecko" : "Binance";
     if(this.status==="ok"){
-      var secs=Math.max(0,Math.round((Date.now()-this.at)/1000));
-      return "Live from "+name+", updated "+secs+"s ago";
+      var secs=Math.max(0,Math.round((Date.now()-this.at)/1000)), gone=this.missing();
+      return "Live from "+name+", updated "+secs+"s ago"+
+        (gone.length ? ". No price for "+andList(gone)+", so "+(gone.length>1?"they":"it")+" cannot be bought" : "");
     }
     if(this.status==="wait") return "Connecting to "+name;
     return "Live feed unavailable ("+this.note+"). "+(this.snapped ? "Holding the last live prices." : "Running on the simulator.");
@@ -782,7 +870,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.9.4";
+var APP_VERSION = "1.10.0";
 /* Absolute so it opens the same public page from the web build, a local file
    and the Android app (the store listing links the same URL). */
 var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
@@ -921,8 +1009,29 @@ function questProgress(q){ return questProgressOf(S,q); }
 /* biggest drop on the board, for the dip quest hint */
 function biggestDrop(){
   var best=null;
-  COINS.forEach(function(c){ var ch=dayChange(c.s); if(best===null || ch<best.ch) best={s:c.s, ch:ch}; });
+  COINS.forEach(function(c){ if(noLive(c.s)) return; var ch=dayChange(c.s); if(best===null || ch<best.ch) best={s:c.s, ch:ch}; });
   return best;
+}
+
+/* the prices the row's sparkline draws: the same 24 hours its percentage
+   covers. Simulator: the last game day of history. Live: the provider's day
+   series plus the current price, or nothing until it arrives (the game's own
+   history is only minutes of live prices) */
+function daySeries(sym){
+  if(Feed.mode==="live" && Feed.snapped){
+    var d=Feed.day[sym];
+    return (d && !noLive(sym)) ? d.concat([S.prices[sym]]) : null;
+  }
+  var h=S.hist[sym];
+  return h.slice(Math.max(0, h.length-TICKS_PER_DAY));
+}
+/* live: biggest 24h volume first; coins without one keep their place at the
+   end. Simulator: the order of COINS */
+function marketOrder(){
+  var vol=function(s){ var a=Feed.anchors[s]; return (Feed.mode==="live" && Feed.snapped && a && typeof a.vol==="number") ? a.vol : -1; };
+  return COINS.map(function(c,i){ return {s:c.s, i:i, v:vol(c.s)}; })
+    .sort(function(a,b){ return (b.v-a.v) || (a.i-b.i); })
+    .map(function(x){ return x.s; });
 }
 
 /* ============================ economics ============================ */
@@ -956,8 +1065,11 @@ function costOf(lots, q){
   lots.forEach(function(l){ var take=Math.min(l.q, q); c+=take*(l.b||l.p); q-=take; });
   return c;
 }
+/* live, but the feed returned no price for this coin */
+function noLive(sym){ return Feed.mode==="live" && Feed.snapped && !Feed.anchors[sym]; }
+/* the provider's 24h change, kept while a later poll fails, like the prices */
 function dayChange(sym){
-  if(Feed.mode==="live" && Feed.status==="ok"){
+  if(Feed.mode==="live" && Feed.snapped){
     var a=Feed.anchors[sym];
     if(a && typeof a.chg==="number") return a.chg;
   }
@@ -1011,6 +1123,7 @@ function step(){
     if(anchored){
       var a=Feed.anchors[c.s];
       if(a) p = p + (a.p - p)*0.10;   /* pull back toward the real price */
+      else p = S.prices[c.s];         /* no live price: hold it, never invent a walk */
     }
     if(p < c.p0*0.02) p = c.p0*0.02*(1+Math.abs(randn())*0.02);
     changed[c.s] = p - S.prices[c.s];
@@ -1105,7 +1218,7 @@ function checkReviews(){
 function checkOrders(){
   /* each trade has its own rules; a copy, because selling removes lots */
   S.lots.slice().forEach(function(l){
-    if(!lotById(l.id)) return;
+    if(!lotById(l.id) || noLive(l.s)) return;   /* no exit on a price that is not real */
     var p=S.prices[l.s];
     if(l.sl && p<=l.sl) sellFrom([l], l.q, "Stop loss triggered on "+l.s);
     else if(l.tp && p>=l.tp) sellFrom([l], l.q, "Take profit hit on "+l.s);
@@ -1116,6 +1229,7 @@ function checkOrders(){
 /* rules: optional {sl, tp} in percent below and above this trade's entry */
 function buy(sym, usd, rules){
   usd = Math.min(usd, S.cash);
+  if(noLive(sym)) return toast("No live price for "+sym+" right now, so it cannot be bought");
   if(!(usd>0.01)) return toast("Enter an amount first");
   var p = S.prices[sym];
   var fee = usd*S.fee;
@@ -1236,6 +1350,23 @@ var NUM_FIELDS = {tick:0, cash:3000, seedCash:3000, sentiment:0, speed:1, realis
   questDone:0, questEarned:0, lotSeq:0, questSwaps:0, swapSpent:0, realisedGain:0};
 var ARR_FIELDS = {trades:1, news:1, owned:1, quests:1, questLog:1, bots:1, pending:1, reviews:1, lots:1};
 
+/* coins whose ticker changed: the same asset, swapped 1:1, so positions,
+   history and rivals move across instead of being sold off as delisted */
+var RENAMED = {TON:"GRAM"};   /* Toncoin became Gram on 15 Jun 2026 */
+function renameCoin(o, from, to){
+  [o.prices, o.hist, o.dayRef, o.hold].forEach(function(m){
+    if(m && typeof m==="object" && from in m){ if(!(to in m)) m[to]=m[from]; delete m[from]; }
+  });
+  [o.lots, o.trades, o.news, o.pending, o.reviews].forEach(function(a){
+    a.forEach(function(x){ if(x && x.s===from) x.s=to; });
+  });
+  o.bots.forEach(function(b){
+    if(!b || !b.h || typeof b.h!=="object" || !(from in b.h)) return;
+    var q=b.h[from]; delete b.h[from];
+    if(typeof q==="number" && isFinite(q)) b.h[to]=(b.h[to]||0)+q;
+  });
+}
+
 /* A save can be truncated or hand edited. Repair it rather than throwing it away. */
 function heal(o){
   var k;
@@ -1246,6 +1377,7 @@ function heal(o){
   if(!o.prices || typeof o.prices!=="object") o.prices={};
   if(!o.hist   || typeof o.hist!=="object")   o.hist={};
   if(!o.dayRef || typeof o.dayRef!=="object") o.dayRef={};
+  Object.keys(RENAMED).forEach(function(from){ renameCoin(o, from, RENAMED[from]); });
 
   COINS.forEach(function(c){
     if(typeof o.prices[c.s]!=="number" || !isFinite(o.prices[c.s]) || o.prices[c.s]<=0) o.prices[c.s]=c.p0;
@@ -1436,11 +1568,16 @@ function render(){
 
 /* --- market --- */
 function renderMarket(m){
+  /* live: why the list is in this order */
+  var vn=el("p","listnote"); vn.hidden=true; refs._volnote=vn; m.appendChild(vn);
   var list=el("div","list");
-  COINS.forEach(function(c){
+  var order=marketOrder(); refs._order=order.join();
+  order.forEach(function(sym){
+    var c=BYSYM[sym];
     var r=el("button","row"); r.dataset.sym=c.s;
     var ic=el("div","coin", c.s.slice(0,4)); ic.style.background=c.c;
     var nm=el("div","nm"); var b=el("b",null,c.s); var sm=el("small",null,c.n);
+    var vl=el("span","vol"); b.appendChild(vl);
     nm.appendChild(b); nm.appendChild(sm);
     var sp=document.createElementNS("http://www.w3.org/2000/svg","svg");
     sp.setAttribute("class","spark"); sp.setAttribute("viewBox","0 0 52 22"); sp.setAttribute("preserveAspectRatio","none");
@@ -1452,7 +1589,7 @@ function renderMarket(m){
     r.appendChild(ic); r.appendChild(nm); r.appendChild(sp); r.appendChild(v);
     r.addEventListener("click",function(){ renderCoinSheet(c.s,"buy"); });
     list.appendChild(r);
-    refs[c.s]={row:r,price:pv,chg:ch,line:pl,last:S.prices[c.s]};
+    refs[c.s]={row:r,price:pv,chg:ch,line:pl,vol:vl,last:S.prices[c.s]};
   });
   m.appendChild(list);
 
@@ -1531,8 +1668,9 @@ function paintWallet(){
     e.appendChild(document.createTextNode("Open the Market tab and place your first buy."));
     L.appendChild(e);
   }else{
-    /* by coin in Market order, then oldest first: the order selling takes them */
-    var rank={}; COINS.forEach(function(c,i){ rank[c.s]=i; });
+    /* by coin in Market order (by 24h volume when live), then oldest first:
+       the order selling takes them */
+    var rank={}; marketOrder().forEach(function(s,i){ rank[s]=i; });
     S.lots.slice().sort(function(a,b){ return (rank[a.s]-rank[b.s]) || (a.id-b.id); }).forEach(function(l){
       L.appendChild(lotRow(l, function(){ renderCoinSheet(l.s,"sell",false,l.id); }));
     });
@@ -1853,18 +1991,26 @@ function paint(changed){
   if(tab==="market"){
     COINS.forEach(function(c){
       var r=refs[c.s]; if(!r) return;
-      var p=S.prices[c.s];
+      var p=S.prices[c.s], gone=noLive(c.s);
       r.price.textContent = priceStr(p);
       var d=dayChange(c.s);
-      r.chg.textContent = pctStr(d);
-      r.chg.className = cls(d);
-      var h=S.hist[c.s], n=Math.min(40,h.length), sl=h.slice(h.length-n);
-      var mn=Math.min.apply(null,sl), mx=Math.max.apply(null,sl), rg=(mx-mn)||1;
-      var pts=""; for(var i=0;i<sl.length;i++){
-        pts += (i*(52/(sl.length-1||1))).toFixed(1)+","+(21-((sl[i]-mn)/rg)*20).toFixed(1)+" ";
+      r.chg.textContent = gone ? "No live price" : pctStr(d);
+      r.chg.className = gone ? "flat" : cls(d);
+      var a=Feed.anchors[c.s], vt=(Feed.mode==="live" && Feed.snapped && a && typeof a.vol==="number") ? volStr(a.vol) : "";
+      if(r.vol.textContent!==vt) r.vol.textContent=vt;
+      /* the sparkline covers the same 24 hours as the percentage beside it */
+      var sl=daySeries(c.s), pts="";
+      if(sl && sl.length>1){
+        var mn=Math.min.apply(null,sl), mx=Math.max.apply(null,sl), rg=(mx-mn)||1;
+        for(var i=0;i<sl.length;i++){
+          pts += (i*(52/(sl.length-1))).toFixed(1)+","+(21-((sl[i]-mn)/rg)*20).toFixed(1)+" ";
+        }
       }
       r.line.setAttribute("points",pts.trim());
       r.line.setAttribute("stroke", d>=0?"var(--up)":"var(--down)");
+      /* no line to draw: give its room to the name */
+      var svg=r.line.parentNode, noLine=!pts;   /* an svg has no .hidden property, only the attribute */
+      if(svg.hasAttribute("hidden")!==noLine){ if(noLine) svg.setAttribute("hidden",""); else svg.removeAttribute("hidden"); }
       var mv = changed[c.s];
       if(mv!==undefined && Math.abs(mv/p) > 0.0025){
         var cell = r.price.parentNode;
@@ -1873,6 +2019,12 @@ function paint(changed){
         cell.classList.add(mv>0?"flash-up":"flash-down");
       }
     });
+    if(refs._volnote){
+      var byVol = COINS.some(function(c){ var a=Feed.anchors[c.s]; return Feed.mode==="live" && Feed.snapped && a && typeof a.vol==="number"; });
+      refs._volnote.hidden = !byVol;
+      var vtxt = "Sorted by trading volume over the last 24 hours, on "+(Feed.provider==="gecko" ? "all exchanges CoinGecko tracks" : "Binance");
+      if(byVol && refs._volnote.textContent!==vtxt) refs._volnote.textContent=vtxt;
+    }
     if(refs._src){
       refs._src.hidden = Feed.mode!=="live";
       refs._src.firstChild.className = Feed.dot();
@@ -1960,6 +2112,12 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
   b.appendChild(head);
 
   var crt=el("div","crt"); var cv=el("canvas"); cv.id="chart"; crt.appendChild(cv); b.appendChild(crt);
+  if(noLive(sym)){
+    var nl=el("p","note nolive", sheetCtx.side==="buy"
+      ? "No live price for "+sym+" from "+(Feed.provider==="gecko"?"CoinGecko":"Binance")+" right now, so it cannot be bought. The price shown is the last one the game had."
+      : "No live price for "+sym+" right now. Selling uses the last price the game had, and exit rules wait for a live one.");
+    nl.style.margin="10px 0 0"; b.appendChild(nl);
+  }
 
   var seg=el("div","seg");
   var bb=el("button",null,"Buy"), sb=el("button",null,"Sell");
@@ -2000,6 +2158,7 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
 
   var go=el("button","btn "+(sheetCtx.side==="buy"?"buy":"sell"));
   go.textContent = sheetCtx.side==="buy" ? "Buy "+sym : (lot ? "Sell this trade" : "Sell "+sym);
+  if(sheetCtx.side==="buy" && noLive(sym)) go.disabled=true;
   go.addEventListener("click",function(){
     var val=parseFloat(inp.value);
     if(!(val>0)) return toast("Enter an amount first");
@@ -2098,9 +2257,9 @@ function paintCoinSheet(){
   if(!sheetCtx||sheetCtx.kind!=="coin") return;
   var sym=sheetCtx.sym, n=sheetCtx.nodes;
   n.price.textContent = priceStr(S.prices[sym]);
-  var d=dayChange(sym);
-  n.chg.textContent = pctStr(d)+" today";
-  n.chg.className = cls(d);
+  var d=dayChange(sym), gone=noLive(sym);
+  n.chg.textContent = gone ? "No live price" : pctStr(d)+" today";
+  n.chg.className = gone ? "flat" : cls(d);
   /* one trade: its entry and rules. Several: their average entry only */
   var mine=lotsOf(sym), marks=[];
   var one = (sheetCtx.lot && lotById(sheetCtx.lot)) || (mine.length===1 ? mine[0] : null);
