@@ -108,9 +108,6 @@ header#top{
 .ph-glass{fill:var(--space)}
 .ph-edge{fill:none;stroke:var(--edge);stroke-width:2}
 .ph-star{fill:#EFE0C6}
-.ph-earth{fill:var(--earth)}
-.ph-cloud{fill:#EEF3FF;opacity:.92}
-.ph-rim{fill:none;stroke:#9ED8FF;stroke-width:1.4;opacity:.85}
 .ph-glare{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;opacity:.3}
 .ph-bolt{fill:var(--bolt);stroke:var(--edge);stroke-width:.8}
 .deck{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
@@ -199,6 +196,8 @@ button.row:active{background:var(--recess)}
 .nm b.who{display:flex;align-items:center;gap:7px}
 .nm .gl{width:18px;height:18px;flex:none;color:var(--muted)}
 .nm small{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* a trade row wraps: its day and exit rule are what tell two trades in one coin apart */
+.row.lot .nm small{white-space:normal;line-height:1.35}
 .val{text-align:right;flex:none;border-radius:6px;padding:2px 5px;margin-right:-5px}
 .val b{display:block;font-size:15px;font-weight:650;line-height:1.25}
 .val b.up,.val b.down,.val b.flat{font-size:11.5px;font-weight:700;font-stretch:88%;max-width:82px;white-space:normal;text-align:right}
@@ -340,15 +339,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       <circle class="ph-bolt" cx="54.60" cy="30.00" r="1.5"/><circle class="ph-bolt" cx="47.39" cy="47.39" r="1.5"/><circle class="ph-bolt" cx="30.00" cy="54.60" r="1.5"/><circle class="ph-bolt" cx="12.61" cy="47.39" r="1.5"/><circle class="ph-bolt" cx="5.40" cy="30.00" r="1.5"/><circle class="ph-bolt" cx="12.61" cy="12.61" r="1.5"/><circle class="ph-bolt" cx="30.00" cy="5.40" r="1.5"/><circle class="ph-bolt" cx="47.39" cy="12.61" r="1.5"/>
       <circle class="ph-glass" cx="30" cy="30" r="21"/>
       <g clip-path="url(#phGlass)">
-        <circle class="ph-star" cx="19" cy="17" r=".75"/><circle class="ph-star" cx="27" cy="13" r=".5"/>
-        <circle class="ph-star" cx="36.5" cy="19.5" r=".65"/><circle class="ph-star" cx="15" cy="27" r=".5"/>
-        <circle class="ph-star" cx="24" cy="23" r=".4"/><circle class="ph-star" cx="42" cy="14" r=".45"/>
-        <circle class="ph-earth" cx="44" cy="54" r="30"/>
-        <path class="ph-cloud" d="M21 44.5c3-2.2 6-1.4 8-.2 2-2.2 6-2.2 7.2.1 2-1 4-.2 5 1.2-4 1-9 1.2-14 1-2.2 0-4.4-.8-6.2-2.1z"/>
-        <path class="ph-cloud" d="M32.5 36.2c2.2-1.3 4.2-1.2 5.3 0 2-1 4.2-.2 5.2 1.1-3.3 1-6.6 1-10.5-1.1z"/>
-        <path class="ph-cloud" d="M39.5 45.5c2.2-1.2 5-1 6.2 1.1-2.1.7-4.2.6-6.2-1.1z"/>
-        <path class="ph-cloud" d="M27 50.5c2-1 4-.8 5 .6-1.8.6-3.4.5-5-.6z"/>
-        <circle class="ph-rim" cx="44" cy="54" r="30"/>
+        <circle class="ph-star" cx="19" cy="17" r=".75"/><circle class="ph-star" cx="27" cy="13" r=".5"/><circle class="ph-star" cx="15" cy="27" r=".5"/><circle class="ph-star" cx="24" cy="23" r=".4"/><circle class="ph-star" cx="42" cy="14" r=".45"/>
+        <g transform="translate(60 0) scale(-1 1)"><path d="M11 39C13 28.5 30 27 35.5 39z" fill="#2F5F95" stroke="#2A1F1A" stroke-width="1.6" stroke-linejoin="round"/><circle cx="17" cy="34.6" r="1.15" fill="#EFE0C6"/><g fill="none" stroke="#9ED8FF" stroke-width="1.5" stroke-linecap="round"><path d="M23.5 28.2V22.5"/><path d="M23.5 23c-1.3-2.8-3.8-3.4-6-2.4"/><path d="M23.5 23c1.3-2.8 3.8-3.4 6-2.4"/></g><path d="M41.6 41L42 35.6C40 34 37.6 33.6 36.2 30.2C38.6 30.6 41 31.4 43 34.2C45 31.4 47.4 30.6 49.8 30.2C48.4 33.6 46 34 44 35.6L44.4 41z" fill="#2F5F95" stroke="#2A1F1A" stroke-width="1.6" stroke-linejoin="round"/><rect x="6" y="38.2" width="48" height="16" fill="#3566B8"/><path d="M8 38.4q2.25-1.3 4.5 0t4.5 0 4.5 0 4.5 0 4.5 0 4.5 0 4.5 0 4.5 0 4.5 0 4.5 0" fill="none" stroke="#9ED8FF" stroke-width="1.1" stroke-linecap="round"/></g>
       </g>
       <circle class="ph-edge" cx="30" cy="30" r="21"/>
       <path class="ph-glare" d="M16.5 23.5a15 15 0 0 1 8.5-9"/>
@@ -424,7 +416,12 @@ function cls(v){ return v>0.0001?"up":(v<-0.0001?"down":"flat"); }
 /* ============================ market ============================ */
 var TICKS_PER_DAY = 240;            /* one game day is 240 ticks, four minutes at 1x */
 var HISTORY = 300;
-var FEE = 0.0015;
+/* trading fee, a share of each trade's value, chosen in Settings and kept in
+   the save. Default 0.10%: the base-tier taker fee at Binance, Bybit and OKX
+   (Oct 2026; Kraken and Coinbase charge more). Was a fixed 0.15% before 1.6.1. */
+var FEE_DEFAULT = 0.001;
+var FEE_CHOICES = [[0,"No fee"],[0.0005,"0.05%"],[0.001,"0.10%, typical of large exchanges"],[0.0025,"0.25%"],[0.006,"0.60%, like a pricier app"]];
+function feePct(){ return S.fee ? (S.fee*100).toFixed(2)+"%" : "none"; }
 
 /* dv is the coin's target daily sigma. The figures are real-world daily
    volatility scaled to 0.68, which keeps BTC calm and DOGE wild relative to
@@ -733,8 +730,10 @@ var Feed = {
       S.dayRef[c.s]=hh[Math.max(0,hh.length-TICKS_PER_DAY)];
       /* the position was paid for in simulated dollars: rescale its basis and
          exit rules by the same factor so the jump does not invent a profit */
-      var hd=S.hold[c.s];
-      if(hd){ hd.avg*=k; if(hd.sl) hd.sl*=k; if(hd.tp) hd.tp*=k; }
+      S.lots.forEach(function(l){
+        if(l.s!==c.s) return;
+        l.p*=k; if(l.sl) l.sl*=k; if(l.tp) l.tp*=k;
+      });
     });
     save();
   },
@@ -757,7 +756,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.6.0";
+var APP_VERSION = "1.6.1";
 var SAVE_KEY = "pw.save.v1";
 var S = null;
 var refs = {};
@@ -782,7 +781,8 @@ function freshState(){
   var st = {
     v:1, tick:0, cash:3000, seedCash:3000, sentiment:0, speed:1,
     prices:{}, hist:{}, dayRef:{},
-    hold:{},            /* sym -> {q, avg, sl, tp} */
+    lots:[], lotSeq:0,  /* one per buy: {id, s, q, p (entry), t, sl, tp} */
+    fee:FEE_DEFAULT,
     trades:[], news:[], pending:[], reviews:[],
     realised:0, volume:0, tradeCount:0, dipBuys:0, winners:0,
     level:1, xp:0, owned:[], quests:[], questLog:[], bots:[], seenQuests:0,
@@ -858,7 +858,7 @@ function questCounter(st,t){
     case "dip":    return st.dipBuys;
     case "winner": return st.winners;
     case "nw":     return netWorthOf(st);
-    case "spread": return Object.keys(st.hold).length;
+    case "spread": return heldSyms(st).length;
   }
   return 0;
 }
@@ -878,12 +878,33 @@ function biggestDrop(){
 /* ============================ economics ============================ */
 function netWorthOf(st){
   var v = st.cash;
-  for(var s in st.hold){ v += st.hold[s].q * st.prices[s]; }
+  st.lots.forEach(function(l){ v += l.q * st.prices[l.s]; });
   return v;
 }
 function netWorth(){ return netWorthOf(S); }
 function holdingsValue(){
-  var v=0; for(var s in S.hold){ v += S.hold[s].q*S.prices[s]; } return v;
+  var v=0; S.lots.forEach(function(l){ v += l.q*S.prices[l.s]; }); return v;
+}
+/* trades: every buy is its own lot with its own entry and exit rules */
+function heldSyms(st){
+  var out=[]; st.lots.forEach(function(l){ if(out.indexOf(l.s)<0) out.push(l.s); }); return out;
+}
+function lotsOf(sym){ return S.lots.filter(function(l){ return l.s===sym; }); }
+function lotById(id){
+  for(var i=0;i<S.lots.length;i++) if(S.lots[i].id===id) return S.lots[i];
+  return null;
+}
+/* a coin's trades taken together: total held and the average entry */
+function position(sym){
+  var q=0, c=0;
+  lotsOf(sym).forEach(function(l){ q+=l.q; c+=l.q*l.p; });
+  return q>0 ? {q:q, avg:c/q} : null;
+}
+/* what selling q of these lots, oldest first, cost when they were bought */
+function costOf(lots, q){
+  var c=0;
+  lots.forEach(function(l){ var take=Math.min(l.q, q); c+=take*l.p; q-=take; });
+  return c;
 }
 function dayChange(sym){
   if(Feed.mode==="live" && Feed.status==="ok"){
@@ -1026,23 +1047,29 @@ function checkReviews(){
 }
 
 function checkOrders(){
-  for(var s in S.hold){
-    var h=S.hold[s], p=S.prices[s];
-    if(h.sl && p<=h.sl){ sell(s, h.q, "Stop loss triggered on "+s); }
-    else if(h.tp && p>=h.tp){ sell(s, h.q, "Take profit hit on "+s); }
-  }
+  /* each trade has its own rules; a copy, because selling removes lots */
+  S.lots.slice().forEach(function(l){
+    if(!lotById(l.id)) return;
+    var p=S.prices[l.s];
+    if(l.sl && p<=l.sl) sellFrom([l], l.q, "Stop loss triggered on "+l.s);
+    else if(l.tp && p>=l.tp) sellFrom([l], l.q, "Take profit hit on "+l.s);
+  });
 }
 
 /* ============================ trading ============================ */
-function buy(sym, usd){
+/* rules: optional {sl, tp} in percent below and above this trade's entry */
+function buy(sym, usd, rules){
   usd = Math.min(usd, S.cash);
   if(!(usd>0.01)) return toast("Enter an amount first");
   var p = S.prices[sym];
-  var fee = usd*FEE;
+  var fee = usd*S.fee;
   var q = (usd-fee)/p;
-  var h = S.hold[sym] || (S.hold[sym]={q:0,avg:0,sl:0,tp:0});
-  h.avg = (h.avg*h.q + p*q)/(h.q+q);
-  h.q += q;
+  var lot = {id:(S.lotSeq=(S.lotSeq||0)+1), s:sym, q:q, p:p, t:S.tick, sl:0, tp:0};
+  if(rules){
+    if(rules.sl>0 && rules.sl<100) lot.sl = p*(1-rules.sl/100);
+    if(rules.tp>0) lot.tp = p*(1+rules.tp/100);
+  }
+  S.lots.push(lot);
   S.cash -= usd;
   S.tradeCount++; S.volume += usd;
   var dc = dayChange(sym);
@@ -1051,24 +1078,29 @@ function buy(sym, usd){
   S.trades.unshift({t:S.tick,s:sym,side:"buy",q:q,p:p,usd:usd,pnl:0});
   if(S.trades.length>40) S.trades.pop();
   addXP(tradeXP());
-  toast("Bought "+qtyStr(q)+" "+sym);
+  toast("Bought "+qtyStr(q)+" "+sym+(lot.sl||lot.tp ? ", exit rule set" : ""));
   afterTrade();
 }
-function sell(sym, q, msg){
-  var h = S.hold[sym]; if(!h) return;
-  q = Math.min(q, h.q);
-  if(!(q>0)) return toast("Nothing to sell");
-  var p = S.prices[sym];
-  var gross = q*p, fee = gross*FEE, net = gross-fee;
-  var cost = h.avg*q;
+/* sell q of a coin, oldest trades first */
+function sell(sym, q, msg){ sellFrom(lotsOf(sym), q, msg); }
+/* sell q out of these lots, in order: one sale, one review, one trade row */
+function sellFrom(lots, q, msg){
+  var have=0; lots.forEach(function(l){ have+=l.q; });
+  q = Math.min(q, have);
+  if(!lots.length || !(q>0)) return toast("Nothing to sell");
+  var sym = lots[0].s, p = S.prices[sym];
+  var gross = q*p, fee = gross*S.fee, net = gross-fee;
+  var cost = costOf(lots, q);
   var pnl = net-cost;
+  var left=q;
+  lots.forEach(function(l){ var take=Math.min(l.q, left); l.q-=take; left-=take; });
+  /* drop sold-out trades and dust worth under a cent */
+  S.lots = S.lots.filter(function(l){ return l.q*S.prices[l.s] >= 0.01; });
   S.cash += net;
   S.realised += pnl;
   S.tradeCount++; S.volume += gross;
   if(pnl > cost*0.10) S.winners++;
   S.quests.forEach(function(qq){ if(qq.own && qq.t==="winner" && !qq.claimed && pnl >= cost*qq.pct/100) qq.n++; });
-  h.q -= q;
-  if(h.q*p < 0.01) delete S.hold[sym];
   S.trades.unshift({t:S.tick,s:sym,side:"sell",q:q,p:p,usd:net,pnl:pnl});
   if(S.trades.length>40) S.trades.pop();
   /* come back in a third of a game day and see what the price did next */
@@ -1082,7 +1114,7 @@ function afterTrade(){
   checkQuests();
   save();
   paint({});
-  if(sheetCtx && sheetCtx.kind==="coin") renderCoinSheet(sheetCtx.sym, sheetCtx.side, true);
+  if(sheetCtx && sheetCtx.kind==="coin") renderCoinSheet(sheetCtx.sym, sheetCtx.side, true, sheetCtx.lot);
 }
 function addXP(n){
   S.xp += n;
@@ -1131,8 +1163,8 @@ function claimAll(){
 /* ============================ storage ============================ */
 var NUM_FIELDS = {tick:0, cash:3000, seedCash:3000, sentiment:0, speed:1, realised:0, volume:0,
   tradeCount:0, dipBuys:0, winners:0, level:1, xp:0, seenQuests:0, peak:3000,
-  questDone:0, questEarned:0};
-var ARR_FIELDS = {trades:1, news:1, owned:1, quests:1, questLog:1, bots:1, pending:1, reviews:1};
+  questDone:0, questEarned:0, lotSeq:0};
+var ARR_FIELDS = {trades:1, news:1, owned:1, quests:1, questLog:1, bots:1, pending:1, reviews:1, lots:1};
 
 /* A save can be truncated or hand edited. Repair it rather than throwing it away. */
 function heal(o){
@@ -1144,7 +1176,6 @@ function heal(o){
   if(!o.prices || typeof o.prices!=="object") o.prices={};
   if(!o.hist   || typeof o.hist!=="object")   o.hist={};
   if(!o.dayRef || typeof o.dayRef!=="object") o.dayRef={};
-  if(!o.hold   || typeof o.hold!=="object")   o.hold={};
 
   COINS.forEach(function(c){
     if(typeof o.prices[c.s]!=="number" || !isFinite(o.prices[c.s]) || o.prices[c.s]<=0) o.prices[c.s]=c.p0;
@@ -1161,21 +1192,36 @@ function heal(o){
     }
   });
 
-  Object.keys(o.hold).forEach(function(s){
-    var h=o.hold[s];
+  /* before 1.6.1 a coin was one position, {q, avg, sl, tp}, in o.hold: each
+     becomes one trade, keeping its entry and exit rules */
+  if(o.hold && typeof o.hold==="object"){
+    Object.keys(o.hold).forEach(function(s){
+      var h=o.hold[s]; if(!h) return;
+      o.lots.push({id:0, s:s, q:h.q, p:h.avg, t:o.tick, sl:h.sl, tp:h.tp});
+    });
+  }
+  delete o.hold;
+  var fin=function(v){ return typeof v==="number" && isFinite(v); };
+  o.lots = o.lots.filter(function(l){
+    if(!l || typeof l.s!=="string" || !fin(l.q) || l.q<=0) return false;
     /* the coin list can shrink between versions: return the money rather than
        quietly deleting someone's position */
-    if(!BYSYM[s]){
-      if(h && typeof h.q==="number" && isFinite(h.q) && h.q>0 && typeof o.prices[s]==="number"){
-        o.cash += h.q*o.prices[s];
-      }
-      delete o.hold[s]; return;
+    if(!BYSYM[l.s]){
+      if(fin(o.prices[l.s])) o.cash += l.q*o.prices[l.s];
+      return false;
     }
-    if(!h || typeof h.q!=="number" || !isFinite(h.q) || h.q<=0 ||
-       typeof h.avg!=="number" || !isFinite(h.avg) || h.avg<=0){ delete o.hold[s]; return; }
-    if(typeof h.sl!=="number" || !isFinite(h.sl) || h.sl<0) h.sl=0;
-    if(typeof h.tp!=="number" || !isFinite(h.tp) || h.tp<0) h.tp=0;
+    if(!fin(l.p) || l.p<=0) return false;
+    if(!fin(l.sl) || l.sl<0) l.sl=0;
+    if(!fin(l.tp) || l.tp<0) l.tp=0;
+    if(!fin(l.t)) l.t=o.tick;
+    return true;
   });
+  /* ids: keep good unique ones, number the rest after the highest */
+  var seen={}, top=o.lotSeq;
+  o.lots.forEach(function(l){ if(fin(l.id) && l.id>0 && !seen[l.id]){ seen[l.id]=1; if(l.id>top) top=l.id; } else l.id=0; });
+  o.lots.forEach(function(l){ if(!l.id) l.id=++top; });
+  o.lotSeq=top;
+  if(!fin(o.fee) || o.fee<0 || o.fee>0.01) o.fee=FEE_DEFAULT;
 
   o.trades = o.trades.filter(function(t){ return t && typeof t.s==="string" && typeof t.q==="number"; }).slice(0,40);
   o.news   = o.news.filter(function(n){ return n && typeof n.x==="string"; }).slice(0,25);
@@ -1388,35 +1434,21 @@ function paintWallet(){
   var nw=netWorth();
   w.alloc.textContent="";
   var parts=[["Cash",S.cash,"var(--chip)"]];
-  Object.keys(S.hold).forEach(function(s){ parts.push([s,S.hold[s].q*S.prices[s],BYSYM[s].c]); });
+  heldSyms(S).forEach(function(s){ parts.push([s,position(s).q*S.prices[s],BYSYM[s].c]); });
   parts.forEach(function(p){
     var i=el("i"); i.style.width=(100*p[1]/nw)+"%"; i.style.background=p[2]; w.alloc.appendChild(i);
   });
   w.leg.textContent = parts.filter(function(p){return p[1]/nw>0.02;}).map(function(p){ return p[0]+" "+Math.round(100*p[1]/nw)+"%"; }).join("   ");
 
   var L=refs._pos; L.textContent="";
-  var syms=Object.keys(S.hold);
-  if(!syms.length){
+  if(!S.lots.length){
     var e=el("div","empty"); e.appendChild(el("b",null,"No positions yet"));
     e.appendChild(document.createTextNode("Open the Market tab and place your first buy."));
     L.appendChild(e);
   }else{
-    syms.sort(function(a,b){ return S.hold[b].q*S.prices[b] - S.hold[a].q*S.prices[a]; });
-    syms.forEach(function(s){
-      var h=S.hold[s], p=S.prices[s], val=h.q*p, pnl=val-h.avg*h.q, pp=(p/h.avg-1)*100;
-      var r=el("button","row");
-      var ic=el("div","coin",s.slice(0,4)); ic.style.background=BYSYM[s].c;
-      var nm=el("div","nm");
-      nm.appendChild(el("b",null,s));
-      var sub=qtyStr(h.q)+" @ "+priceStr(h.avg);
-      if(h.sl||h.tp) sub += ", exit rule set";
-      nm.appendChild(el("small",null,sub));
-      var v=el("div","val");
-      v.appendChild(el("b",null,moneyFull(val)));
-      var sm=el("small",cls(pnl), moneyFull(pnl)+"  "+pctStr(pp)); v.appendChild(sm);
-      r.appendChild(ic); r.appendChild(nm); r.appendChild(v);
-      r.addEventListener("click",function(){ renderCoinSheet(s,"sell"); });
-      L.appendChild(r);
+    /* one row per trade, biggest first: each has its own entry and exit rules */
+    S.lots.slice().sort(function(a,b){ return b.q*S.prices[b.s] - a.q*S.prices[a.s]; }).forEach(function(l){
+      L.appendChild(lotRow(l, function(){ renderCoinSheet(l.s,"sell",false,l.id); }));
     });
   }
 
@@ -1738,15 +1770,53 @@ function paint(changed){
 
 
 /* ============================ trade sheet ============================ */
-function renderCoinSheet(sym, side, keepAmount){
-  sheetCtx = {kind:"coin", sym:sym, side:side||"buy"};
-  var c = BYSYM[sym], h = S.hold[sym];
+function dayOf(t){ return Math.floor(t/TICKS_PER_DAY)+1; }
+/* a trade as a row: coin, size and entry, value and profit so far */
+function lotRow(l, onClick){
+  var p=S.prices[l.s], val=l.q*p, pnl=val-l.p*l.q, pp=(p/l.p-1)*100;
+  var r=el("button","row lot"); r.dataset.lot=l.id;
+  var ic=el("div","coin",l.s.slice(0,4)); ic.style.background=BYSYM[l.s].c;
+  var nm=el("div","nm");
+  nm.appendChild(el("b",null,l.s));
+  var sub=qtyStr(l.q)+" @ "+priceStr(l.p)+", day "+dayOf(l.t);
+  if(l.sl||l.tp) sub += ", exit rule set";
+  nm.appendChild(el("small",null,sub));
+  var v=el("div","val");
+  v.appendChild(el("b",null,moneyFull(val)));
+  v.appendChild(el("small",cls(pnl), moneyFull(pnl)+"  "+pctStr(pp)));
+  r.appendChild(ic); r.appendChild(nm); r.appendChild(v);
+  r.addEventListener("click", onClick);
+  return r;
+}
+/* stop loss and take profit as percent from an entry; prefilled from a trade */
+function exitInputs(entry, sl, tp){
+  var pr=el("div","protect");
+  var l1=el("label"); l1.appendChild(document.createTextNode("Stop loss, % below entry"));
+  var i1=el("input"); i1.type="text"; i1.inputMode="decimal"; i1.placeholder="off";
+  if(sl && entry) i1.value=((1-sl/entry)*100).toFixed(1);
+  l1.appendChild(i1);
+  var l2=el("label"); l2.appendChild(document.createTextNode("Take profit, % above entry"));
+  var i2=el("input"); i2.type="text"; i2.inputMode="decimal"; i2.placeholder="off";
+  if(tp && entry) i2.value=((tp/entry-1)*100).toFixed(1);
+  l2.appendChild(i2);
+  pr.appendChild(l1); pr.appendChild(l2);
+  return {box:pr, sl:i1, tp:i2};
+}
+
+/* With lotId the sheet is one trade (from Wallet): sell it, or change its exit
+   rules. Without, it is the coin's: buy (with optional exit rules), or sell
+   oldest trades first, and a list of your trades in it. */
+function renderCoinSheet(sym, side, keepAmount, lotId){
+  var lot = lotId ? lotById(lotId) : null;   /* sold meanwhile: the coin's sheet */
+  sheetCtx = {kind:"coin", sym:sym, side: lot ? "sell" : (side||"buy"), lot: lot ? lot.id : null};
+  var c = BYSYM[sym], h = lot ? {q:lot.q, avg:lot.p} : position(sym);
   var b = $("#sheetBody"); b.textContent="";
 
   var head=el("div","sheeth");
   var ic=el("div","coin",sym.slice(0,4)); ic.style.background=c.c;
   var nm=el("div","nm"); nm.appendChild(el("b",null,c.n));
-  nm.appendChild(el("small",null, sym+", typical day \u00B1"+(c.dv*100).toFixed(1)+"%"));
+  nm.appendChild(el("small",null, lot ? "Bought on day "+dayOf(lot.t)+" at "+priceStr(lot.p)+", typical day ±"+(c.dv*100).toFixed(1)+"%"
+                                      : sym+", typical day \u00B1"+(c.dv*100).toFixed(1)+"%"));
   var v=el("div","val"); var pv=el("b"); var ch=el("small"); v.appendChild(pv); v.appendChild(ch);
   head.appendChild(ic); head.appendChild(nm); head.appendChild(v);
   b.appendChild(head);
@@ -1760,7 +1830,7 @@ function renderCoinSheet(sym, side, keepAmount){
   bb.addEventListener("click",function(){ renderCoinSheet(sym,"buy"); });
   sb.addEventListener("click",function(){ renderCoinSheet(sym,"sell"); });
   seg.appendChild(bb); seg.appendChild(sb);
-  b.appendChild(seg);
+  if(!lot) b.appendChild(seg);
 
   var maxUsd = sheetCtx.side==="buy" ? S.cash : (h? h.q*S.prices[sym] : 0);
 
@@ -1774,54 +1844,72 @@ function renderCoinSheet(sym, side, keepAmount){
   var chips=el("div","chips");
   [[0.25,"25%"],[0.5,"50%"],[0.75,"75%"],[1,"Max"]].forEach(function(p){
     var cb=el("button",null,p[1]);
-    cb.addEventListener("click",function(){ inp.value=(maxUsd*p[0]).toFixed(2); updateSummary(); });
+    /* round down: toFixed rounds $1,511.026 up to 1511.03, more than you have */
+    cb.addEventListener("click",function(){ inp.value=(Math.floor(maxUsd*p[0]*100)/100).toFixed(2); updateSummary(); });
     chips.appendChild(cb);
   });
   b.appendChild(chips);
 
+  /* exit rules can be set with the buy, so the trade is protected from its first tick */
+  var rules=null;
+  if(sheetCtx.side==="buy"){
+    var rh=el("h2","sec","Automatic exit, optional"); rh.style.marginTop="14px"; b.appendChild(rh);
+    rules=exitInputs(0,0,0); b.appendChild(rules.box);
+  }
+
   var sumWrap=el("div"); b.appendChild(sumWrap);
 
   var go=el("button","btn "+(sheetCtx.side==="buy"?"buy":"sell"));
-  go.textContent = sheetCtx.side==="buy" ? "Buy "+sym : "Sell "+sym;
+  go.textContent = sheetCtx.side==="buy" ? "Buy "+sym : (lot ? "Sell this trade" : "Sell "+sym);
   go.addEventListener("click",function(){
     var val=parseFloat(inp.value);
     if(!(val>0)) return toast("Enter an amount first");
     if(sheetCtx.side==="buy"){
-      if(val>S.cash+0.001) return toast("You only have "+moneyFull(S.cash)+" in cash");
-      buy(sym,val);
+      /* cash is not whole cents; anything within half a cent is "all of it",
+         and buy() caps the spend at what you have */
+      if(val>S.cash+0.005) return toast("You only have "+moneyFull(S.cash)+" in cash");
+      if(val>S.cash-0.01) val=S.cash;   /* Max, or a typed balance: spend it all, no dust left */
+      buy(sym, val, {sl:parseFloat(rules.sl.value), tp:parseFloat(rules.tp.value)});
     }else{
       if(!h) return toast("You do not hold any "+sym);
       var q=Math.min(h.q, val/S.prices[sym]);
-      sell(sym,q);
+      if(lot) sellFrom([lot], q); else sell(sym,q);
     }
     inp.value="";
     updateSummary();
   });
   b.appendChild(go);
 
-  if(h){
+  if(lot){
+    /* this trade's own exit rules, from its own entry */
     var hd=el("h2","sec","Automatic exit");
     hd.style.marginTop="18px"; b.appendChild(hd);
-    var pr=el("div","protect");
-    var l1=el("label"); l1.appendChild(document.createTextNode("Stop loss, % below entry"));
-    var i1=el("input"); i1.type="text"; i1.inputMode="decimal"; i1.placeholder="off";
-    if(h.sl) i1.value=((1-h.sl/h.avg)*100).toFixed(1);
-    l1.appendChild(i1);
-    var l2=el("label"); l2.appendChild(document.createTextNode("Take profit, % above entry"));
-    var i2=el("input"); i2.type="text"; i2.inputMode="decimal"; i2.placeholder="off";
-    if(h.tp) i2.value=((h.tp/h.avg-1)*100).toFixed(1);
-    l2.appendChild(i2);
-    pr.appendChild(l1); pr.appendChild(l2);
-    b.appendChild(pr);
+    var ex=exitInputs(lot.p, lot.sl, lot.tp);
+    b.appendChild(ex.box);
     var sv=el("button","btn ghost","Save exit rules"); sv.style.marginTop="9px";
     sv.addEventListener("click",function(){
-      var a=parseFloat(i1.value), z=parseFloat(i2.value);
-      h.sl = (a>0&&a<100) ? h.avg*(1-a/100) : 0;
-      h.tp = (z>0) ? h.avg*(1+z/100) : 0;
-      save(); toast(h.sl||h.tp ? "Exit rules saved" : "Exit rules cleared");
-      paint({});
+      var a=parseFloat(ex.sl.value), z=parseFloat(ex.tp.value);
+      lot.sl = (a>0&&a<100) ? lot.p*(1-a/100) : 0;
+      lot.tp = (z>0) ? lot.p*(1+z/100) : 0;
+      save(); toast(lot.sl||lot.tp ? "Exit rules saved" : "Exit rules cleared");
+      paint({}); paintCoinSheet();
     });
     b.appendChild(sv);
+    var all=el("button","btn ghost","All "+sym+" trades"); all.style.marginTop="9px";
+    all.addEventListener("click",function(){ renderCoinSheet(sym,"sell"); });
+    b.appendChild(all);
+  } else {
+    var mine=lotsOf(sym);
+    if(mine.length){
+      var th=el("h2","sec","Your "+sym+" trades"); th.style.marginTop="18px"; b.appendChild(th);
+      if(sheetCtx.side==="sell" && mine.length>1){
+        var fifo=el("p","note","Selling here takes from your oldest trade first. Open a trade to sell it on its own or set its exit rules.");
+        fifo.style.margin="0 0 8px"; b.appendChild(fifo);
+      }
+      var TL=el("div","list");
+      mine.forEach(function(l){ TL.appendChild(lotRow(l, function(){ renderCoinSheet(sym,"sell",false,l.id); })); });
+      b.appendChild(TL);
+    }
   }
 
   var cl=el("button","btn ghost","Close"); cl.style.marginTop="9px";
@@ -1840,22 +1928,22 @@ function renderCoinSheet(sym, side, keepAmount){
     sumWrap.textContent="";
     var rows=[];
     if(sheetCtx.side==="buy"){
-      var fee=val*FEE, q=(val-fee)/p;
+      var fee=val*S.fee, q=(val-fee)/p;
       rows.push(["You receive", qtyStr(Math.max(0,q))+" "+sym]);
-      rows.push(["Fee (0.15%)", moneyFull(fee)]);
+      rows.push(["Fee ("+feePct()+")", moneyFull(fee)]);
       rows.push(["Cash after", moneyFull(S.cash-val)]);
     }else{
       var q2=Math.min(h?h.q:0, val/p);
-      var gross=q2*p, fee2=gross*FEE;
+      var gross=q2*p, fee2=gross*S.fee;
       rows.push(["You sell", qtyStr(q2)+" "+sym]);
-      rows.push(["Fee (0.15%)", moneyFull(fee2)]);
-      if(h) rows.push(["Profit on this sale", moneyFull(gross-fee2-h.avg*q2)]);
+      rows.push(["Fee ("+feePct()+")", moneyFull(fee2)]);
+      if(h) rows.push(["Profit on this sale", moneyFull(gross-fee2-costOf(lot ? [lot] : lotsOf(sym), q2))]);
     }
     rows.forEach(function(r){
       var k=el("div","kv"); k.appendChild(el("span",null,r[0])); k.appendChild(el("b",null,r[1])); sumWrap.appendChild(k);
     });
     var avail=el("div","kv");
-    avail.appendChild(el("span",null, sheetCtx.side==="buy"?"Available cash":"Position value"));
+    avail.appendChild(el("span",null, sheetCtx.side==="buy"?"Available cash":(lot?"Trade value":"Position value")));
     avail.appendChild(el("b",null, moneyFull(maxUsd)));
     sumWrap.appendChild(avail);
   }
@@ -1868,11 +1956,15 @@ function paintCoinSheet(){
   var d=dayChange(sym);
   n.chg.textContent = pctStr(d)+" today";
   n.chg.className = cls(d);
-  var hd=S.hold[sym], marks=[];
-  if(hd){
-    marks.push({v:hd.avg, label:"entry", token:"--crt-text", dash:[5,4]});
-    if(hd.sl) marks.push({v:hd.sl, label:"stop", token:"--crt-down", dash:[3,3]});
-    if(hd.tp) marks.push({v:hd.tp, label:"target", token:"--crt-up", dash:[3,3]});
+  /* one trade: its entry and rules. Several: their average entry only */
+  var mine=lotsOf(sym), marks=[];
+  var one = (sheetCtx.lot && lotById(sheetCtx.lot)) || (mine.length===1 ? mine[0] : null);
+  if(one){
+    marks.push({v:one.p, label:"entry", token:"--crt-text", dash:[5,4]});
+    if(one.sl) marks.push({v:one.sl, label:"stop", token:"--crt-down", dash:[3,3]});
+    if(one.tp) marks.push({v:one.tp, label:"target", token:"--crt-up", dash:[3,3]});
+  } else if(mine.length){
+    marks.push({v:position(sym).avg, label:"avg entry", token:"--crt-text", dash:[5,4]});
   }
   drawChart(n.canvas, S.hist[sym], d>=0, marks);
 }
@@ -2057,6 +2149,18 @@ function renderSettings(){
   pnote.style.margin="7px 0 0";
   pnote.textContent="Live prices need a build that can reach the network, so the packaged app or your own hosting. They will not load inside a published artifact, where outbound requests are blocked. When a live feed is on, the simulator keeps the chart moving between polls and news shocks are switched off.";
   b.appendChild(pnote);
+
+  b.appendChild(el("h2","sec","Trading fee"));
+  var fs=el("select","sel");
+  FEE_CHOICES.forEach(function(o){
+    var op=el("option",null,o[1]); op.value=String(o[0]); fs.appendChild(op);
+  });
+  fs.value=String(S.fee);
+  fs.addEventListener("change",function(){ S.fee=parseFloat(fs.value); save(); toast("Trading fee set to "+feePct()); });
+  b.appendChild(fs);
+  var fnote=el("p","note"); fnote.style.margin="7px 0 0";
+  fnote.textContent="Charged on every buy and sell, as a share of its value. Large exchanges charge about 0.10% on small accounts.";
+  b.appendChild(fnote);
 
   b.appendChild(el("h2","sec","Market speed"));
   var sp=el("select","sel");
