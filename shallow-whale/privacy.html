@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Shallow Whale privacy policy</title>
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<style>
+/* Fonts come from the bundled files next to the staged page (www/fonts),
+   never from Google; without them the page falls back to the system font. */
+@font-face{font-family:"Saira";src:url("fonts/Saira-VF.ttf") format("truetype");font-weight:100 900;font-stretch:50% 125%;font-display:swap}
+:root{--bg:#EFE0C6;--text:#2A1F1A;--muted:#54453A;--rule:rgba(42,31,26,.2);--link:#1F415E}
+@media (prefers-color-scheme:dark){:root{--bg:#0B1426;--text:#EFE0C6;--muted:#BDB4A6;--rule:rgba(239,224,198,.15);--link:#8FB8E6}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 "Saira",system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:26px;line-height:1.2;margin:0 0 4px}
+h2{font-size:18px;margin:28px 0 6px;padding-top:14px;border-top:1.5px solid var(--rule)}
+p,li{margin:0 0 10px}
+ul{padding-left:20px;margin:0 0 10px}
+.date{color:var(--muted);margin-bottom:18px}
+a{color:var(--link);text-underline-offset:2px}
+code{font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Shallow Whale privacy policy</h1>
+<p class="date">Effective 2 October 2026</p>
+
+<p>Shallow Whale is a crypto trading game played with play money. It has no
+accounts, no ads, no analytics and no purchases. It does not collect, store
+or share any personal information about you.</p>
+
+<h2>What stays on your device</h2>
+<p>Your game progress and settings (cash, holdings, quests, theme and price
+source) are saved on your device only, in the browser's or the app's local
+storage. They are never sent to us or to anyone else.</p>
+<p>To delete them, use Reset everything in Settings, clear the site's data in
+your browser, or uninstall the app.</p>
+
+<h2>Live prices</h2>
+<p>By default the game shows real market prices. To get them, your device
+asks one of these providers for current prices about every 15 seconds:</p>
+<ul>
+<li>Binance (<code>data-api.binance.vision</code>), and if that fails,</li>
+<li>CoinGecko (<code>api.coingecko.com</code>).</li>
+</ul>
+<p>These requests contain only the list of coins. They carry nothing about
+you or your game. Like any request on the internet, they show the provider
+your IP address and basic device details such as your browser version, and
+the provider's own privacy policy covers how it treats them:
+<a href="https://www.binance.com/en/privacy">Binance</a>,
+<a href="https://www.coingecko.com/en/privacy">CoinGecko</a>.</p>
+<p>To stop these requests, choose the simulated market in Settings. The game
+then makes up its own prices on your device and sends nothing.</p>
+
+<h2>The web version</h2>
+<p>The web version is hosted on GitHub Pages. GitHub may log the IP address
+of visitors, as described in the
+<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub privacy statement</a>.
+The game's fonts are bundled with it, so loading the game sends nothing to
+font services such as Google Fonts.</p>
+
+<h2>Children</h2>
+<p>The game collects nothing from anyone, children included.</p>
+
+<h2>Changes</h2>
+<p>If what the game does with data ever changes, this page changes first,
+with a new effective date.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy:
+<a href="https://github.com/ilya-paskhover/paper-whale/issues">open an issue on the project's GitHub page</a>.</p>
+</main>
+</body>
+</html>
