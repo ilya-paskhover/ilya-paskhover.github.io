@@ -771,7 +771,7 @@ var Feed = {
       return "Live from "+name+", updated "+secs+"s ago";
     }
     if(this.status==="wait") return "Connecting to "+name;
-    return "Live feed unavailable ("+this.note+"). Running on the simulator.";
+    return "Live feed unavailable ("+this.note+"). "+(this.snapped ? "Holding the last live prices." : "Running on the simulator.");
   },
   dot:function(){
     if(this.mode!=="live") return "";
@@ -781,7 +781,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.9.0";
+var APP_VERSION = "1.9.1";
 /* Absolute so it opens the same public page from the web build, a local file
    and the Android app (the store listing links the same URL). */
 var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
@@ -993,7 +993,11 @@ function step(){
   S.sentiment = clamp(S.sentiment*0.97 + randn()*0.13, -2.2, 2.2);
 
   var changed = {};
-  var anchored = (Feed.mode==="live" && Feed.status==="ok");
+  /* live once a poll has landed, even while later polls fail: a dropped poll
+     used to switch the walk back to simulator speed, with news shocks, and
+     the pull home afterwards was a near-free trade (1.9.1). Now the price
+     keeps walking at real speed around the last real price */
+  var anchored = (Feed.mode==="live" && Feed.snapped);
   var mkt = randn();                 /* one shared move, felt by every coin */
   COINS.forEach(function(c){
     /* live: real speed, so the chart moves between polls by what the market
