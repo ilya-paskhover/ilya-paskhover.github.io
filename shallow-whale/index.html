@@ -660,7 +660,9 @@ var Feed = {
              syms.map(function(x){ return x.gecko; }).join(",")+
              "&vs_currencies=usd&include_24hr_change=true";
     }
-    return "https://api.binance.com/api/v3/ticker/24hr?symbols="+
+    /* data-api.binance.vision is Binance's host for public market data only:
+       same ticker, no account endpoints behind it */
+    return "https://data-api.binance.vision/api/v3/ticker/24hr?symbols="+
            encodeURIComponent(JSON.stringify(syms.map(function(x){ return x.binance; })));
   },
 
@@ -756,7 +758,10 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.6.1";
+var APP_VERSION = "1.7.0";
+/* Absolute so it opens the same public page from the web build, a local file
+   and the Android app (the store listing links the same URL). */
+var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
 var SAVE_KEY = "pw.save.v1";
 var S = null;
 var refs = {};
@@ -2214,9 +2219,12 @@ function renderSettings(){
   b.appendChild(ver);
 
   b.appendChild(el("h2","sec","About"));
-  var p1=el("p","note","Shallow Whale is a trading game. Prices come from a simulation that runs on your device, not from a real exchange, and nothing here touches real money. There are no ads, no purchases and no accounts.");
-  var p2=el("p","note","One game day is 240 ticks, so about four minutes at normal speed. Percent changes are measured over that window. Your progress is saved in this browser only.");
+  var p1=el("p","note","Shallow Whale is a trading game. Live prices come from Binance or CoinGecko; the simulated market runs on your device. Your trades never touch an exchange and nothing here uses real money. There are no ads, no purchases and no accounts.");
+  var p2=el("p","note","In the simulated market, one game day is 240 ticks, so about four minutes at normal speed. Your progress is saved on this device only.");
   b.appendChild(p1); b.appendChild(p2);
+  var pp=el("a","attrib","Privacy policy");
+  pp.href=PRIVACY_URL; pp.target="_blank"; pp.rel="noopener"; pp.id="privacyLink";
+  b.appendChild(pp);
 
   var cl=el("button","btn ghost","Close"); cl.style.marginTop="12px";
   cl.addEventListener("click", closeSheet); b.appendChild(cl);
