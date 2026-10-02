@@ -428,6 +428,354 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   });
   var EVENT_RATE = 0.6 / (TICKS_PER_DAY * (0.78 / COINS.length + 0.22));
 
+  // src/core/format.js
+  var clamp = function(v, a, b) {
+    return v < a ? a : v > b ? b : v;
+  };
+  function money(v) {
+    var a = Math.abs(v), s = v < 0 ? "-" : "";
+    if (a >= 1e6) return s + "$" + (a / 1e6).toFixed(2) + "M";
+    if (a >= 1e3) return s + "$" + Math.round(a).toLocaleString("en-US");
+    return s + "$" + a.toFixed(2);
+  }
+  function moneyFull(v) {
+    var a = Math.abs(v), s = v < 0 && a >= 5e-3 ? "-" : "";
+    return s + "$" + a.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function priceStr(v) {
+    if (v >= 1e3) return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+    if (v >= 10) return v.toFixed(2);
+    if (v >= 1) return v.toFixed(3);
+    if (v >= 0.01) return v.toFixed(4);
+    if (v >= 1e-4) return v.toFixed(6);
+    return v.toFixed(8);
+  }
+  function qtyStr(q) {
+    if (!(q > 0)) return "0";
+    if (q >= 1e4) return Math.round(q).toLocaleString("en-US");
+    if (q >= 1) return q.toFixed(4);
+    if (q >= 1e-4) return q.toFixed(6);
+    return q.toFixed(8);
+  }
+  function andList(a) {
+    return a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a[0] || "";
+  }
+  function volStr(v) {
+    if (v >= 1e9) return "$" + (v / 1e9).toFixed(v >= 1e10 ? 0 : 1) + "B";
+    if (v >= 1e6) return "$" + Math.round(v / 1e6) + "M";
+    if (v >= 1e3) return "$" + Math.round(v / 1e3) + "K";
+    return "$" + Math.round(v);
+  }
+  function pctStr(v) {
+    return (v >= 0 ? "+" : "") + v.toFixed(2) + "%";
+  }
+  function cls(v) {
+    return v > 1e-4 ? "up" : v < -1e-4 ? "down" : "flat";
+  }
+
+  // src/feed/binance.js
+  var binance_exports = {};
+  __export(binance_exports, {
+    dayUrl: () => dayUrl,
+    parse: () => parse,
+    parseDay: () => parseDay,
+    url: () => url
+  });
+
+  // src/feed/map.js
+  var FEED_MAP = {
+    BTC: { binance: "BTCUSDT", gecko: "bitcoin" },
+    ETH: { binance: "ETHUSDT", gecko: "ethereum" },
+    SOL: { binance: "SOLUSDT", gecko: "solana" },
+    XRP: { binance: "XRPUSDT", gecko: "ripple" },
+    DOGE: { binance: "DOGEUSDT", gecko: "dogecoin" },
+    BNB: { binance: "BNBUSDT", gecko: "binancecoin" },
+    /* CoinGecko kept its id through the rename (search result, unconfirmed);
+       if it changes, the coin shows "No live price" rather than a made-up one */
+    GRAM: { binance: "GRAMUSDT", gecko: "the-open-network" },
+    BCH: { binance: "BCHUSDT", gecko: "bitcoin-cash" }
+  };
+
+  // src/feed/binance.js
+  function url() {
+    var syms = COINS.map(function(c) {
+      return FEED_MAP[c.s];
+    }).filter(Boolean);
+    return "https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + encodeURIComponent(JSON.stringify(syms.map(function(x) {
+      return x.binance;
+    })));
+  }
+  function parse(json, stale) {
+    var out = {};
+    if (!Array.isArray(json)) return out;
+    var by = {};
+    json.forEach(function(r) {
+      if (r && r.symbol) by[r.symbol] = r;
+    });
+    COINS.forEach(function(c) {
+      var r2 = by[FEED_MAP[c.s].binance];
+      if (!r2 || stale(Number(r2.closeTime))) return;
+      var pz = parseFloat(r2.lastPrice), ch = parseFloat(r2.priceChangePercent), qv = parseFloat(r2.quoteVolume);
+      if (isFinite(pz) && pz > 0) out[c.s] = { p: pz, chg: isFinite(ch) ? ch : null, vol: isFinite(qv) && qv >= 0 ? qv : null };
+    });
+    return out;
+  }
+  function dayUrl(sym) {
+    return "https://data-api.binance.vision/api/v3/klines?symbol=" + FEED_MAP[sym].binance + "&interval=15m&limit=96";
+  }
+  function parseDay(json) {
+    var out = [];
+    if (Array.isArray(json)) json.forEach(function(r) {
+      if (Array.isArray(r)) out.push(parseFloat(r[4]));
+    });
+    return out;
+  }
+
+  // src/feed/coingecko.js
+  var coingecko_exports = {};
+  __export(coingecko_exports, {
+    dayUrl: () => dayUrl2,
+    parse: () => parse2,
+    parseDay: () => parseDay2,
+    url: () => url2
+  });
+  function url2() {
+    var syms = COINS.map(function(c) {
+      return FEED_MAP[c.s];
+    }).filter(Boolean);
+    return "https://api.coingecko.com/api/v3/simple/price?ids=" + syms.map(function(x) {
+      return x.gecko;
+    }).join(",") + "&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_last_updated_at=true";
+  }
+  function parse2(json, stale) {
+    var out = {};
+    COINS.forEach(function(c) {
+      var row = json[FEED_MAP[c.s].gecko];
+      if (row && typeof row.usd === "number" && row.usd > 0 && !stale(row.last_updated_at * 1e3)) {
+        out[c.s] = {
+          p: row.usd,
+          chg: typeof row.usd_24h_change === "number" ? row.usd_24h_change : null,
+          vol: typeof row.usd_24h_vol === "number" && row.usd_24h_vol >= 0 ? row.usd_24h_vol : null
+        };
+      }
+    });
+    return out;
+  }
+  function dayUrl2(sym) {
+    return "https://api.coingecko.com/api/v3/coins/" + FEED_MAP[sym].gecko + "/market_chart?vs_currency=usd&days=1";
+  }
+  function parseDay2(json) {
+    var out = [];
+    if (json && Array.isArray(json.prices)) json.prices.forEach(function(r) {
+      if (Array.isArray(r)) out.push(r[1]);
+    });
+    return out;
+  }
+
+  // src/feed/feed.js
+  var Feed = {
+    /* what the game does when the feed changes; main.js fills these in at boot */
+    onModeChange: function() {
+    },
+    /* the mode was switched: quests need redrawing */
+    onFirstPrices: function(anchors) {
+    },
+    /* the first good poll: jump the book to them */
+    onChange: function(kind) {
+    },
+    /* "prices" after a good poll, "status" otherwise */
+    mode: "live",
+    /* "live" | "sim"; live by default, the simulator covers any outage */
+    provider: "binance",
+    /* "binance" | "gecko" */
+    pollMs: 15e3,
+    anchors: {},
+    /* sym -> {p, chg, vol}; a coin the last good poll left out has none */
+    day: {},
+    /* sym -> the provider's prices over the last 24 hours, oldest first */
+    dayAt: 0,
+    dayBusy: false,
+    dayMs: 3e5,
+    /* the day line is refreshed every 5 minutes, one request per coin */
+    status: "off",
+    /* off | wait | ok | error */
+    note: "",
+    at: 0,
+    snapped: false,
+    timer: null,
+    load: function() {
+      try {
+        var o = JSON.parse(localStorage.getItem("pw.feed") || "{}");
+        if (o.mode === "sim") this.mode = "sim";
+        if (o.provider === "gecko" || o.provider === "binance") this.provider = o.provider;
+      } catch (e) {
+      }
+    },
+    persist: function() {
+      try {
+        localStorage.setItem("pw.feed", JSON.stringify({ mode: this.mode, provider: this.provider }));
+      } catch (e) {
+      }
+    },
+    set: function(mode, provider) {
+      var switched = mode !== this.mode;
+      this.mode = mode;
+      if (provider) this.provider = provider;
+      this.fellBack = false;
+      if (switched) this.onModeChange();
+      this.anchors = {};
+      this.snapped = false;
+      this.day = {};
+      this.dayAt = 0;
+      this.status = mode === "live" ? "wait" : "off";
+      this.note = "";
+      this.persist();
+      this.start();
+      this.onChange("status");
+    },
+    start: function() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+      if (this.mode !== "live") return;
+      var self = this;
+      this.poll();
+      this.timer = setInterval(function() {
+        self.poll();
+      }, this.pollMs);
+    },
+    stop: function() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    },
+    /* the provider modules build the requests and read the answers */
+    api: function() {
+      return this.provider === "gecko" ? coingecko_exports : binance_exports;
+    },
+    url: function() {
+      return this.api().url();
+    },
+    /* a quote last updated over an hour ago is a dead market (a delisted pair
+       can keep answering with its final price), so it counts as no price */
+    staleMs: 36e5,
+    parse: function(json) {
+      var now = Date.now(), self = this;
+      return this.api().parse(json, function(ms) {
+        return isFinite(ms) && ms > 0 && now - ms > self.staleMs;
+      });
+    },
+    poll: function() {
+      if (this.mode !== "live") return;
+      if (typeof fetch !== "function") {
+        this.status = "error";
+        this.note = "no network access";
+        return;
+      }
+      var self = this;
+      var ctl = typeof AbortController === "function" ? new AbortController() : null;
+      var kill = setTimeout(function() {
+        if (ctl) ctl.abort();
+      }, 8e3);
+      fetch(this.url(), ctl ? { signal: ctl.signal } : {}).then(function(r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }).then(function(j) {
+        clearTimeout(kill);
+        var got = self.parse(j);
+        if (!Object.keys(got).length) throw new Error("no prices in the response");
+        self.anchors = got;
+        self.status = "ok";
+        self.note = "";
+        self.at = Date.now();
+        if (!self.snapped) {
+          self.onFirstPrices(self.anchors);
+          self.snapped = true;
+        }
+        if (Date.now() - self.dayAt > self.dayMs) self.pollDay();
+        self.onChange("prices");
+      }).catch(function(e) {
+        clearTimeout(kill);
+        if (!self.snapped && !self.fellBack && self.provider === "binance") {
+          self.fellBack = true;
+          self.provider = "gecko";
+          self.persist();
+          self.poll();
+          return;
+        }
+        self.status = "error";
+        self.note = e && e.name === "AbortError" ? "the request timed out" : e && e.message || "request blocked";
+        self.onChange("status");
+      });
+    },
+    /* coins the last good poll returned no price for (renamed, delisted, or
+       the provider dropped them): shown as such, never as a made-up price */
+    missing: function() {
+      if (this.mode !== "live" || !this.snapped) return [];
+      var a = this.anchors;
+      return COINS.filter(function(c) {
+        return !a[c.s];
+      }).map(function(c) {
+        return c.s;
+      });
+    },
+    dayUrl: function(sym) {
+      return this.api().dayUrl(sym);
+    },
+    /* prices over the last 24 hours, the window the percentage covers:
+       Binance 15 minute closes, CoinGecko's 5 minute points */
+    parseDay: function(json) {
+      var out = this.api().parseDay(json).filter(function(v) {
+        return typeof v === "number" && isFinite(v) && v > 0;
+      });
+      return out.length >= 12 ? out : null;
+    },
+    pollDay: function() {
+      if (this.mode !== "live" || this.dayBusy || typeof fetch !== "function") return;
+      var self = this, left = COINS.length, prov = this.provider;
+      this.dayBusy = true;
+      this.dayAt = Date.now();
+      COINS.forEach(function(c) {
+        var ctl = typeof AbortController === "function" ? new AbortController() : null;
+        var kill = setTimeout(function() {
+          if (ctl) ctl.abort();
+        }, 8e3);
+        fetch(self.dayUrl(c.s), ctl ? { signal: ctl.signal } : {}).then(function(r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        }).then(function(j) {
+          if (self.provider !== prov) return;
+          var d = self.parseDay(j);
+          if (d) self.day[c.s] = d;
+          else delete self.day[c.s];
+        }).catch(function() {
+        }).then(function() {
+          clearTimeout(kill);
+          if (--left === 0) {
+            self.dayBusy = false;
+            self.onChange("status");
+          }
+        });
+      });
+    },
+    label: function() {
+      if (this.mode !== "live") return "Simulated market";
+      var name = this.provider === "gecko" ? "CoinGecko" : "Binance";
+      if (this.status === "ok") {
+        var secs = Math.max(0, Math.round((Date.now() - this.at) / 1e3)), gone = this.missing();
+        return "Live from " + name + ", updated " + secs + "s ago" + (gone.length ? ". No price for " + andList(gone) + ", so " + (gone.length > 1 ? "they" : "it") + " cannot be bought" : "");
+      }
+      if (this.status === "wait") return "Connecting to " + name;
+      return "Live feed unavailable (" + this.note + "). " + (this.snapped ? "Holding the last live prices." : "Running on the simulator.");
+    },
+    dot: function() {
+      if (this.mode !== "live") return "";
+      return this.status === "ok" ? "live" : this.status === "error" ? "bad" : "";
+    }
+  };
+
   // src/core/random.js
   var spare = null;
   function randn() {
@@ -515,51 +863,6 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       b.h[s2] -= q;
       if (b.h[s2] * st.prices[s2] < 0.5) delete b.h[s2];
     }
-  }
-
-  // src/core/format.js
-  var clamp = function(v, a, b) {
-    return v < a ? a : v > b ? b : v;
-  };
-  function money(v) {
-    var a = Math.abs(v), s = v < 0 ? "-" : "";
-    if (a >= 1e6) return s + "$" + (a / 1e6).toFixed(2) + "M";
-    if (a >= 1e3) return s + "$" + Math.round(a).toLocaleString("en-US");
-    return s + "$" + a.toFixed(2);
-  }
-  function moneyFull(v) {
-    var a = Math.abs(v), s = v < 0 && a >= 5e-3 ? "-" : "";
-    return s + "$" + a.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  function priceStr(v) {
-    if (v >= 1e3) return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
-    if (v >= 10) return v.toFixed(2);
-    if (v >= 1) return v.toFixed(3);
-    if (v >= 0.01) return v.toFixed(4);
-    if (v >= 1e-4) return v.toFixed(6);
-    return v.toFixed(8);
-  }
-  function qtyStr(q) {
-    if (!(q > 0)) return "0";
-    if (q >= 1e4) return Math.round(q).toLocaleString("en-US");
-    if (q >= 1) return q.toFixed(4);
-    if (q >= 1e-4) return q.toFixed(6);
-    return q.toFixed(8);
-  }
-  function andList(a) {
-    return a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a[0] || "";
-  }
-  function volStr(v) {
-    if (v >= 1e9) return "$" + (v / 1e9).toFixed(v >= 1e10 ? 0 : 1) + "B";
-    if (v >= 1e6) return "$" + Math.round(v / 1e6) + "M";
-    if (v >= 1e3) return "$" + Math.round(v / 1e3) + "K";
-    return "$" + Math.round(v);
-  }
-  function pctStr(v) {
-    return (v >= 0 ? "+" : "") + v.toFixed(2) + "%";
-  }
-  function cls(v) {
-    return v > 1e-4 ? "up" : v < -1e-4 ? "down" : "flat";
   }
 
   // src/core/market.js
@@ -1076,431 +1379,29 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return o;
   }
 
-  // src/core/state.js
-  function freshState(live) {
-    var st = {
-      v: 1,
-      tick: 0,
-      cash: 3e3,
-      seedCash: 3e3,
-      sentiment: 0,
-      speed: 1,
-      prices: {},
-      hist: {},
-      dayRef: {},
-      lots: [],
-      lotSeq: 0,
-      /* one per buy: {id, s, q, p (entry), t, sl, tp} */
-      fee: FEE_DEFAULT,
-      trades: [],
-      news: [],
-      pending: [],
-      reviews: [],
-      realised: 0,
-      volume: 0,
-      tradeCount: 0,
-      dipBuys: 0,
-      winners: 0,
-      realisedGain: 0,
-      level: 1,
-      xp: 0,
-      owned: [],
-      quests: [],
-      questLog: [],
-      bots: [],
-      seenQuests: 0,
-      questSwaps: 0,
-      swapSpent: 0,
-      questStats: {},
-      peak: 3e3,
-      started: Date.now()
-    };
-    COINS.forEach(function(c) {
-      st.prices[c.s] = c.p0;
-      st.hist[c.s] = seedHistory(c, c.p0);
-      st.dayRef[c.s] = st.hist[c.s][Math.max(0, HISTORY - TICKS_PER_DAY)];
-    });
-    st.bots = defaultBots(st.prices);
-    for (var q = 0; q < 3; q++) st.quests.push(makeQuest(st, void 0, live));
-    pushNews(st, "Markets open. You start with " + money(st.cash) + " of play money.");
-    return st;
-  }
-
-  // src/feed/binance.js
-  var binance_exports = {};
-  __export(binance_exports, {
-    dayUrl: () => dayUrl,
-    parse: () => parse,
-    parseDay: () => parseDay,
-    url: () => url
-  });
-
-  // src/feed/map.js
-  var FEED_MAP = {
-    BTC: { binance: "BTCUSDT", gecko: "bitcoin" },
-    ETH: { binance: "ETHUSDT", gecko: "ethereum" },
-    SOL: { binance: "SOLUSDT", gecko: "solana" },
-    XRP: { binance: "XRPUSDT", gecko: "ripple" },
-    DOGE: { binance: "DOGEUSDT", gecko: "dogecoin" },
-    BNB: { binance: "BNBUSDT", gecko: "binancecoin" },
-    /* CoinGecko kept its id through the rename (search result, unconfirmed);
-       if it changes, the coin shows "No live price" rather than a made-up one */
-    GRAM: { binance: "GRAMUSDT", gecko: "the-open-network" },
-    BCH: { binance: "BCHUSDT", gecko: "bitcoin-cash" }
-  };
-
-  // src/feed/binance.js
-  function url() {
-    var syms = COINS.map(function(c) {
-      return FEED_MAP[c.s];
-    }).filter(Boolean);
-    return "https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + encodeURIComponent(JSON.stringify(syms.map(function(x) {
-      return x.binance;
-    })));
-  }
-  function parse(json, stale) {
-    var out = {};
-    if (!Array.isArray(json)) return out;
-    var by = {};
-    json.forEach(function(r) {
-      if (r && r.symbol) by[r.symbol] = r;
-    });
-    COINS.forEach(function(c) {
-      var r2 = by[FEED_MAP[c.s].binance];
-      if (!r2 || stale(Number(r2.closeTime))) return;
-      var pz = parseFloat(r2.lastPrice), ch = parseFloat(r2.priceChangePercent), qv = parseFloat(r2.quoteVolume);
-      if (isFinite(pz) && pz > 0) out[c.s] = { p: pz, chg: isFinite(ch) ? ch : null, vol: isFinite(qv) && qv >= 0 ? qv : null };
-    });
-    return out;
-  }
-  function dayUrl(sym) {
-    return "https://data-api.binance.vision/api/v3/klines?symbol=" + FEED_MAP[sym].binance + "&interval=15m&limit=96";
-  }
-  function parseDay(json) {
-    var out = [];
-    if (Array.isArray(json)) json.forEach(function(r) {
-      if (Array.isArray(r)) out.push(parseFloat(r[4]));
-    });
-    return out;
-  }
-
-  // src/feed/coingecko.js
-  var coingecko_exports = {};
-  __export(coingecko_exports, {
-    dayUrl: () => dayUrl2,
-    parse: () => parse2,
-    parseDay: () => parseDay2,
-    url: () => url2
-  });
-  function url2() {
-    var syms = COINS.map(function(c) {
-      return FEED_MAP[c.s];
-    }).filter(Boolean);
-    return "https://api.coingecko.com/api/v3/simple/price?ids=" + syms.map(function(x) {
-      return x.gecko;
-    }).join(",") + "&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_last_updated_at=true";
-  }
-  function parse2(json, stale) {
-    var out = {};
-    COINS.forEach(function(c) {
-      var row = json[FEED_MAP[c.s].gecko];
-      if (row && typeof row.usd === "number" && row.usd > 0 && !stale(row.last_updated_at * 1e3)) {
-        out[c.s] = {
-          p: row.usd,
-          chg: typeof row.usd_24h_change === "number" ? row.usd_24h_change : null,
-          vol: typeof row.usd_24h_vol === "number" && row.usd_24h_vol >= 0 ? row.usd_24h_vol : null
-        };
-      }
-    });
-    return out;
-  }
-  function dayUrl2(sym) {
-    return "https://api.coingecko.com/api/v3/coins/" + FEED_MAP[sym].gecko + "/market_chart?vs_currency=usd&days=1";
-  }
-  function parseDay2(json) {
-    var out = [];
-    if (json && Array.isArray(json.prices)) json.prices.forEach(function(r) {
-      if (Array.isArray(r)) out.push(r[1]);
-    });
-    return out;
-  }
-
-  // src/main.js
-  var $ = function(s, r) {
-    return (r || document).querySelector(s);
-  };
-  var el = function(tag, cls2, txt) {
-    var n = document.createElement(tag);
-    if (cls2) n.className = cls2;
-    if (txt != null) n.textContent = txt;
-    return n;
-  };
-  function feePct() {
-    return S.fee ? (S.fee * 100).toFixed(2) + "%" : "none";
-  }
-  var GLYPHS = {
-    styl1: '<path d="M3.5 15.5a7 7 0 0 1 14 0"/><path d="M3 15.5h12c3 0 5.5.8 6.5 2.3"/><path d="M8 9.5c1 1.5 1.5 3.5 1.5 6"/><circle cx="10.5" cy="8" r=".9" fill="currentColor" stroke="none"/>',
-    desk1: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 19h19"/>',
-    ride1: '<circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M8 17.5h8.5"/><path d="M18.5 17.5L15 5h-2.5"/>',
-    desk2: '<rect x="2.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="12.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="2.5" y="11" width="9" height="6.5" rx="1"/><rect x="12.5" y="11" width="9" height="6.5" rx="1"/><path d="M12 17.5v3M8.5 20.5h7"/>',
-    styl2: '<path d="M2.5 9h19"/><path d="M3.5 9l.8 5a2.5 2.5 0 0 0 2.5 2h1.4a2.5 2.5 0 0 0 2.4-1.8L11.2 9"/><path d="M20.5 9l-.8 5a2.5 2.5 0 0 1-2.5 2h-1.4a2.5 2.5 0 0 1-2.4-1.8L12.8 9"/>',
-    home1: '<path d="M2.5 20.5h19"/><path d="M4.5 20.5L12 4.5l7.5 16"/><path d="M10 20.5v-5h4v5"/>',
-    ride2: '<path d="M2.5 16v-3.2L5 7.5h9.5l4 4.5 2.5.7V16"/><path d="M3 12h15.5"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/>',
-    desk3: '<rect x="7" y="3" width="10" height="8.5" rx="2"/><path d="M12 11.5v2M5.5 13.5h13M12 13.5v5M6.5 21.5l5.5-3 5.5 3"/>',
-    styl3: '<circle cx="12" cy="12" r="5.5"/><path d="M9 7l.7-4h4.6l.7 4M9 17l.7 4h4.6l.7-4"/><path d="M12 9.5V12l1.7 1.2"/>',
-    home2: '<path d="M3 20.5V9.5l4.5-4.5 4.5 4.5 4.5-4.5 4.5 4.5v11"/><path d="M12 9.5v11M2 20.5h20"/><path d="M6 20.5v-4h3v4M15 20.5v-4h3v4"/>',
-    desk4: '<path d="M4.5 8.5a10 10 0 0 0 11 11z"/><path d="M10 14l4-4"/><circle cx="15" cy="9" r="1.2"/><path d="M16 3.5a4.5 4.5 0 0 1 4.5 4.5"/><path d="M8 18.5l-2 3h6"/>',
-    ride3: '<path d="M2 16.5v-2.7l5-1.3 3.5-3h4.5l5 3.7 2 .6v2.7"/><path d="M2.5 9.5h3.5M4.2 9.5v3.5"/><circle cx="6.5" cy="16.5" r="2"/><circle cx="17.5" cy="16.5" r="2"/><path d="M8.5 16.5h7"/>',
-    styl4: '<circle cx="12" cy="14.5" r="6"/><rect x="9" y="4" width="6" height="4.5" rx="1.2"/>',
-    home3: '<path d="M3 20.5h18"/><rect x="6" y="7" width="12" height="13.5"/><path d="M8.5 7V4h7v3"/><path d="M9 11h1.5M13.5 11H15M9 14.5h1.5M13.5 14.5H15"/><path d="M11 20.5v-3h2v3"/>',
-    ride4: '<path d="M11.5 3v13"/><path d="M11.5 4l7 11h-7"/><path d="M9.5 6.5L5 15h4.5"/><path d="M3 17.5h18l-2.5 3h-13z"/>',
-    styl5: '<path d="M3.5 17.5l-1-10 5 4 4.5-6.5 4.5 6.5 5-4-1 10z"/><path d="M4 20.5h16"/>',
-    home4: '<path d="M5 19a7 3.5 0 0 1 14 0"/><path d="M2.5 21.5h19"/><path d="M12 16.5c.5-3.5-.3-6.5-2-9.5"/><path d="M10 7c-2-1.5-5-1-6.5 1M10 7c1.5-2 4.5-2.5 6.5-1M10 7c2.5 0 4.5 1.5 5 4M10 7c-2 .5-3.5 2-4 4"/>',
-    ride5: '<path d="M12 2.5c1 0 1.5 1.5 1.5 3v4l7.5 4.5v2l-7.5-2.2v4.2l2.5 2v1.5l-4-1-4 1V18l2.5-2v-4.2L3 16v-2l7.5-4.5v-4c0-1.5.5-3 1.5-3z"/>',
-    diamond: '<path d="M6.5 4h11l4 5-9.5 11L2.5 9z"/><path d="M2.5 9h19M9 4L7.5 9 12 20l4.5-11L15 4"/>',
-    worried: '<circle cx="12" cy="12" r="9"/><path d="M8.5 16.5c1-1.2 2.2-1.8 3.5-1.8s2.5.6 3.5 1.8"/><path d="M7.5 8.5l2.5-1M16.5 8.5l-2.5-1"/><g fill="currentColor" stroke="none"><circle cx="9" cy="11.5" r="1"/><circle cx="15" cy="11.5" r="1"/></g>',
-    whale: '<path d="M2.5 14c0-3.3 2.7-5.5 6.5-5.5 3.8 0 6 2 8.3 4.3L19 9.5l1.5-.5.5 1.5-2 3.5c-1.5 3.5-5 5.5-9.5 5.5-4.2 0-7-2.2-7-5.5z"/><path d="M9 6V3.5M9 3.5c-1-.8-2-.8-3 0M9 3.5c1-.8 2-.8 3 0"/><circle cx="6.5" cy="13" r="1" fill="currentColor" stroke="none"/>',
-    bolt: '<path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/>',
-    rocket: '<path d="M12 2.5c3 2 4.5 5.5 4.5 9.5v4h-9v-4c0-4 1.5-7.5 4.5-9.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M7.5 12.5l-3 3v3l3-1.5M16.5 12.5l3 3v3l-3-1.5M10 19.5l2 2 2-2"/>',
-    bag: '<path d="M4.5 9h15L18 20.5H6z"/><path d="M8 9c0-3 1.5-5 4-5s4 2 4 5"/><path d="M12 12.5v5M9.8 15.3l2.2 2.2 2.2-2.2"/>',
-    sideways: '<path d="M3 12h18M6.5 8.5L3 12l3.5 3.5M17.5 8.5L21 12l-3.5 3.5"/>',
-    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/><circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/></g>',
-    contra: '<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
-    rug: '<rect x="2.5" y="7" width="12.5" height="10" rx="1"/><path d="M5 10.5h7.5M5 13.5h7.5"/><path d="M15 12h6.5M19 9.5l2.5 2.5-2.5 2.5"/>',
-    cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
-    you: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.5-4 3.5-6.5 7.5-6.5s7 2.5 7.5 6.5"/>'
-  };
-  function glyph(key, cls2) {
-    var i = el("i", cls2 || "gl");
-    i.setAttribute("aria-hidden", "true");
-    i.innerHTML = ICON(GLYPHS[key] || GLYPHS.you);
-    return i;
-  }
-  var Feed = {
-    mode: "live",
-    /* "live" | "sim"; live by default, the simulator covers any outage */
-    provider: "binance",
-    /* "binance" | "gecko" */
-    pollMs: 15e3,
-    anchors: {},
-    /* sym -> {p, chg, vol}; a coin the last good poll left out has none */
-    day: {},
-    /* sym -> the provider's prices over the last 24 hours, oldest first */
-    dayAt: 0,
-    dayBusy: false,
-    dayMs: 3e5,
-    /* the day line is refreshed every 5 minutes, one request per coin */
-    status: "off",
-    /* off | wait | ok | error */
-    note: "",
-    at: 0,
-    snapped: false,
-    timer: null,
-    load: function() {
-      try {
-        var o = JSON.parse(localStorage.getItem("pw.feed") || "{}");
-        if (o.mode === "sim") this.mode = "sim";
-        if (o.provider === "gecko" || o.provider === "binance") this.provider = o.provider;
-      } catch (e) {
-      }
-    },
-    persist: function() {
-      try {
-        localStorage.setItem("pw.feed", JSON.stringify({ mode: this.mode, provider: this.provider }));
-      } catch (e) {
-      }
-    },
-    set: function(mode, provider) {
-      var switched = mode !== this.mode;
-      this.mode = mode;
-      if (provider) this.provider = provider;
-      this.fellBack = false;
-      if (switched && S) {
-        refreshQuests(S, true, this.mode === "live");
-        save();
-        render();
-      }
-      this.anchors = {};
-      this.snapped = false;
-      this.day = {};
-      this.dayAt = 0;
-      this.status = mode === "live" ? "wait" : "off";
-      this.note = "";
-      this.persist();
-      this.start();
-      paint({});
-    },
-    start: function() {
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
-      }
-      if (this.mode !== "live") return;
-      var self = this;
-      this.poll();
-      this.timer = setInterval(function() {
-        self.poll();
-      }, this.pollMs);
-    },
-    stop: function() {
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
-      }
-    },
-    /* the provider modules build the requests and read the answers */
-    api: function() {
-      return this.provider === "gecko" ? coingecko_exports : binance_exports;
-    },
-    url: function() {
-      return this.api().url();
-    },
-    /* a quote last updated over an hour ago is a dead market (a delisted pair
-       can keep answering with its final price), so it counts as no price */
-    staleMs: 36e5,
-    parse: function(json) {
-      var now = Date.now(), self = this;
-      return this.api().parse(json, function(ms) {
-        return isFinite(ms) && ms > 0 && now - ms > self.staleMs;
-      });
-    },
-    poll: function() {
-      if (this.mode !== "live") return;
-      if (typeof fetch !== "function") {
-        this.status = "error";
-        this.note = "no network access";
-        return;
-      }
-      var self = this;
-      var ctl = typeof AbortController === "function" ? new AbortController() : null;
-      var kill = setTimeout(function() {
-        if (ctl) ctl.abort();
-      }, 8e3);
-      fetch(this.url(), ctl ? { signal: ctl.signal } : {}).then(function(r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      }).then(function(j) {
-        clearTimeout(kill);
-        var got = self.parse(j);
-        if (!Object.keys(got).length) throw new Error("no prices in the response");
-        self.anchors = got;
-        self.status = "ok";
-        self.note = "";
-        self.at = Date.now();
-        if (!self.snapped) {
-          self.snap();
-          self.snapped = true;
-        }
-        if (Date.now() - self.dayAt > self.dayMs) self.pollDay();
-        if (tab === "market" && !sheetCtx && refs._order !== marketOrder().join()) render();
-        else paint({});
-      }).catch(function(e) {
-        clearTimeout(kill);
-        if (!self.snapped && !self.fellBack && self.provider === "binance") {
-          self.fellBack = true;
-          self.provider = "gecko";
-          self.persist();
-          self.poll();
-          return;
-        }
-        self.status = "error";
-        self.note = e && e.name === "AbortError" ? "the request timed out" : e && e.message || "request blocked";
-        paint({});
-      });
-    },
-    /* coins the last good poll returned no price for (renamed, delisted, or
-       the provider dropped them): shown as such, never as a made-up price */
-    missing: function() {
-      if (this.mode !== "live" || !this.snapped) return [];
-      var a = this.anchors;
-      return COINS.filter(function(c) {
-        return !a[c.s];
-      }).map(function(c) {
-        return c.s;
-      });
-    },
-    dayUrl: function(sym) {
-      return this.api().dayUrl(sym);
-    },
-    /* prices over the last 24 hours, the window the percentage covers:
-       Binance 15 minute closes, CoinGecko's 5 minute points */
-    parseDay: function(json) {
-      var out = this.api().parseDay(json).filter(function(v) {
-        return typeof v === "number" && isFinite(v) && v > 0;
-      });
-      return out.length >= 12 ? out : null;
-    },
-    pollDay: function() {
-      if (this.mode !== "live" || this.dayBusy || typeof fetch !== "function") return;
-      var self = this, left = COINS.length, prov = this.provider;
-      this.dayBusy = true;
-      this.dayAt = Date.now();
-      COINS.forEach(function(c) {
-        var ctl = typeof AbortController === "function" ? new AbortController() : null;
-        var kill = setTimeout(function() {
-          if (ctl) ctl.abort();
-        }, 8e3);
-        fetch(self.dayUrl(c.s), ctl ? { signal: ctl.signal } : {}).then(function(r) {
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          return r.json();
-        }).then(function(j) {
-          if (self.provider !== prov) return;
-          var d = self.parseDay(j);
-          if (d) self.day[c.s] = d;
-          else delete self.day[c.s];
-        }).catch(function() {
-        }).then(function() {
-          clearTimeout(kill);
-          if (--left === 0) {
-            self.dayBusy = false;
-            paint({});
-          }
-        });
-      });
-    },
-    /* First good poll: jump the book to the real prices instead of drifting in. */
-    snap: function() {
-      COINS.forEach(function(c) {
-        var a = Feed.anchors[c.s];
-        if (!a) return;
-        var k = a.p / S.prices[c.s];
-        if (!isFinite(k) || k <= 0) return;
-        S.prices[c.s] = a.p;
-        var hh = S.hist[c.s];
-        for (var i = 0; i < hh.length; i++) hh[i] = hh[i] * k;
-        S.dayRef[c.s] = hh[Math.max(0, hh.length - TICKS_PER_DAY)];
-        S.lots.forEach(function(l) {
-          if (l.s !== c.s || l.live) return;
-          l.p *= k;
-          if (l.b) l.b *= k;
-          if (l.sl) l.sl *= k;
-          if (l.tp) l.tp *= k;
-        });
-      });
-      save();
-    },
-    label: function() {
-      if (this.mode !== "live") return "Simulated market";
-      var name = this.provider === "gecko" ? "CoinGecko" : "Binance";
-      if (this.status === "ok") {
-        var secs = Math.max(0, Math.round((Date.now() - this.at) / 1e3)), gone = this.missing();
-        return "Live from " + name + ", updated " + secs + "s ago" + (gone.length ? ". No price for " + andList(gone) + ", so " + (gone.length > 1 ? "they" : "it") + " cannot be bought" : "");
-      }
-      if (this.status === "wait") return "Connecting to " + name;
-      return "Live feed unavailable (" + this.note + "). " + (this.snapped ? "Holding the last live prices." : "Running on the simulator.");
-    },
-    dot: function() {
-      if (this.mode !== "live") return "";
-      return this.status === "ok" ? "live" : this.status === "error" ? "bad" : "";
-    }
-  };
-  var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
+  // src/game.js
   var SAVE_KEY = "pw.save.v1";
   var S = null;
-  var refs = {};
-  var tab = "market";
-  var timer = null;
-  var sheetCtx = null;
+  function setState(st) {
+    S = st;
+  }
+  var ui = {
+    toast: function(msg) {
+    },
+    /* a short message */
+    traded: function() {
+    },
+    /* after a buy or sale, once it is saved */
+    ticked: function(changed) {
+    },
+    /* after each tick, with the price changes */
+    news: function() {
+    },
+    /* a headline fired */
+    reviewed: function() {
+    }
+    /* a sale's "what happened next" is in */
+  };
   function questProgress(q) {
     return questProgressOf(S, q);
   }
@@ -1603,7 +1504,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   }
   function step() {
     var r = marketTick(S, Feed.mode === "live" && Feed.snapped ? Feed.anchors : null);
-    if (r.fired) flagNews();
+    if (r.fired) ui.news();
     S.bots.forEach(function(b) {
       stepBot(b, S);
     });
@@ -1611,7 +1512,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     checkReviews();
     var nw = netWorth();
     if (nw > S.peak) S.peak = nw;
-    paint(r.changed);
+    ui.ticked(r.changed);
     if (S.tick % 6 === 0) save();
   }
   var REVIEW_LAG = 80;
@@ -1628,10 +1529,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       if (!now) return;
       S.reviews.unshift({ s: r.s, p: r.p, now, chg: (now / r.p - 1) * 100, t: S.tick, auto: r.auto });
       if (S.reviews.length > 8) S.reviews.pop();
-      if (tab !== "wallet") {
-        walletDot = true;
-        buildTabs();
-      }
+      ui.reviewed();
     });
   }
   function checkOrders() {
@@ -1644,8 +1542,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   }
   function buy(sym, usd, rules) {
     usd = Math.min(usd, S.cash);
-    if (noLive(sym)) return toast("No live price for " + sym + " right now, so it cannot be bought");
-    if (!(usd > 0.01)) return toast("Enter an amount first");
+    if (noLive(sym)) return ui.toast("No live price for " + sym + " right now, so it cannot be bought");
+    if (!(usd > 0.01)) return ui.toast("Enter an amount first");
     var p = S.prices[sym];
     var fee = usd * S.fee;
     var q = (usd - fee) / p;
@@ -1677,7 +1575,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.trades.unshift({ t: S.tick, s: sym, side: "buy", q, p, usd, pnl: 0, at: Date.now(), live: Feed.mode === "live" });
     if (S.trades.length > 40) S.trades.pop();
     addXP(tradeXP());
-    toast("Bought " + qtyStr(q) + " " + sym + (lot.sl || lot.tp ? ", exit rule set" : ""));
+    ui.toast("Bought " + qtyStr(q) + " " + sym + (lot.sl || lot.tp ? ", exit rule set" : ""));
     afterTrade();
   }
   function sell(sym, q, msg) {
@@ -1689,7 +1587,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       have += l.q;
     });
     q = Math.min(q, have);
-    if (!lots.length || !(q > 0)) return toast("Nothing to sell");
+    if (!lots.length || !(q > 0)) return ui.toast("Nothing to sell");
     var sym = lots[0].s, p = S.prices[sym];
     var gross = q * p, fee = gross * S.fee, net = gross - fee;
     var cost = costOf(lots, q);
@@ -1717,25 +1615,19 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.pending.push({ s: sym, p, t: S.tick, auto: !!msg });
     if (S.pending.length > 12) S.pending.shift();
     addXP(pnl > 0 ? tradeXP() * 2 : tradeXP());
-    toast(msg || "Sold " + qtyStr(q) + " " + sym + " for " + moneyFull(net));
+    ui.toast(msg || "Sold " + qtyStr(q) + " " + sym + " for " + moneyFull(net));
     afterTrade();
   }
   function afterTrade() {
-    checkQuests();
-    save();
-    paint({});
-    if (sheetCtx && sheetCtx.kind === "coin") renderCoinSheet(sheetCtx.sym, sheetCtx.side, true, sheetCtx.lot);
+    ui.traded();
   }
   function addXP(n) {
     S.xp += n;
     while (S.xp >= xpNeeded(S.level)) {
       S.xp -= xpNeeded(S.level);
       S.level++;
-      toast("Level " + S.level + ". You are now a " + title().toLowerCase() + ".");
+      ui.toast("Level " + S.level + ". You are now a " + title().toLowerCase() + ".");
     }
-  }
-  function checkQuests() {
-    paintTabExtras();
   }
   function readyQuests() {
     var a = [];
@@ -1774,16 +1666,6 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.quests[idx] = makeQuest(S, idx, Feed.mode === "live");
     return q.reward;
   }
-  function claimAll() {
-    var idx = readyQuests(), total = 0;
-    if (!idx.length) return;
-    idx.forEach(function(i) {
-      total += claimQuest(i);
-    });
-    save();
-    go("quests");
-    toast("Claimed " + money(total) + (idx.length > 1 ? " from " + idx.length + " quests" : ""));
-  }
   function save() {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(S));
@@ -1800,6 +1682,146 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     } catch (e) {
       return null;
     }
+  }
+  function feePct() {
+    return S.fee ? (S.fee * 100).toFixed(2) + "%" : "none";
+  }
+  function snapToLive(anchors) {
+    COINS.forEach(function(c) {
+      var a = anchors[c.s];
+      if (!a) return;
+      var k = a.p / S.prices[c.s];
+      if (!isFinite(k) || k <= 0) return;
+      S.prices[c.s] = a.p;
+      var hh = S.hist[c.s];
+      for (var i = 0; i < hh.length; i++) hh[i] = hh[i] * k;
+      S.dayRef[c.s] = hh[Math.max(0, hh.length - TICKS_PER_DAY)];
+      S.lots.forEach(function(l) {
+        if (l.s !== c.s || l.live) return;
+        l.p *= k;
+        if (l.b) l.b *= k;
+        if (l.sl) l.sl *= k;
+        if (l.tp) l.tp *= k;
+      });
+    });
+    save();
+  }
+
+  // src/core/state.js
+  function freshState(live) {
+    var st = {
+      v: 1,
+      tick: 0,
+      cash: 3e3,
+      seedCash: 3e3,
+      sentiment: 0,
+      speed: 1,
+      prices: {},
+      hist: {},
+      dayRef: {},
+      lots: [],
+      lotSeq: 0,
+      /* one per buy: {id, s, q, p (entry), t, sl, tp} */
+      fee: FEE_DEFAULT,
+      trades: [],
+      news: [],
+      pending: [],
+      reviews: [],
+      realised: 0,
+      volume: 0,
+      tradeCount: 0,
+      dipBuys: 0,
+      winners: 0,
+      realisedGain: 0,
+      level: 1,
+      xp: 0,
+      owned: [],
+      quests: [],
+      questLog: [],
+      bots: [],
+      seenQuests: 0,
+      questSwaps: 0,
+      swapSpent: 0,
+      questStats: {},
+      peak: 3e3,
+      started: Date.now()
+    };
+    COINS.forEach(function(c) {
+      st.prices[c.s] = c.p0;
+      st.hist[c.s] = seedHistory(c, c.p0);
+      st.dayRef[c.s] = st.hist[c.s][Math.max(0, HISTORY - TICKS_PER_DAY)];
+    });
+    st.bots = defaultBots(st.prices);
+    for (var q = 0; q < 3; q++) st.quests.push(makeQuest(st, void 0, live));
+    pushNews(st, "Markets open. You start with " + money(st.cash) + " of play money.");
+    return st;
+  }
+
+  // src/main.js
+  var $ = function(s, r) {
+    return (r || document).querySelector(s);
+  };
+  var el = function(tag, cls2, txt) {
+    var n = document.createElement(tag);
+    if (cls2) n.className = cls2;
+    if (txt != null) n.textContent = txt;
+    return n;
+  };
+  var GLYPHS = {
+    styl1: '<path d="M3.5 15.5a7 7 0 0 1 14 0"/><path d="M3 15.5h12c3 0 5.5.8 6.5 2.3"/><path d="M8 9.5c1 1.5 1.5 3.5 1.5 6"/><circle cx="10.5" cy="8" r=".9" fill="currentColor" stroke="none"/>',
+    desk1: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 19h19"/>',
+    ride1: '<circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M8 17.5h8.5"/><path d="M18.5 17.5L15 5h-2.5"/>',
+    desk2: '<rect x="2.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="12.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="2.5" y="11" width="9" height="6.5" rx="1"/><rect x="12.5" y="11" width="9" height="6.5" rx="1"/><path d="M12 17.5v3M8.5 20.5h7"/>',
+    styl2: '<path d="M2.5 9h19"/><path d="M3.5 9l.8 5a2.5 2.5 0 0 0 2.5 2h1.4a2.5 2.5 0 0 0 2.4-1.8L11.2 9"/><path d="M20.5 9l-.8 5a2.5 2.5 0 0 1-2.5 2h-1.4a2.5 2.5 0 0 1-2.4-1.8L12.8 9"/>',
+    home1: '<path d="M2.5 20.5h19"/><path d="M4.5 20.5L12 4.5l7.5 16"/><path d="M10 20.5v-5h4v5"/>',
+    ride2: '<path d="M2.5 16v-3.2L5 7.5h9.5l4 4.5 2.5.7V16"/><path d="M3 12h15.5"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/>',
+    desk3: '<rect x="7" y="3" width="10" height="8.5" rx="2"/><path d="M12 11.5v2M5.5 13.5h13M12 13.5v5M6.5 21.5l5.5-3 5.5 3"/>',
+    styl3: '<circle cx="12" cy="12" r="5.5"/><path d="M9 7l.7-4h4.6l.7 4M9 17l.7 4h4.6l.7-4"/><path d="M12 9.5V12l1.7 1.2"/>',
+    home2: '<path d="M3 20.5V9.5l4.5-4.5 4.5 4.5 4.5-4.5 4.5 4.5v11"/><path d="M12 9.5v11M2 20.5h20"/><path d="M6 20.5v-4h3v4M15 20.5v-4h3v4"/>',
+    desk4: '<path d="M4.5 8.5a10 10 0 0 0 11 11z"/><path d="M10 14l4-4"/><circle cx="15" cy="9" r="1.2"/><path d="M16 3.5a4.5 4.5 0 0 1 4.5 4.5"/><path d="M8 18.5l-2 3h6"/>',
+    ride3: '<path d="M2 16.5v-2.7l5-1.3 3.5-3h4.5l5 3.7 2 .6v2.7"/><path d="M2.5 9.5h3.5M4.2 9.5v3.5"/><circle cx="6.5" cy="16.5" r="2"/><circle cx="17.5" cy="16.5" r="2"/><path d="M8.5 16.5h7"/>',
+    styl4: '<circle cx="12" cy="14.5" r="6"/><rect x="9" y="4" width="6" height="4.5" rx="1.2"/>',
+    home3: '<path d="M3 20.5h18"/><rect x="6" y="7" width="12" height="13.5"/><path d="M8.5 7V4h7v3"/><path d="M9 11h1.5M13.5 11H15M9 14.5h1.5M13.5 14.5H15"/><path d="M11 20.5v-3h2v3"/>',
+    ride4: '<path d="M11.5 3v13"/><path d="M11.5 4l7 11h-7"/><path d="M9.5 6.5L5 15h4.5"/><path d="M3 17.5h18l-2.5 3h-13z"/>',
+    styl5: '<path d="M3.5 17.5l-1-10 5 4 4.5-6.5 4.5 6.5 5-4-1 10z"/><path d="M4 20.5h16"/>',
+    home4: '<path d="M5 19a7 3.5 0 0 1 14 0"/><path d="M2.5 21.5h19"/><path d="M12 16.5c.5-3.5-.3-6.5-2-9.5"/><path d="M10 7c-2-1.5-5-1-6.5 1M10 7c1.5-2 4.5-2.5 6.5-1M10 7c2.5 0 4.5 1.5 5 4M10 7c-2 .5-3.5 2-4 4"/>',
+    ride5: '<path d="M12 2.5c1 0 1.5 1.5 1.5 3v4l7.5 4.5v2l-7.5-2.2v4.2l2.5 2v1.5l-4-1-4 1V18l2.5-2v-4.2L3 16v-2l7.5-4.5v-4c0-1.5.5-3 1.5-3z"/>',
+    diamond: '<path d="M6.5 4h11l4 5-9.5 11L2.5 9z"/><path d="M2.5 9h19M9 4L7.5 9 12 20l4.5-11L15 4"/>',
+    worried: '<circle cx="12" cy="12" r="9"/><path d="M8.5 16.5c1-1.2 2.2-1.8 3.5-1.8s2.5.6 3.5 1.8"/><path d="M7.5 8.5l2.5-1M16.5 8.5l-2.5-1"/><g fill="currentColor" stroke="none"><circle cx="9" cy="11.5" r="1"/><circle cx="15" cy="11.5" r="1"/></g>',
+    whale: '<path d="M2.5 14c0-3.3 2.7-5.5 6.5-5.5 3.8 0 6 2 8.3 4.3L19 9.5l1.5-.5.5 1.5-2 3.5c-1.5 3.5-5 5.5-9.5 5.5-4.2 0-7-2.2-7-5.5z"/><path d="M9 6V3.5M9 3.5c-1-.8-2-.8-3 0M9 3.5c1-.8 2-.8 3 0"/><circle cx="6.5" cy="13" r="1" fill="currentColor" stroke="none"/>',
+    bolt: '<path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/>',
+    rocket: '<path d="M12 2.5c3 2 4.5 5.5 4.5 9.5v4h-9v-4c0-4 1.5-7.5 4.5-9.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M7.5 12.5l-3 3v3l3-1.5M16.5 12.5l3 3v3l-3-1.5M10 19.5l2 2 2-2"/>',
+    bag: '<path d="M4.5 9h15L18 20.5H6z"/><path d="M8 9c0-3 1.5-5 4-5s4 2 4 5"/><path d="M12 12.5v5M9.8 15.3l2.2 2.2 2.2-2.2"/>',
+    sideways: '<path d="M3 12h18M6.5 8.5L3 12l3.5 3.5M17.5 8.5L21 12l-3.5 3.5"/>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/><circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/></g>',
+    contra: '<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
+    rug: '<rect x="2.5" y="7" width="12.5" height="10" rx="1"/><path d="M5 10.5h7.5M5 13.5h7.5"/><path d="M15 12h6.5M19 9.5l2.5 2.5-2.5 2.5"/>',
+    cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+    you: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.5-4 3.5-6.5 7.5-6.5s7 2.5 7.5 6.5"/>'
+  };
+  function glyph(key, cls2) {
+    var i = el("i", cls2 || "gl");
+    i.setAttribute("aria-hidden", "true");
+    i.innerHTML = ICON(GLYPHS[key] || GLYPHS.you);
+    return i;
+  }
+  var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
+  var refs = {};
+  var tab = "market";
+  var timer = null;
+  var sheetCtx = null;
+  function checkQuests() {
+    paintTabExtras();
+  }
+  function claimAll() {
+    var idx = readyQuests(), total = 0;
+    if (!idx.length) return;
+    idx.forEach(function(i) {
+      total += claimQuest(i);
+    });
+    save();
+    go("quests");
+    toast("Claimed " + money(total) + (idx.length > 1 ? " from " + idx.length + " quests" : ""));
   }
   var ICON = function(d) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>";
@@ -3093,7 +3115,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         var o = JSON.parse(ta.value);
         if (!o || o.v !== 1) throw new Error("bad");
         localStorage.setItem(SAVE_KEY, JSON.stringify(o));
-        S = load() || freshState(Feed.mode === "live");
+        setState(load() || freshState(Feed.mode === "live"));
         closeSheet();
         render();
         toast("Save loaded");
@@ -3132,14 +3154,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         localStorage.removeItem("pw.intro");
       } catch (e) {
       }
-      S = freshState(Feed.mode === "live");
+      setState(freshState(Feed.mode === "live"));
       save();
       closeSheet();
       go("market");
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.10.2");
+    var ver = el("p", "note", "Shallow Whale 1.10.3");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3180,8 +3202,35 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   window.addEventListener("resize", function() {
     if (sheetCtx && sheetCtx.kind === "coin") paintCoinSheet();
   });
+  ui.toast = toast;
+  ui.traded = function() {
+    checkQuests();
+    save();
+    paint({});
+    if (sheetCtx && sheetCtx.kind === "coin") renderCoinSheet(sheetCtx.sym, sheetCtx.side, true, sheetCtx.lot);
+  };
+  ui.ticked = paint;
+  ui.news = flagNews;
+  ui.reviewed = function() {
+    if (tab !== "wallet") {
+      walletDot = true;
+      buildTabs();
+    }
+  };
+  Feed.onModeChange = function() {
+    if (S) {
+      refreshQuests(S, true, Feed.mode === "live");
+      save();
+      render();
+    }
+  };
+  Feed.onFirstPrices = snapToLive;
+  Feed.onChange = function(kind) {
+    if (kind === "prices" && tab === "market" && !sheetCtx && refs._order !== marketOrder().join()) render();
+    else paint({});
+  };
   Feed.load();
-  S = load() || freshState(Feed.mode === "live");
+  setState(load() || freshState(Feed.mode === "live"));
   if (typeof S.speed !== "number") S.speed = 1;
   if (!Array.isArray(S.quests)) S.quests = [];
   refreshQuests(S, false, Feed.mode === "live");
