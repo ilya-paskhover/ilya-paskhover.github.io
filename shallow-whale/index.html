@@ -447,6 +447,10 @@ var COINS = [
 var SQRT_TPD = Math.sqrt(TICKS_PER_DAY);
 COINS.forEach(function(c){
   c.ts  = c.dv / SQRT_TPD;          /* per-tick sigma */
+  /* real-world sigma per second (dv / 0.94, see CLAUDE.md), for the walk
+     between live polls: at simulator speed it wandered 0.3 to 0.7% around
+     the real price, enough to fake a winner and to scalp the pull-back */
+  c.lts = c.dv / 0.94 / Math.sqrt(86400);
   c.sqC = Math.sqrt(c.corr);        /* market factor weight */
   c.sqI = Math.sqrt(1 - c.corr);    /* idiosyncratic weight */
 });
@@ -576,24 +580,43 @@ function botGlyph(name){
    at a 10% gain") can take weeks against the real market, so each quest is
    sized for the mode it was drawn in. `live` holds the live-mode scale. */
 var QUEST_LOG_MAX = 20;   /* completed quests kept for the history list */
+/* `market` quests can only finish when prices move. In live mode that is the
+   real market, which can take hours, while the others finish as fast as you
+   trade. Finished quests get replaced and slow ones stay, so without a cap a
+   live board drifts to all market quests and nothing is left to do. */
+var LIVE_MARKET_CAP = 2;
+/* `day` quests (winner, profit) need a real move of a few percent: with live
+   prices that takes hours, often a day. Allow one at a time, so the board
+   always has room for quests a session can finish */
+var LIVE_DAY_CAP = 1;
+/* live-mode sizing in one place, so tools/verify-quests.js can sweep it.
+   Rewards are a share of net worth times (1 + random), floored at
+   rewardFloor; quick are trades, volume and spread, market the rest.
+   profitScale multiplies the profit quest's `live` shares; winnerPct is the
+   gain a winner needs. */
+var LIVE_TUNE = {quickReward:0.005, marketReward:0.01, rewardFloor:10, profitScale:1, winnerPct:2};
 var QUEST_POOL = [
-  {t:"trades",  vals:[3,5,8,12],
+  {t:"trades",  n:"Trades", vals:[3,5,8,12],
    txt:function(x){ return "Place "+x+" trades"; }},
-  {t:"volume",  vals:[1500,5000,15000,40000], money:true,
+  {t:"volume",  n:"Volume", vals:[1500,5000,15000,40000], money:true,
    txt:function(x){ return "Trade "+money(x)+" in total volume"; }},
-  {t:"profit",  vals:[150,500,1500,5000], money:true, live:[0.01,0.02,0.03,0.05],   /* share of net worth */
-   txt:function(x){ return "Bank "+money(x)+" in realised profit"; }},
-  {t:"nw",      vals:[4000,7000,15000,40000], money:true, abs:true, live:[0.02,0.03,0.05,0.08],
+  {t:"profit",  n:"Profit from winning sales", market:true, day:true, vals:[150,500,1500,5000], money:true, live:[0.01,0.02,0.03,0.05],   /* share of net worth */
+   txt:function(x){ return "Bank "+money(x)+" in profit from winning sales"; }},
+  {t:"nw",      n:"Net worth", market:true, vals:[4000,7000,15000,40000], money:true, abs:true, live:[0.02,0.03,0.05,0.08],
    txt:function(x){ return "Grow net worth to "+money(x); }},
-  {t:"spread",  vals:[2,3,4,5], abs:true,
+  {t:"spread",  n:"Coins held", vals:[2,3,4,5], abs:true,
    txt:function(x){ return "Hold "+x+" different coins at once"; }},
-  {t:"dip",     vals:[1,2,3,4], own:true, pct:{sim:3, live:1},
+  {t:"dip",     n:"Buy the dip", market:true, vals:[1,2,3,4], own:true, pct:{sim:3, live:1},
    txt:function(x,p){ return x===1 ? "Buy a coin that is down "+p+"% or more today"
                                    : "Buy coins that are down "+p+"% or more today, "+x+" times"; }},
-  {t:"winner",  vals:[1,2,3,4], own:true, pct:{sim:10, live:2},
+  {t:"winner",  n:"Sell a winner", market:true, day:true, vals:[1,2,3,4], own:true, pct:{sim:10},   /* live: LIVE_TUNE.winnerPct */
    txt:function(x,p){ return x===1 ? "Sell a position at a "+p+"% gain or better"
                                    : "Sell "+x+" positions at a "+p+"% gain or better"; }}
 ];
+var QUEST_DEF = {};
+QUEST_POOL.forEach(function(d){ QUEST_DEF[d.t]=d; });
+function isMarketQuest(q){ return !!(QUEST_DEF[q.t] && QUEST_DEF[q.t].market); }
+function isDayQuest(q){ return !!(QUEST_DEF[q.t] && QUEST_DEF[q.t].day); }
 
 /* ============================ price feed ============================ */
 /* Live prices are the default. The feed supplies an anchor price every few
@@ -758,7 +781,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.8.0";
+var APP_VERSION = "1.9.0";
 /* Absolute so it opens the same public page from the web build, a local file
    and the Android app (the store listing links the same URL). */
 var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
@@ -790,7 +813,9 @@ function freshState(){
     fee:FEE_DEFAULT,
     trades:[], news:[], pending:[], reviews:[],
     realised:0, volume:0, tradeCount:0, dipBuys:0, winners:0,
+    realisedGain:0,
     level:1, xp:0, owned:[], quests:[], questLog:[], bots:[], seenQuests:0,
+    questSwaps:0, swapSpent:0, questStats:{},
     peak:3000, started:Date.now()
   };
   COINS.forEach(function(c){
@@ -814,43 +839,62 @@ function seedHistory(c, end){
   return h;
 }
 
-function makeQuest(st){
-  /* never two of the same kind on the board at once */
-  var taken = (st.quests||[]).map(function(q){ return q.t; });
-  var pool = QUEST_POOL.filter(function(d){ return taken.indexOf(d.t)<0; });
-  var def = pick(pool.length ? pool : QUEST_POOL);
+/* `slot` is the index being replaced (a swap or a claim), if any. That quest
+   still counts as taken, so the new one is a different kind, but not towards
+   the market cap, since it is leaving the board */
+function makeQuest(st, slot){
   var live = Feed.mode==="live";
+  /* never two of the same kind on the board at once */
+  var board = st.quests||[];
+  var taken = board.map(function(q){ return q.t; });
+  var pool = QUEST_POOL.filter(function(d){ return taken.indexOf(d.t)<0; });
+  var market = board.filter(function(q,i){ return i!==slot && isMarketQuest(q); }).length;
+  var day = board.filter(function(q,i){ return i!==slot && isDayQuest(q); }).length;
+  if(live && market>=LIVE_MARKET_CAP){
+    var quick = pool.filter(function(d){ return !d.market; });
+    if(quick.length) pool = quick;
+  }
+  if(live && day>=LIVE_DAY_CAP){
+    var short = pool.filter(function(d){ return !d.day; });
+    if(short.length) pool = short;
+  }
+  var def = pick(pool.length ? pool : QUEST_POOL);
   var lv = clamp(Math.floor((st.level-1)/2),0,3);
   var nw = netWorthOf(st);
   var target = def.vals[lv];
-  if(live && def.t==="profit") target = Math.max(10, Math.round(nw*def.live[lv]/10)*10);
+  if(live && def.t==="profit") target = Math.max(10, Math.round(nw*def.live[lv]*LIVE_TUNE.profitScale/10)*10);
   else if(live && def.t==="nw") target = Math.round(nw*(1+def.live[lv]+Math.random()*0.01)/10)*10;
   else if(def.t==="nw") target = Math.max(target, Math.round(nw*(1.25+Math.random()*0.35)/100)*100);
   var pct = def.pct ? def.pct[live?"live":"sim"] : 0;
+  if(live && def.t==="winner") pct = LIVE_TUNE.winnerPct;
   /* a flat reward is a windfall at the start and pocket change later, so pay a
      slice of current net worth instead: always worth doing, never a shortcut */
   var reward = live
-    ? Math.max(20, Math.round(nw*(0.01+Math.random()*0.01)/10)*10)    /* live goals are smaller, so is the pay */
+    ? Math.max(LIVE_TUNE.rewardFloor, Math.round(nw*(def.market?LIVE_TUNE.marketReward:LIVE_TUNE.quickReward)*(1+Math.random())/10)*10)    /* live goals are smaller, so is the pay */
     : Math.max(150, Math.round(nw*(0.03+Math.random()*0.04)/10)*10);
   var q = {
     id:(st.seenQuests=(st.seenQuests||0)+1),
     t:def.t, target:target, money:!!def.money, abs:!!def.abs, live:live,
     txt:def.txt(target, pct),
     base: questCounter(st, def.t),
-    reward:reward, xp:Math.round(xpNeeded(st.level)*0.35), claimed:false
+    reward:reward, xp:Math.round(xpNeeded(st.level)*0.35), claimed:false,
+    drawnAt:Date.now()
   };
+  if(def.t==="profit") q.gain=true;
   /* dip and winner thresholds differ by mode, so they count their own events */
   if(def.own){ q.own=true; q.pct=pct; q.n=0; }
   return q;
 }
-/* swap out quests that no longer fit (a mode switch, duplicates in an old
-   save) but keep any that are finished and waiting to be claimed */
+/* swap out quests that no longer fit (a mode switch, duplicates or an all
+   market live board in an old save) but keep any that are finished and
+   waiting to be claimed */
 function refreshQuests(st, all){
-  var keep=[];
+  var keep=[], market=0, day=0, live=Feed.mode==="live";
   (st.quests||[]).forEach(function(q){
     var done = questProgressOf(st,q) >= q.target;
     var dup = keep.some(function(k){ return k.t===q.t; });
-    if(!dup && (done || !all)) keep.push(q);
+    var over = live && !done && ((isMarketQuest(q) && market>=LIVE_MARKET_CAP) || (isDayQuest(q) && day>=LIVE_DAY_CAP));
+    if(!dup && !over && (done || !all)){ keep.push(q); if(isMarketQuest(q)) market++; if(isDayQuest(q)) day++; }
   });
   st.quests = keep;
   while(st.quests.length<3) st.quests.push(makeQuest(st));
@@ -859,7 +903,7 @@ function questCounter(st,t){
   switch(t){
     case "trades": return st.tradeCount;
     case "volume": return st.volume;
-    case "profit": return st.realised;
+    case "profit": return st.realisedGain;   /* winning sales only: fees on losing round trips must not undo it */
     case "dip":    return st.dipBuys;
     case "winner": return st.winners;
     case "nw":     return netWorthOf(st);
@@ -952,10 +996,12 @@ function step(){
   var anchored = (Feed.mode==="live" && Feed.status==="ok");
   var mkt = randn();                 /* one shared move, felt by every coin */
   COINS.forEach(function(c){
-    var ret = c.dr
-            + c.ts*0.05*S.sentiment  /* slow regime tilt */
-            + c.ts*c.sqC*mkt         /* market factor */
-            + c.ts*c.sqI*randn();    /* this coin's own news */
+    /* live: real speed, so the chart moves between polls by what the market
+       could plausibly do in a tick, and stays within ~0.05% of the real price */
+    var sig = anchored ? c.lts/Math.sqrt(S.speed||1) : c.ts;
+    var ret = (anchored ? 0 : c.dr + c.ts*0.05*S.sentiment)  /* drift and slow regime tilt */
+            + sig*c.sqC*mkt          /* market factor */
+            + sig*c.sqI*randn();     /* this coin's own news */
     var p = S.prices[c.s]*(1+ret);
     if(anchored){
       var a=Feed.anchors[c.s];
@@ -1103,6 +1149,7 @@ function sellFrom(lots, q, msg){
   S.lots = S.lots.filter(function(l){ return l.q*S.prices[l.s] >= 0.01; });
   S.cash += net;
   S.realised += pnl;
+  if(pnl > 0) S.realisedGain += pnl;
   S.tradeCount++; S.volume += gross;
   if(pnl > cost*0.10) S.winners++;
   S.quests.forEach(function(qq){ if(qq.own && qq.t==="winner" && !qq.claimed && pnl >= cost*qq.pct/100) qq.n++; });
@@ -1138,21 +1185,31 @@ function readyQuests(){
    mode the way rewards do (a flat fee would exceed every live reward early on
    and be pocket change later) */
 function swapFee(q){ return Math.max(10, Math.round(q.reward/20)*10); }
+/* lifetime counts per quest kind and mode, e.g. "live:winner": how many were
+   finished, how many swapped away, and the total time the finished ones took.
+   Swaps per claim and time to finish are how we tell whether quests fit */
+function questStat(q){
+  var k=(q.live?"live":"sim")+":"+q.t;
+  return S.questStats[k] || (S.questStats[k]={done:0, swap:0, ms:0});
+}
+function questAge(q){ return q.drawnAt>0 ? Math.max(0, Date.now()-q.drawnAt) : 0; }
 function swapQuest(idx){
   var q=S.quests[idx], fee=swapFee(q);
   if(S.cash < fee) return 0;
   S.cash -= fee;
+  S.questSwaps++; S.swapSpent += fee; questStat(q).swap++;
   /* the old quest is still on the board here, so makeQuest never redraws its kind */
-  S.quests[idx]=makeQuest(S);
+  S.quests[idx]=makeQuest(S, idx);
   return fee;
 }
 function claimQuest(idx){
-  var q=S.quests[idx];
+  var q=S.quests[idx], ms=questAge(q), st=questStat(q);
   S.cash += q.reward; addXP(q.xp);
-  S.questLog.unshift({txt:q.txt, reward:q.reward, xp:q.xp, live:!!q.live, at:Date.now()});
+  S.questLog.unshift({txt:q.txt, t:q.t, reward:q.reward, xp:q.xp, live:!!q.live, at:Date.now(), ms:ms});
   if(S.questLog.length>QUEST_LOG_MAX) S.questLog.length=QUEST_LOG_MAX;
   S.questDone = (S.questDone||0)+1; S.questEarned = (S.questEarned||0)+q.reward;
-  S.quests[idx]=makeQuest(S);
+  st.done++; st.ms += ms;
+  S.quests[idx]=makeQuest(S, idx);
   return q.reward;
 }
 /* the pill: claim everything that is ready, then show the fresh quests */
@@ -1168,7 +1225,7 @@ function claimAll(){
 /* ============================ storage ============================ */
 var NUM_FIELDS = {tick:0, cash:3000, seedCash:3000, sentiment:0, speed:1, realised:0, volume:0,
   tradeCount:0, dipBuys:0, winners:0, level:1, xp:0, seenQuests:0, peak:3000,
-  questDone:0, questEarned:0, lotSeq:0};
+  questDone:0, questEarned:0, lotSeq:0, questSwaps:0, swapSpent:0, realisedGain:0};
 var ARR_FIELDS = {trades:1, news:1, owned:1, quests:1, questLog:1, bots:1, pending:1, reviews:1, lots:1};
 
 /* A save can be truncated or hand edited. Repair it rather than throwing it away. */
@@ -1235,7 +1292,20 @@ function heal(o){
   o.owned  = o.owned.filter(function(id){ return SHOP.some(function(i){ return i.id===id; }); });
   o.quests = o.quests.filter(function(q){ return q && typeof q.t==="string" && typeof q.target==="number" && typeof q.txt==="string"; }).slice(0,3);
   o.questLog = o.questLog.filter(function(e){ return e && typeof e.txt==="string" && typeof e.reward==="number" && isFinite(e.reward); }).slice(0,QUEST_LOG_MAX);
-  o.quests.forEach(function(q){ if(q.own && !(typeof q.n==="number" && isFinite(q.n))) q.n=0; if(q.own && !(q.pct>0)) q.pct=3; });
+  o.quests.forEach(function(q){
+    if(q.own && !(typeof q.n==="number" && isFinite(q.n))) q.n=0; if(q.own && !(q.pct>0)) q.pct=3;
+    /* before 1.9.0 a profit quest counted realised profit net of losses:
+       re-base it on winning sales, from now */
+    if(q.t==="profit" && !q.gain){ q.gain=true; q.base=o.realisedGain; }
+    /* quests from before 1.9.0 have no draw time: start their clock now */
+    if(!(typeof q.drawnAt==="number" && isFinite(q.drawnAt) && q.drawnAt>0)) q.drawnAt=Date.now();
+  });
+  if(!o.questStats || typeof o.questStats!=="object" || Array.isArray(o.questStats)) o.questStats={};
+  Object.keys(o.questStats).forEach(function(k){
+    var e=o.questStats[k], m=/^(live|sim):(\w+)$/.exec(k);
+    if(!m || !QUEST_DEF[m[2]] || !e || typeof e!=="object"){ delete o.questStats[k]; return; }
+    ["done","swap","ms"].forEach(function(f){ if(!(typeof e[f]==="number" && isFinite(e[f]) && e[f]>=0)) e[f]=0; });
+  });
   if(!o.bots.length) o.bots = defaultBots(o.prices);
   o.bots = o.bots.filter(function(b){ return b && typeof b.cash==="number" && isFinite(b.cash) && b.h; });
   o.bots.forEach(function(b){
@@ -1543,6 +1613,10 @@ function renderQuests(m){
     var bar2=el("div","bar"); var f2=el("i"); bar2.appendChild(f2); d.appendChild(bar2);
     var hint=null;
     if(q.t==="dip"){ hint=el("p","note"); hint.style.margin="7px 0 0"; d.appendChild(hint); }
+    else if(q.live && isDayQuest(q)){
+      var slow=el("p","note","With live prices this usually takes a day or more. Keep it for a later visit, or swap it.");
+      slow.className="note dayhint"; slow.style.margin="7px 0 0"; d.appendChild(slow);
+    }
     var slot=el("div"); d.appendChild(slot);
     L.appendChild(d);
     refs._q.push({q:q, idx:idx, lbl:lbl, pc:pc, fill:f2, slot:slot, hint:hint, mode:null});
@@ -1555,16 +1629,19 @@ function renderQuests(m){
   note.style.marginTop="12px";
   m.appendChild(note);
 
-  /* history: totals cover every claim, the list only the latest QUEST_LOG_MAX */
+  /* history: totals cover every claim and swap, the list only the latest QUEST_LOG_MAX */
   var hh=el("h2","sec","Completed"); hh.style.marginTop="18px"; m.appendChild(hh);
-  if(!S.questLog.length){
+  if(!S.questLog.length && !S.questSwaps){
     m.appendChild(el("p","note","Claimed quests show up here."));
     return;
   }
   var tot=el("p","note"); tot.id="questTotals"; tot.style.margin="0 0 8px";
-  tot.textContent=S.questDone+(S.questDone===1?" quest":" quests")+" completed, "+money(S.questEarned)+" earned in rewards.";
+  tot.textContent=S.questDone+(S.questDone===1?" quest":" quests")+" completed, "+money(S.questEarned)+" earned in rewards."+
+    (S.questSwaps ? " "+S.questSwaps+(S.questSwaps===1?" swap":" swaps")+", "+money(S.swapSpent)+" spent on swapping." : "");
   m.appendChild(tot);
-  var H=el("div","list"); H.id="questLog";
+  renderQuestStats(m);
+  if(!S.questLog.length) return;
+  var H=el("div","list"); H.id="questLog"; H.style.marginTop="12px";
   S.questLog.forEach(function(e){
     var d=el("div","quest");
     var qh=el("div","qh");
@@ -1578,6 +1655,35 @@ function renderQuests(m){
     H.appendChild(d);
   });
   m.appendChild(H);
+}
+function durStr(ms){
+  var mn=ms/60000;
+  if(mn<1) return "under a minute";
+  if(mn<90) return Math.round(mn)+" min";
+  if(mn<48*60) return Math.round(mn/60)+" h";
+  return Math.round(mn/1440)+" days";
+}
+/* per kind: what got finished, what got swapped away, how long finishing took.
+   A kind that is swapped more often than finished does not fit its mode */
+function renderQuestStats(m){
+  var keys=Object.keys(S.questStats).filter(function(k){ var e=S.questStats[k]; return e.done||e.swap; });
+  if(!keys.length) return;
+  keys.sort(function(a,b){ var x=S.questStats[a], y=S.questStats[b]; return (y.done+y.swap)-(x.done+x.swap); });
+  var L=el("div","list"); L.id="questStats";
+  keys.forEach(function(k){
+    var e=S.questStats[k], mode=k.split(":")[0], def=QUEST_DEF[k.split(":")[1]];
+    var d=el("div","quest");
+    var qh=el("div","qh");
+    qh.appendChild(el("b",null,def.n));
+    qh.appendChild(el("div","rw",e.done+" done, "+e.swap+" swapped"));
+    d.appendChild(qh);
+    var qm=el("div","qm"); qm.style.marginBottom="0";
+    qm.appendChild(el("span",null,mode==="live"?"Live prices":"Simulator"));
+    qm.appendChild(el("span",null,e.done ? durStr(e.ms/e.done)+" on average to finish" : "None finished yet"));
+    d.appendChild(qm);
+    L.appendChild(d);
+  });
+  m.appendChild(L);
 }
 function paintQuests(){
   var arr=refs._q; if(!arr) return;
