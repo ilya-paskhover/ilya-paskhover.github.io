@@ -781,7 +781,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.9.1";
+var APP_VERSION = "1.9.2";
 /* Absolute so it opens the same public page from the web build, a local file
    and the Android app (the store listing links the same URL). */
 var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
@@ -1947,7 +1947,8 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
   seg.appendChild(bb); seg.appendChild(sb);
   if(!lot) b.appendChild(seg);
 
-  var maxUsd = sheetCtx.side==="buy" ? S.cash : (h? h.q*S.prices[sym] : 0);
+  /* a sale's value moves with the price, so it is read fresh each time */
+  function maxUsdNow(){ return sheetCtx.side==="buy" ? S.cash : (h? h.q*S.prices[sym] : 0); }
 
   var amt=el("div","amt");
   amt.appendChild(el("span",null,"$"));
@@ -1960,7 +1961,7 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
   [[0.25,"25%"],[0.5,"50%"],[0.75,"75%"],[1,"Max"]].forEach(function(p){
     var cb=el("button",null,p[1]);
     /* round down: toFixed rounds $1,511.026 up to 1511.03, more than you have */
-    cb.addEventListener("click",function(){ inp.value=(Math.floor(maxUsd*p[0]*100)/100).toFixed(2); updateSummary(); });
+    cb.addEventListener("click",function(){ inp.value=(Math.floor(maxUsdNow()*p[0]*100)/100).toFixed(2); updateSummary(); });
     chips.appendChild(cb);
   });
   b.appendChild(chips);
@@ -2031,7 +2032,10 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
   cl.addEventListener("click", closeSheet);
   b.appendChild(cl);
 
-  sheetCtx.nodes={price:pv,chg:ch,canvas:cv,sum:sumWrap,input:inp,max:maxUsd};
+  /* paintCoinSheet runs every tick and calls update, so the fee, the
+     profit and the value follow the price instead of freezing at the moment
+     the amount was typed */
+  sheetCtx.nodes={price:pv,chg:ch,canvas:cv,sum:sumWrap,input:inp,update:updateSummary};
   inp.addEventListener("input", updateSummary);
   updateSummary();
   paintCoinSheet();
@@ -2052,14 +2056,17 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
       var gross=q2*p, fee2=gross*S.fee;
       rows.push(["You sell", qtyStr(q2)+" "+sym]);
       rows.push(["Fee ("+feePct()+")", moneyFull(fee2)]);
-      if(h) rows.push(["Profit on this sale", moneyFull(gross-fee2-costOf(lot ? [lot] : lotsOf(sym), q2))]);
+      if(h){
+        var pr=gross-fee2-costOf(lot ? [lot] : lotsOf(sym), q2);
+        rows.push(["Profit on this sale", moneyFull(pr), q2>0 ? cls(pr) : null]);
+      }
     }
     rows.forEach(function(r){
-      var k=el("div","kv"); k.appendChild(el("span",null,r[0])); k.appendChild(el("b",null,r[1])); sumWrap.appendChild(k);
+      var k=el("div","kv"); k.appendChild(el("span",null,r[0])); k.appendChild(el("b",r[2]||null,r[1])); sumWrap.appendChild(k);
     });
     var avail=el("div","kv");
     avail.appendChild(el("span",null, sheetCtx.side==="buy"?"Available cash":(lot?"Trade value":"Position value")));
-    avail.appendChild(el("b",null, moneyFull(maxUsd)));
+    avail.appendChild(el("b",null, moneyFull(maxUsdNow())));
     sumWrap.appendChild(avail);
   }
 }
@@ -2082,6 +2089,7 @@ function paintCoinSheet(){
     marks.push({v:position(sym).avg, label:"avg entry", token:"--crt-text", dash:[5,4]});
   }
   drawChart(n.canvas, S.hist[sym], d>=0, marks);
+  if(n.update) n.update();
 }
 
 function drawChart(cv, hist, up, marks){
@@ -2099,6 +2107,9 @@ function drawChart(cv, hist, up, marks){
   var line = st.getPropertyValue("--crt-grid").trim() || "rgba(158,216,255,.13)";
   var n=Math.min(180,hist.length), sl=hist.slice(hist.length-n);
   var mn=Math.min.apply(null,sl), mx=Math.max.apply(null,sl);
+  /* the trend's own high and low, before any padding or marks widen the
+     window, each with how far it is from the price now */
+  var hi=mx, lo=mn, now=sl[sl.length-1];
   /* widen the window so an entry or a stop sitting outside the visible range
      is still on screen, which is exactly when you need to see it */
   marks = (marks||[]).filter(function(m){ return m && m.v>0; });
@@ -2123,8 +2134,8 @@ function drawChart(cv, hist, up, marks){
   g.fillStyle=st.getPropertyValue("--crt-text").trim()||"#9ED8FF";
   g.globalAlpha=0.75;
   g.font="600 10.5px Saira, sans-serif";
-  g.fillText(priceStr(mx), 6, 11);
-  g.fillText(priceStr(mn), 6, hh-4);
+  g.fillText(priceStr(hi)+" ("+pctStr((hi/now-1)*100)+")", 6, 11);
+  g.fillText(priceStr(lo)+" ("+pctStr((lo/now-1)*100)+")", 6, hh-4);
   g.globalAlpha=1;
 
   marks.forEach(function(m){
