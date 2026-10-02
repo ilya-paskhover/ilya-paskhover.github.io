@@ -196,8 +196,7 @@ button.row:active{background:var(--recess)}
 .nm b.who{display:flex;align-items:center;gap:7px}
 .nm .gl{width:18px;height:18px;flex:none;color:var(--muted)}
 .nm small{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* a trade row wraps: its day and exit rule are what tell two trades in one coin apart */
-.row.lot .nm small{white-space:normal;line-height:1.35}
+.row.lot .nm small{line-height:1.35}
 .val{text-align:right;flex:none;border-radius:6px;padding:2px 5px;margin-right:-5px}
 .val b{display:block;font-size:15px;font-weight:650;line-height:1.25}
 .val b.up,.val b.down,.val b.flat{font-size:11.5px;font-weight:700;font-stretch:88%;max-width:82px;white-space:normal;text-align:right}
@@ -753,11 +752,13 @@ var Feed = {
       var hh=S.hist[c.s];
       for(var i=0;i<hh.length;i++) hh[i]=hh[i]*k;
       S.dayRef[c.s]=hh[Math.max(0,hh.length-TICKS_PER_DAY)];
-      /* the position was paid for in simulated dollars: rescale its basis and
-         exit rules by the same factor so the jump does not invent a profit */
+      /* a trade bought in the simulator was paid in simulated dollars: rescale
+         its basis and exit rules by the same factor so the jump does not invent
+         a profit. A trade bought on live prices already has real ones; before
+         1.9.3 it was rescaled too, so its entry crept on every reload. */
       S.lots.forEach(function(l){
-        if(l.s!==c.s) return;
-        l.p*=k; if(l.sl) l.sl*=k; if(l.tp) l.tp*=k;
+        if(l.s!==c.s || l.live) return;
+        l.p*=k; if(l.b) l.b*=k; if(l.sl) l.sl*=k; if(l.tp) l.tp*=k;
       });
     });
     save();
@@ -781,7 +782,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.9.2";
+var APP_VERSION = "1.9.3";
 /* Absolute so it opens the same public page from the web build, a local file
    and the Android app (the store listing links the same URL). */
 var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
@@ -952,7 +953,7 @@ function position(sym){
 /* what selling q of these lots, oldest first, cost when they were bought */
 function costOf(lots, q){
   var c=0;
-  lots.forEach(function(l){ var take=Math.min(l.q, q); c+=take*l.p; q-=take; });
+  lots.forEach(function(l){ var take=Math.min(l.q, q); c+=take*(l.b||l.p); q-=take; });
   return c;
 }
 function dayChange(sym){
@@ -1119,7 +1120,10 @@ function buy(sym, usd, rules){
   var p = S.prices[sym];
   var fee = usd*S.fee;
   var q = (usd-fee)/p;
-  var lot = {id:(S.lotSeq=(S.lotSeq||0)+1), s:sym, q:q, p:p, t:S.tick, sl:0, tp:0};
+  /* p: the market price, which exit rules and the chart use. b: what each coin
+     really cost, buy fee included, which profit is measured against */
+  var lot = {id:(S.lotSeq=(S.lotSeq||0)+1), s:sym, q:q, p:p, b:usd/q, t:S.tick, sl:0, tp:0,
+             at:Date.now(), live:Feed.mode==="live"};
   if(rules){
     if(rules.sl>0 && rules.sl<100) lot.sl = p*(1-rules.sl/100);
     if(rules.tp>0) lot.tp = p*(1+rules.tp/100);
@@ -1130,7 +1134,7 @@ function buy(sym, usd, rules){
   var dc = dayChange(sym);
   if(dc <= -4) S.dipBuys++;
   S.quests.forEach(function(qq){ if(qq.own && qq.t==="dip" && !qq.claimed && dc <= -qq.pct) qq.n++; });
-  S.trades.unshift({t:S.tick,s:sym,side:"buy",q:q,p:p,usd:usd,pnl:0});
+  S.trades.unshift({t:S.tick,s:sym,side:"buy",q:q,p:p,usd:usd,pnl:0,at:Date.now(),live:Feed.mode==="live"});
   if(S.trades.length>40) S.trades.pop();
   addXP(tradeXP());
   toast("Bought "+qtyStr(q)+" "+sym+(lot.sl||lot.tp ? ", exit rule set" : ""));
@@ -1157,7 +1161,7 @@ function sellFrom(lots, q, msg){
   S.tradeCount++; S.volume += gross;
   if(pnl > cost*0.10) S.winners++;
   S.quests.forEach(function(qq){ if(qq.own && qq.t==="winner" && !qq.claimed && pnl >= cost*qq.pct/100) qq.n++; });
-  S.trades.unshift({t:S.tick,s:sym,side:"sell",q:q,p:p,usd:net,pnl:pnl});
+  S.trades.unshift({t:S.tick,s:sym,side:"sell",q:q,p:p,usd:net,pnl:pnl,at:Date.now(),live:Feed.mode==="live"});
   if(S.trades.length>40) S.trades.pop();
   /* come back in a third of a game day and see what the price did next */
   S.pending.push({s:sym, p:p, t:S.tick, auto:!!msg});
@@ -1277,6 +1281,7 @@ function heal(o){
       return false;
     }
     if(!fin(l.p) || l.p<=0) return false;
+    if(!fin(l.b) || l.b<=0) l.b=l.p;   /* before 1.9.3 cost left out the buy fee */
     if(!fin(l.sl) || l.sl<0) l.sl=0;
     if(!fin(l.tp) || l.tp<0) l.tp=0;
     if(!fin(l.t)) l.t=o.tick;
@@ -1494,6 +1499,7 @@ function renderWallet(m){
   refs._w={cash:cv,hold:hv,real:rv,alloc:alloc,leg:leg};
 
   m.appendChild(el("h2","sec","Open positions"));
+  var po=el("p","note","By coin, oldest first, the order selling takes them."); po.style.margin="-2px 0 8px"; m.appendChild(po);
   var list=el("div","list"); refs._pos=list; m.appendChild(list);
 
   m.appendChild(el("h2","sec","What happened next"));
@@ -1525,8 +1531,9 @@ function paintWallet(){
     e.appendChild(document.createTextNode("Open the Market tab and place your first buy."));
     L.appendChild(e);
   }else{
-    /* one row per trade, biggest first: each has its own entry and exit rules */
-    S.lots.slice().sort(function(a,b){ return b.q*S.prices[b.s] - a.q*S.prices[a.s]; }).forEach(function(l){
+    /* by coin in Market order, then oldest first: the order selling takes them */
+    var rank={}; COINS.forEach(function(c,i){ rank[c.s]=i; });
+    S.lots.slice().sort(function(a,b){ return (rank[a.s]-rank[b.s]) || (a.id-b.id); }).forEach(function(l){
       L.appendChild(lotRow(l, function(){ renderCoinSheet(l.s,"sell",false,l.id); }));
     });
   }
@@ -1572,7 +1579,7 @@ function paintWallet(){
     ic.style.fontSize="9.5px";
     var nm=el("div","nm");
     nm.appendChild(el("b",null,t.s+"  "+qtyStr(t.q)));
-    nm.appendChild(el("small",null,"Day "+(Math.floor(t.t/TICKS_PER_DAY)+1)+" at "+priceStr(t.p)));
+    nm.appendChild(el("small",null,whenStr(t)+" at "+priceStr(t.p)));
     var v=el("div","val");
     v.appendChild(el("b",null,moneyFull(t.usd)));
     if(t.side==="sell") v.appendChild(el("small",cls(t.pnl),moneyFull(t.pnl)));
@@ -1886,16 +1893,27 @@ function paint(changed){
 
 /* ============================ trade sheet ============================ */
 function dayOf(t){ return Math.floor(t/TICKS_PER_DAY)+1; }
+/* when a trade happened. With live prices that is the clock: a game day is
+   four simulated minutes and means nothing next to a real market. In the
+   simulator it stays the game day, which is what the news and charts count. */
+var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function whenStr(x){
+  if(!(x.live && x.at)) return "Day "+dayOf(x.t);
+  var d=new Date(x.at), now=new Date();
+  var hm=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  return d.toDateString()===now.toDateString() ? hm : d.getDate()+" "+MONTHS[d.getMonth()]+" "+hm;
+}
 /* a trade as a row: coin, size and entry, value and profit so far */
 function lotRow(l, onClick){
-  var p=S.prices[l.s], val=l.q*p, pnl=val-l.p*l.q, pp=(p/l.p-1)*100;
+  var p=S.prices[l.s], cost=l.q*(l.b||l.p), val=l.q*p, pnl=val-cost, pp=(val/cost-1)*100;
   var r=el("button","row lot"); r.dataset.lot=l.id;
   var ic=el("div","coin",l.s.slice(0,4)); ic.style.background=BYSYM[l.s].c;
   var nm=el("div","nm");
   nm.appendChild(el("b",null,l.s));
-  var sub=qtyStr(l.q)+" @ "+priceStr(l.p)+", day "+dayOf(l.t);
-  if(l.sl||l.tp) sub += ", exit rule set";
-  nm.appendChild(el("small",null,sub));
+  /* two fixed lines in every row, so no trade wraps while its neighbour does */
+  /* the entry, not the size: at 320px "0.017762 @ 84,367" cut the price off; size is in Recent trades */
+  nm.appendChild(el("small",null,"Entry "+priceStr(l.p)));
+  nm.appendChild(el("small",null,whenStr(l)+(l.sl||l.tp ? ", exit set" : "")));
   var v=el("div","val");
   v.appendChild(el("b",null,moneyFull(val)));
   v.appendChild(el("small",cls(pnl), moneyFull(pnl)+"  "+pctStr(pp)));
@@ -1915,7 +1933,12 @@ function exitInputs(entry, sl, tp){
   if(tp && entry) i2.value=((tp/entry-1)*100).toFixed(1);
   l2.appendChild(i2);
   pr.appendChild(l1); pr.appendChild(l2);
-  return {box:pr, sl:i1, tp:i2};
+  /* like a real exchange: the rule watches the price; both fees come off the result */
+  var fn=el("p","note","Triggered by the price. The buy and sell fees come off the result, so a 2% target nets about "+
+    (2-2*S.fee*100).toFixed(1)+"%.");
+  fn.style.margin="6px 0 0";
+  var box=el("div"); box.appendChild(pr); box.appendChild(fn);
+  return {box:box, sl:i1, tp:i2};
 }
 
 /* With lotId the sheet is one trade (from Wallet): sell it, or change its exit
@@ -1930,7 +1953,7 @@ function renderCoinSheet(sym, side, keepAmount, lotId){
   var head=el("div","sheeth");
   var ic=el("div","coin",sym.slice(0,4)); ic.style.background=c.c;
   var nm=el("div","nm"); nm.appendChild(el("b",null,c.n));
-  nm.appendChild(el("small",null, lot ? "Bought on day "+dayOf(lot.t)+" at "+priceStr(lot.p)+", typical day ±"+(c.dv*100).toFixed(1)+"%"
+  nm.appendChild(el("small",null, lot ? "Bought "+(lot.live&&lot.at ? whenStr(lot) : "on "+whenStr(lot).toLowerCase())+" at "+priceStr(lot.p)+", typical day ±"+(c.dv*100).toFixed(1)+"%"
                                       : sym+", typical day \u00B1"+(c.dv*100).toFixed(1)+"%"));
   var v=el("div","val"); var pv=el("b"); var ch=el("small"); v.appendChild(pv); v.appendChild(ch);
   head.appendChild(ic); head.appendChild(nm); head.appendChild(v);
