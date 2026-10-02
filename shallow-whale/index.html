@@ -8,6 +8,9 @@
 <meta name="theme-color" content="#1C2739" media="(prefers-color-scheme: dark)">
 <meta name="description" content="Shallow Whale, a simulated crypto trading game. No ads, no purchases, no real money.">
 <title>Shallow Whale</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 @font-face{font-family:"Saira";src:url("fonts/Saira-VF.ttf") format("truetype");font-weight:100 900;font-stretch:50% 125%;font-display:swap}
 @font-face{font-family:"Saira Stencil One";src:url("fonts/SairaStencilOne-Regular.ttf") format("truetype");font-display:swap}
@@ -754,7 +757,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.5.0";
+var APP_VERSION = "1.6.0";
 var SAVE_KEY = "pw.save.v1";
 var S = null;
 var refs = {};
