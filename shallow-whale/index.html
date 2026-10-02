@@ -473,6 +473,29 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return v > 1e-4 ? "up" : v < -1e-4 ? "down" : "flat";
   }
 
+  // src/platform/storage.js
+  function getItem(key, fallback) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      return fallback;
+    }
+  }
+  function setItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function removeItem(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+    }
+  }
+
   // src/feed/binance.js
   var binance_exports = {};
   __export(binance_exports, {
@@ -605,17 +628,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     timer: null,
     load: function() {
       try {
-        var o = JSON.parse(localStorage.getItem("pw.feed") || "{}");
+        var o = JSON.parse(getItem("pw.feed", null) || "{}");
         if (o.mode === "sim") this.mode = "sim";
         if (o.provider === "gecko" || o.provider === "binance") this.provider = o.provider;
       } catch (e) {
       }
     },
     persist: function() {
-      try {
-        localStorage.setItem("pw.feed", JSON.stringify({ mode: this.mode, provider: this.provider }));
-      } catch (e) {
-      }
+      setItem("pw.feed", JSON.stringify({ mode: this.mode, provider: this.provider }));
     },
     set: function(mode, provider) {
       var switched = mode !== this.mode;
@@ -1667,14 +1687,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return q.reward;
   }
   function save() {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(S));
-    } catch (e) {
-    }
+    setItem(SAVE_KEY, JSON.stringify(S));
   }
   function load() {
     try {
-      var raw = localStorage.getItem(SAVE_KEY);
+      var raw = getItem(SAVE_KEY, null);
       if (!raw) return null;
       var o = JSON.parse(raw);
       if (!o || typeof o !== "object" || o.v !== 1) return null;
@@ -1757,7 +1774,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return st;
   }
 
-  // src/main.js
+  // src/ui/dom.js
   var $ = function(s, r) {
     return (r || document).querySelector(s);
   };
@@ -1767,157 +1784,6 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (txt != null) n.textContent = txt;
     return n;
   };
-  var GLYPHS = {
-    styl1: '<path d="M3.5 15.5a7 7 0 0 1 14 0"/><path d="M3 15.5h12c3 0 5.5.8 6.5 2.3"/><path d="M8 9.5c1 1.5 1.5 3.5 1.5 6"/><circle cx="10.5" cy="8" r=".9" fill="currentColor" stroke="none"/>',
-    desk1: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 19h19"/>',
-    ride1: '<circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M8 17.5h8.5"/><path d="M18.5 17.5L15 5h-2.5"/>',
-    desk2: '<rect x="2.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="12.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="2.5" y="11" width="9" height="6.5" rx="1"/><rect x="12.5" y="11" width="9" height="6.5" rx="1"/><path d="M12 17.5v3M8.5 20.5h7"/>',
-    styl2: '<path d="M2.5 9h19"/><path d="M3.5 9l.8 5a2.5 2.5 0 0 0 2.5 2h1.4a2.5 2.5 0 0 0 2.4-1.8L11.2 9"/><path d="M20.5 9l-.8 5a2.5 2.5 0 0 1-2.5 2h-1.4a2.5 2.5 0 0 1-2.4-1.8L12.8 9"/>',
-    home1: '<path d="M2.5 20.5h19"/><path d="M4.5 20.5L12 4.5l7.5 16"/><path d="M10 20.5v-5h4v5"/>',
-    ride2: '<path d="M2.5 16v-3.2L5 7.5h9.5l4 4.5 2.5.7V16"/><path d="M3 12h15.5"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/>',
-    desk3: '<rect x="7" y="3" width="10" height="8.5" rx="2"/><path d="M12 11.5v2M5.5 13.5h13M12 13.5v5M6.5 21.5l5.5-3 5.5 3"/>',
-    styl3: '<circle cx="12" cy="12" r="5.5"/><path d="M9 7l.7-4h4.6l.7 4M9 17l.7 4h4.6l.7-4"/><path d="M12 9.5V12l1.7 1.2"/>',
-    home2: '<path d="M3 20.5V9.5l4.5-4.5 4.5 4.5 4.5-4.5 4.5 4.5v11"/><path d="M12 9.5v11M2 20.5h20"/><path d="M6 20.5v-4h3v4M15 20.5v-4h3v4"/>',
-    desk4: '<path d="M4.5 8.5a10 10 0 0 0 11 11z"/><path d="M10 14l4-4"/><circle cx="15" cy="9" r="1.2"/><path d="M16 3.5a4.5 4.5 0 0 1 4.5 4.5"/><path d="M8 18.5l-2 3h6"/>',
-    ride3: '<path d="M2 16.5v-2.7l5-1.3 3.5-3h4.5l5 3.7 2 .6v2.7"/><path d="M2.5 9.5h3.5M4.2 9.5v3.5"/><circle cx="6.5" cy="16.5" r="2"/><circle cx="17.5" cy="16.5" r="2"/><path d="M8.5 16.5h7"/>',
-    styl4: '<circle cx="12" cy="14.5" r="6"/><rect x="9" y="4" width="6" height="4.5" rx="1.2"/>',
-    home3: '<path d="M3 20.5h18"/><rect x="6" y="7" width="12" height="13.5"/><path d="M8.5 7V4h7v3"/><path d="M9 11h1.5M13.5 11H15M9 14.5h1.5M13.5 14.5H15"/><path d="M11 20.5v-3h2v3"/>',
-    ride4: '<path d="M11.5 3v13"/><path d="M11.5 4l7 11h-7"/><path d="M9.5 6.5L5 15h4.5"/><path d="M3 17.5h18l-2.5 3h-13z"/>',
-    styl5: '<path d="M3.5 17.5l-1-10 5 4 4.5-6.5 4.5 6.5 5-4-1 10z"/><path d="M4 20.5h16"/>',
-    home4: '<path d="M5 19a7 3.5 0 0 1 14 0"/><path d="M2.5 21.5h19"/><path d="M12 16.5c.5-3.5-.3-6.5-2-9.5"/><path d="M10 7c-2-1.5-5-1-6.5 1M10 7c1.5-2 4.5-2.5 6.5-1M10 7c2.5 0 4.5 1.5 5 4M10 7c-2 .5-3.5 2-4 4"/>',
-    ride5: '<path d="M12 2.5c1 0 1.5 1.5 1.5 3v4l7.5 4.5v2l-7.5-2.2v4.2l2.5 2v1.5l-4-1-4 1V18l2.5-2v-4.2L3 16v-2l7.5-4.5v-4c0-1.5.5-3 1.5-3z"/>',
-    diamond: '<path d="M6.5 4h11l4 5-9.5 11L2.5 9z"/><path d="M2.5 9h19M9 4L7.5 9 12 20l4.5-11L15 4"/>',
-    worried: '<circle cx="12" cy="12" r="9"/><path d="M8.5 16.5c1-1.2 2.2-1.8 3.5-1.8s2.5.6 3.5 1.8"/><path d="M7.5 8.5l2.5-1M16.5 8.5l-2.5-1"/><g fill="currentColor" stroke="none"><circle cx="9" cy="11.5" r="1"/><circle cx="15" cy="11.5" r="1"/></g>',
-    whale: '<path d="M2.5 14c0-3.3 2.7-5.5 6.5-5.5 3.8 0 6 2 8.3 4.3L19 9.5l1.5-.5.5 1.5-2 3.5c-1.5 3.5-5 5.5-9.5 5.5-4.2 0-7-2.2-7-5.5z"/><path d="M9 6V3.5M9 3.5c-1-.8-2-.8-3 0M9 3.5c1-.8 2-.8 3 0"/><circle cx="6.5" cy="13" r="1" fill="currentColor" stroke="none"/>',
-    bolt: '<path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/>',
-    rocket: '<path d="M12 2.5c3 2 4.5 5.5 4.5 9.5v4h-9v-4c0-4 1.5-7.5 4.5-9.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M7.5 12.5l-3 3v3l3-1.5M16.5 12.5l3 3v3l-3-1.5M10 19.5l2 2 2-2"/>',
-    bag: '<path d="M4.5 9h15L18 20.5H6z"/><path d="M8 9c0-3 1.5-5 4-5s4 2 4 5"/><path d="M12 12.5v5M9.8 15.3l2.2 2.2 2.2-2.2"/>',
-    sideways: '<path d="M3 12h18M6.5 8.5L3 12l3.5 3.5M17.5 8.5L21 12l-3.5 3.5"/>',
-    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/><circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/></g>',
-    contra: '<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
-    rug: '<rect x="2.5" y="7" width="12.5" height="10" rx="1"/><path d="M5 10.5h7.5M5 13.5h7.5"/><path d="M15 12h6.5M19 9.5l2.5 2.5-2.5 2.5"/>',
-    cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
-    you: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.5-4 3.5-6.5 7.5-6.5s7 2.5 7.5 6.5"/>'
-  };
-  function glyph(key, cls2) {
-    var i = el("i", cls2 || "gl");
-    i.setAttribute("aria-hidden", "true");
-    i.innerHTML = ICON(GLYPHS[key] || GLYPHS.you);
-    return i;
-  }
-  var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
-  var refs = {};
-  var tab = "market";
-  var timer = null;
-  var sheetCtx = null;
-  function checkQuests() {
-    paintTabExtras();
-  }
-  function claimAll() {
-    var idx = readyQuests(), total = 0;
-    if (!idx.length) return;
-    idx.forEach(function(i) {
-      total += claimQuest(i);
-    });
-    save();
-    go("quests");
-    toast("Claimed " + money(total) + (idx.length > 1 ? " from " + idx.length + " quests" : ""));
-  }
-  var ICON = function(d) {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>";
-  };
-  var TABS = [
-    {
-      id: "market",
-      n: "Market",
-      ic: ICON('<path d="M4 4v16h16"/><path d="M7.5 15l3.5-4 3 2.5 5-6.5"/>'),
-      on: ICON('<path d="M4 4v16h16"/><path d="M7.5 15l3.5-4 3 2.5 5-6.5V20H7.5z" fill="currentColor"/>')
-    },
-    {
-      id: "wallet",
-      n: "Wallet",
-      ic: ICON('<rect x="3" y="6.5" width="18" height="13" rx="2.5"/><path d="M3 10.5h18M15.5 15h2.5"/><path d="M6 6.5l8.5-3 1.2 3"/>'),
-      on: ICON('<path d="M6 6.5l8.5-3 1.2 3"/><rect x="3" y="6.5" width="18" height="13" rx="2.5" fill="currentColor"/><path class="ko" d="M4.6 10.5h14.8M15.5 15h2.5"/>')
-    },
-    {
-      id: "quests",
-      n: "Quests",
-      ic: ICON('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
-      on: ICON('<circle cx="12" cy="12" r="8.5" fill="currentColor"/><circle class="ko" cx="12" cy="12" r="4.5"/><circle class="kof" cx="12" cy="12" r="1.3"/>')
-    },
-    {
-      id: "shop",
-      n: "Shop",
-      ic: ICON('<path d="M5 8.5h14l-1.2 11.5H6.2z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>'),
-      on: ICON('<path d="M5 8.5h14l-1.2 11.5H6.2z" fill="currentColor"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>')
-    },
-    {
-      id: "ranks",
-      n: "Ranks",
-      ic: ICON('<path d="M3 20.5h18"/><path d="M4.5 20.5v-5h4.5v5M9.8 20.5V9h4.4v11.5M15 20.5v-7.5h4.5v7.5"/>'),
-      on: ICON('<path d="M3 20.5h18"/><g fill="currentColor" stroke="none"><rect x="3.5" y="14.5" width="5.2" height="6" rx="1"/><rect x="9.4" y="8" width="5.2" height="12.5" rx="1"/><rect x="15.3" y="12" width="5.2" height="8.5" rx="1"/></g>')
-    }
-  ];
-  var newsDot = false;
-  var walletDot = false;
-  var lastReady = -1;
-  function flagNews() {
-    if (tab !== "market") {
-      newsDot = true;
-      buildTabs();
-    }
-  }
-  function buildTabs() {
-    var nav = $("#tabs");
-    nav.textContent = "";
-    TABS.forEach(function(t) {
-      var b = el("button");
-      b.dataset.tab = t.id;
-      if (tab === t.id) b.setAttribute("aria-current", "page");
-      var i = el("i");
-      i.innerHTML = tab === t.id ? t.on : t.ic;
-      i.setAttribute("aria-hidden", "true");
-      b.appendChild(i);
-      b.appendChild(el("span", null, t.n));
-      if (t.id === "market" && newsDot || t.id === "wallet" && walletDot) b.appendChild(el("span", "dot"));
-      if (t.id === "quests") {
-        var n = readyQuests().length;
-        if (n) {
-          var bg = el("span", "badge", String(n));
-          bg.setAttribute("aria-hidden", "true");
-          b.appendChild(bg);
-          b.setAttribute("aria-label", "Quests, " + n + " reward" + (n > 1 ? "s" : "") + " ready");
-        }
-      }
-      b.addEventListener("click", function() {
-        go(t.id);
-      });
-      nav.appendChild(b);
-    });
-  }
-  function go(id) {
-    tab = id;
-    if (id === "market") newsDot = false;
-    if (id === "wallet") walletDot = false;
-    buildTabs();
-    render();
-    window.scrollTo(0, 0);
-  }
-  function paintTabExtras() {
-    var n = readyQuests().length;
-    if (n !== lastReady) {
-      lastReady = n;
-      buildTabs();
-    }
-    var a = $("#action"), show = n > 0 && tab !== "quests" && !sheetCtx;
-    if (show) {
-      var txt = "Claim " + n + " reward" + (n > 1 ? "s" : "");
-      if (a.textContent !== txt) a.textContent = txt;
-    }
-    if (a.hidden === show) a.hidden = !show;
-    document.body.classList.toggle("has-action", show);
-  }
-  $("#action").addEventListener("click", claimAll);
   function toast(msg) {
     var t = $("#toast");
     t.textContent = msg;
@@ -1927,896 +1793,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       t.classList.remove("on");
     }, 2200);
   }
-  function openSheet() {
-    $("#sheet").classList.add("on");
-    $("#scrim").classList.add("on");
-    paintTabExtras();
-  }
-  function closeSheet() {
-    $("#sheet").classList.remove("on");
-    $("#scrim").classList.remove("on");
-    sheetCtx = null;
-    paintTabExtras();
-  }
-  $("#scrim").addEventListener("click", closeSheet);
-  function render() {
-    var m = $("#screen");
-    m.textContent = "";
-    refs = {};
-    if (tab === "market") renderMarket(m);
-    else if (tab === "wallet") renderWallet(m);
-    else if (tab === "quests") renderQuests(m);
-    else if (tab === "shop") renderShop(m);
-    else renderRanks(m);
-    paint({});
-  }
-  function renderMarket(m) {
-    var vn = el("p", "listnote");
-    vn.hidden = true;
-    refs._volnote = vn;
-    m.appendChild(vn);
-    var list = el("div", "list");
-    var order = marketOrder();
-    refs._order = order.join();
-    order.forEach(function(sym) {
-      var c = BYSYM[sym];
-      var r = el("button", "row");
-      r.dataset.sym = c.s;
-      var ic = el("div", "coin", c.s.slice(0, 4));
-      ic.style.background = c.c;
-      var nm = el("div", "nm");
-      var b = el("b", null, c.s);
-      var sm = el("small", null, c.n);
-      var vl = el("span", "vol");
-      b.appendChild(vl);
-      nm.appendChild(b);
-      nm.appendChild(sm);
-      var sp = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      sp.setAttribute("class", "spark");
-      sp.setAttribute("viewBox", "0 0 52 22");
-      sp.setAttribute("preserveAspectRatio", "none");
-      var pl = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-      pl.setAttribute("fill", "none");
-      pl.setAttribute("stroke-width", "1.6");
-      pl.setAttribute("stroke-linejoin", "round");
-      sp.appendChild(pl);
-      var v = el("div", "val");
-      var pv = el("b");
-      var ch = el("small");
-      v.appendChild(pv);
-      v.appendChild(ch);
-      r.appendChild(ic);
-      r.appendChild(nm);
-      r.appendChild(sp);
-      r.appendChild(v);
-      r.addEventListener("click", function() {
-        renderCoinSheet(c.s, "buy");
-      });
-      list.appendChild(r);
-      refs[c.s] = { row: r, price: pv, chg: ch, line: pl, vol: vl, last: S.prices[c.s] };
-    });
-    m.appendChild(list);
-    var src = el("div", "srcline");
-    refs._src = src;
-    src.appendChild(el("i"));
-    src.appendChild(el("span"));
-    src.addEventListener("click", function(e) {
-      if (e.target.tagName !== "A") renderSettings();
-    });
-    m.appendChild(src);
-    var attr = el("a", "attrib", "Data provided by CoinGecko");
-    attr.href = "https://www.coingecko.com/en/api";
-    attr.target = "_blank";
-    attr.rel = "noopener";
-    attr.hidden = true;
-    refs._attr = attr;
-    m.appendChild(attr);
-    m.appendChild(el("h2", "sec", "Headlines"));
-    var nl = el("div", "list");
-    refs._news = nl;
-    m.appendChild(nl);
-    paintNews();
-  }
-  function paintNews() {
-    var nl = refs._news;
-    if (!nl) return;
-    var sig = S.news.length ? S.news.length + ":" + S.news[0].t : "0";
-    if (nl._sig === sig) return;
-    nl._sig = sig;
-    nl.textContent = "";
-    if (!S.news.length) {
-      nl.appendChild(el("div", "empty", "Quiet so far."));
-      return;
-    }
-    S.news.slice(0, 8).forEach(function(n) {
-      var d = el("div", "news");
-      var day = Math.floor(n.t / TICKS_PER_DAY) + 1;
-      d.appendChild(el("em", null, "Day " + day + (n.s ? ", " + n.s : "")));
-      d.appendChild(document.createTextNode(n.x));
-      nl.appendChild(d);
-    });
-  }
-  function renderWallet(m) {
-    var c = el("div", "card");
-    c.style.padding = "13px";
-    var kv1 = el("div", "kv");
-    kv1.appendChild(el("span", null, "Cash"));
-    var cv = el("b");
-    kv1.appendChild(cv);
-    var kv2 = el("div", "kv");
-    kv2.appendChild(el("span", null, "Positions"));
-    var hv = el("b");
-    kv2.appendChild(hv);
-    var kv3 = el("div", "kv");
-    kv3.appendChild(el("span", null, "Realised profit"));
-    var rv = el("b");
-    kv3.appendChild(rv);
-    c.appendChild(kv1);
-    c.appendChild(kv2);
-    c.appendChild(kv3);
-    var alloc = el("div", "alloc");
-    c.appendChild(alloc);
-    var leg = el("div");
-    leg.style.cssText = "font-size:11.5px;color:var(--faint);margin-top:4px";
-    c.appendChild(leg);
-    m.appendChild(c);
-    refs._w = { cash: cv, hold: hv, real: rv, alloc, leg };
-    m.appendChild(el("h2", "sec", "Open positions"));
-    var po = el("p", "note", "By coin, oldest first, the order selling takes them.");
-    po.style.margin = "-2px 0 8px";
-    m.appendChild(po);
-    var list = el("div", "list");
-    refs._pos = list;
-    m.appendChild(list);
-    m.appendChild(el("h2", "sec", "What happened next"));
-    var rv = el("div", "list");
-    refs._rv = rv;
-    m.appendChild(rv);
-    m.appendChild(el("h2", "sec", "Recent trades"));
-    var tl = el("div", "list");
-    refs._tr = tl;
-    m.appendChild(tl);
-    paintWallet();
-  }
-  function paintWallet() {
-    var w = refs._w;
-    if (!w) return;
-    w.cash.textContent = moneyFull(S.cash);
-    w.hold.textContent = moneyFull(holdingsValue());
-    w.real.textContent = moneyFull(S.realised);
-    w.real.className = cls(S.realised);
-    var nw = netWorth();
-    w.alloc.textContent = "";
-    var parts = [["Cash", S.cash, "var(--chip)"]];
-    heldSyms(S).forEach(function(s) {
-      parts.push([s, position(s).q * S.prices[s], BYSYM[s].c]);
-    });
-    parts.forEach(function(p) {
-      var i = el("i");
-      i.style.width = 100 * p[1] / nw + "%";
-      i.style.background = p[2];
-      w.alloc.appendChild(i);
-    });
-    w.leg.textContent = parts.filter(function(p) {
-      return p[1] / nw > 0.02;
-    }).map(function(p) {
-      return p[0] + " " + Math.round(100 * p[1] / nw) + "%";
-    }).join("   ");
-    var L = refs._pos;
-    L.textContent = "";
-    if (!S.lots.length) {
-      var e = el("div", "empty");
-      e.appendChild(el("b", null, "No positions yet"));
-      e.appendChild(document.createTextNode("Open the Market tab and place your first buy."));
-      L.appendChild(e);
-    } else {
-      var rank = {};
-      marketOrder().forEach(function(s, i) {
-        rank[s] = i;
-      });
-      S.lots.slice().sort(function(a, b) {
-        return rank[a.s] - rank[b.s] || a.id - b.id;
-      }).forEach(function(l) {
-        L.appendChild(lotRow(l, function() {
-          renderCoinSheet(l.s, "sell", false, l.id);
-        }));
-      });
-    }
-    var R = refs._rv;
-    if (R) {
-      var rsig = S.reviews.length ? S.reviews.length + ":" + S.reviews[0].t : "0";
-      if (R._sig !== rsig) {
-        R._sig = rsig;
-        R.textContent = "";
-        if (!S.reviews.length) {
-          var re0 = el("div", "empty");
-          re0.appendChild(el("b", null, "Nothing to review yet"));
-          re0.appendChild(document.createTextNode("A third of a game day after each sale, the price you sold at gets checked against where it went."));
-          R.appendChild(re0);
-        } else {
-          S.reviews.forEach(function(r) {
-            var row = el("div", "row");
-            var ic = el("div", "coin", r.s.slice(0, 4));
-            ic.style.background = BYSYM[r.s] ? BYSYM[r.s].c : "var(--chip)";
-            var nm = el("div", "nm");
-            nm.appendChild(el("b", null, r.s + " is " + (r.chg >= 0 ? "up " : "down ") + Math.abs(r.chg).toFixed(2) + "% since you sold"));
-            var how = r.auto ? "Closed by your exit rule at " : "You sold at ";
-            var det = el("small", null, how + priceStr(r.p) + ", now " + priceStr(r.now));
-            det.style.whiteSpace = "normal";
-            nm.appendChild(det);
-            var v = el("div", "val");
-            v.appendChild(el("b", cls(-r.chg), r.chg >= 0 ? "left on the table" : "avoided"));
-            row.appendChild(ic);
-            row.appendChild(nm);
-            row.appendChild(v);
-            R.appendChild(row);
-          });
-        }
-      }
-    }
-    var T = refs._tr;
-    T.textContent = "";
-    if (!S.trades.length) {
-      T.appendChild(el("div", "empty", "Your trade history shows up here."));
-      return;
-    }
-    S.trades.slice(0, 12).forEach(function(t) {
-      var r = el("div", "row");
-      var ic = el("div", "coin", t.side === "buy" ? "BUY" : "SELL");
-      ic.style.background = t.side === "buy" ? "var(--up)" : "var(--down)";
-      ic.style.color = t.side === "buy" ? "var(--on-up)" : "var(--on-down)";
-      ic.style.fontSize = "9.5px";
-      var nm = el("div", "nm");
-      nm.appendChild(el("b", null, t.s + "  " + qtyStr(t.q)));
-      nm.appendChild(el("small", null, whenStr(t) + " at " + priceStr(t.p)));
-      var v = el("div", "val");
-      v.appendChild(el("b", null, moneyFull(t.usd)));
-      if (t.side === "sell") v.appendChild(el("small", cls(t.pnl), moneyFull(t.pnl)));
-      r.appendChild(ic);
-      r.appendChild(nm);
-      r.appendChild(v);
-      T.appendChild(r);
-    });
-  }
-  function whenAgo(at) {
-    var s = Math.max(0, (Date.now() - (at || 0)) / 1e3);
-    if (!at || !isFinite(s)) return "Earlier";
-    if (s < 60) return "Just now";
-    if (s < 3600) return Math.floor(s / 60) + " min ago";
-    if (s < 86400) return Math.floor(s / 3600) + " h ago";
-    var d = Math.floor(s / 86400);
-    return d === 1 ? "Yesterday" : d + " days ago";
-  }
-  function renderQuests(m) {
-    var c = el("div", "card");
-    c.style.padding = "13px";
-    var top = el("div");
-    top.style.cssText = "display:flex;justify-content:space-between;align-items:baseline";
-    top.appendChild(el("b", null, "Level " + S.level + ", " + title().toLowerCase()));
-    var xt = el("span");
-    xt.style.cssText = "font-size:12px;color:var(--faint)";
-    xt.textContent = S.xp + " / " + xpNeeded(S.level) + " XP";
-    top.appendChild(xt);
-    c.appendChild(top);
-    var bar = el("div", "bar");
-    bar.style.marginTop = "9px";
-    var fill = el("i");
-    fill.style.width = 100 * S.xp / xpNeeded(S.level) + "%";
-    bar.appendChild(fill);
-    c.appendChild(bar);
-    m.appendChild(c);
-    m.appendChild(el("h2", "sec", "Active quests"));
-    var L = el("div", "list");
-    refs._q = [];
-    S.quests.forEach(function(q, idx) {
-      var d = el("div", "quest");
-      var qh = el("div", "qh");
-      qh.appendChild(el("b", null, q.txt));
-      qh.appendChild(el("div", "rw", "+" + money(q.reward) + " and " + q.xp + " XP"));
-      d.appendChild(qh);
-      var qm = el("div", "qm");
-      var lbl = el("span"), pc = el("span");
-      qm.appendChild(lbl);
-      qm.appendChild(pc);
-      d.appendChild(qm);
-      var bar2 = el("div", "bar");
-      var f2 = el("i");
-      bar2.appendChild(f2);
-      d.appendChild(bar2);
-      var hint = null;
-      if (q.t === "dip") {
-        hint = el("p", "note");
-        hint.style.margin = "7px 0 0";
-        d.appendChild(hint);
-      } else if (q.live && isDayQuest(q)) {
-        var slow = el("p", "note", "With live prices this usually takes a day or more. Keep it for a later visit, or swap it.");
-        slow.className = "note dayhint";
-        slow.style.margin = "7px 0 0";
-        d.appendChild(slow);
-      }
-      var slot = el("div");
-      d.appendChild(slot);
-      L.appendChild(d);
-      refs._q.push({ q, idx, lbl, pc, fill: f2, slot, hint, mode: null });
-    });
-    m.appendChild(L);
-    paintQuests();
-    var note = el("p", "note");
-    note.textContent = "Quests refresh as you finish them, or swap one you do not want for half its reward. Rewards are play money, and nothing here costs anything real.";
-    note.style.marginTop = "12px";
-    m.appendChild(note);
-    var hh = el("h2", "sec", "Completed");
-    hh.style.marginTop = "18px";
-    m.appendChild(hh);
-    if (!S.questLog.length && !S.questSwaps) {
-      m.appendChild(el("p", "note", "Claimed quests show up here."));
-      return;
-    }
-    var tot = el("p", "note");
-    tot.id = "questTotals";
-    tot.style.margin = "0 0 8px";
-    tot.textContent = S.questDone + (S.questDone === 1 ? " quest" : " quests") + " completed, " + money(S.questEarned) + " earned in rewards." + (S.questSwaps ? " " + S.questSwaps + (S.questSwaps === 1 ? " swap" : " swaps") + ", " + money(S.swapSpent) + " spent on swapping." : "");
-    m.appendChild(tot);
-    renderQuestStats(m);
-    if (!S.questLog.length) return;
-    var H = el("div", "list");
-    H.id = "questLog";
-    H.style.marginTop = "12px";
-    S.questLog.forEach(function(e) {
-      var d = el("div", "quest");
-      var qh = el("div", "qh");
-      qh.appendChild(el("b", null, e.txt));
-      qh.appendChild(el("div", "rw", "+" + money(e.reward) + " and " + e.xp + " XP"));
-      d.appendChild(qh);
-      var qm = el("div", "qm");
-      qm.style.marginBottom = "0";
-      qm.appendChild(el("span", null, whenAgo(e.at)));
-      qm.appendChild(el("span", null, e.live ? "Live prices" : "Simulator"));
-      d.appendChild(qm);
-      H.appendChild(d);
-    });
-    m.appendChild(H);
-  }
-  function durStr(ms) {
-    var mn = ms / 6e4;
-    if (mn < 1) return "under a minute";
-    if (mn < 90) return Math.round(mn) + " min";
-    if (mn < 48 * 60) return Math.round(mn / 60) + " h";
-    return Math.round(mn / 1440) + " days";
-  }
-  function renderQuestStats(m) {
-    var keys = Object.keys(S.questStats).filter(function(k) {
-      var e = S.questStats[k];
-      return e.done || e.swap;
-    });
-    if (!keys.length) return;
-    keys.sort(function(a, b) {
-      var x = S.questStats[a], y = S.questStats[b];
-      return y.done + y.swap - (x.done + x.swap);
-    });
-    var L = el("div", "list");
-    L.id = "questStats";
-    keys.forEach(function(k) {
-      var e = S.questStats[k], mode = k.split(":")[0], def = QUEST_DEF[k.split(":")[1]];
-      var d = el("div", "quest");
-      var qh = el("div", "qh");
-      qh.appendChild(el("b", null, def.n));
-      qh.appendChild(el("div", "rw", e.done + " done, " + e.swap + " swapped"));
-      d.appendChild(qh);
-      var qm = el("div", "qm");
-      qm.style.marginBottom = "0";
-      qm.appendChild(el("span", null, mode === "live" ? "Live prices" : "Simulator"));
-      qm.appendChild(el("span", null, e.done ? durStr(e.ms / e.done) + " on average to finish" : "None finished yet"));
-      d.appendChild(qm);
-      L.appendChild(d);
-    });
-    m.appendChild(L);
-  }
-  function paintQuests() {
-    var arr = refs._q;
-    if (!arr) return;
-    arr.forEach(function(r) {
-      var q = r.q, prog = clamp(questProgress(q), 0, q.target);
-      r.lbl.textContent = (q.money ? money(prog) : Math.floor(prog)) + " of " + (q.money ? money(q.target) : q.target);
-      var frac = q.t === "nw" && q.base < q.target ? clamp((prog - q.base) / (q.target - q.base), 0, 1) : prog / q.target;
-      r.pc.textContent = Math.round(100 * frac) + "%";
-      r.fill.style.width = 100 * frac + "%";
-      if (r.hint) {
-        var bd = biggestDrop(), pct = q.own ? q.pct : 4;
-        r.hint.textContent = bd && bd.ch <= -pct ? bd.s + " is down " + Math.abs(bd.ch).toFixed(1) + "% today, so a buy counts now." : "Nothing is down " + pct + "% yet. The market list shows each coin's change today, or swap this quest below.";
-      }
-      var mode = prog >= q.target ? "claim" : "swap";
-      if (r.mode !== mode) {
-        r.mode = mode;
-        r.slot.textContent = "";
-        if (mode === "claim") {
-          var btn = el("button", "claim", "Claim reward");
-          btn.addEventListener("click", function() {
-            toast("Claimed " + money(claimQuest(r.idx)));
-            save();
-            render();
-          });
-          r.slot.appendChild(btn);
-        } else r.slot.appendChild(swapButton(r));
-      }
-    });
-  }
-  function swapButton(r) {
-    var fee = swapFee(r.q), idle = "Swap for " + money(fee);
-    var row = el("div", "swaprow"), b = el("button", "swap", idle);
-    b.type = "button";
-    b.addEventListener("click", function() {
-      if (!b.classList.contains("armed")) {
-        b.classList.add("armed");
-        b.textContent = "Tap again to pay " + money(fee);
-        clearTimeout(b._t);
-        b._t = setTimeout(function() {
-          b.classList.remove("armed");
-          b.textContent = idle;
-        }, 3e3);
-        return;
-      }
-      clearTimeout(b._t);
-      if (!swapQuest(r.idx)) {
-        b.classList.remove("armed");
-        b.textContent = idle;
-        toast("Not enough cash to swap. Sell something first.");
-        return;
-      }
-      save();
-      render();
-      toast("Swapped for " + money(fee));
-    });
-    row.appendChild(b);
-    return row;
-  }
-  function renderShop(m) {
-    var c = el("div", "card");
-    c.style.padding = "13px";
-    var head = el("div");
-    head.style.cssText = "display:flex;justify-content:space-between;align-items:baseline";
-    head.appendChild(el("b", null, "Your flex score"));
-    head.appendChild(el("span", "pill", flexPoints() + " pts"));
-    c.appendChild(head);
-    var tc = el("div", "trophycase");
-    if (!S.owned.length) {
-      var p = el("p", "note", "Nothing bought yet. Items are cosmetic and add to your flex score.");
-      p.style.margin = "6px 0 0";
-      c.appendChild(p);
-    } else S.owned.forEach(function(id) {
-      var it = SHOP.filter(function(x) {
-        return x.id === id;
-      })[0];
-      if (it) {
-        var sp = el("span");
-        sp.title = it.n;
-        sp.appendChild(glyph(it.id));
-        tc.appendChild(sp);
-      }
-    });
-    c.appendChild(tc);
-    m.appendChild(c);
-    ["Desk", "Ride", "Home", "Style"].forEach(function(cat) {
-      m.appendChild(el("h2", "sec", cat));
-      var g = el("div", "grid");
-      SHOP.filter(function(i) {
-        return i.cat === cat;
-      }).forEach(function(i) {
-        var owned = S.owned.indexOf(i.id) >= 0;
-        var locked = S.level < i.lv;
-        var b = el("button", "item" + (owned ? " owned" : locked ? " locked" : ""));
-        b.appendChild(glyph(i.id, "ic"));
-        b.appendChild(el("b", null, i.n));
-        b.appendChild(el("small", null, owned ? "Owned" : locked ? "Level " + i.lv : money(i.p)));
-        if (!owned && !locked) {
-          b.addEventListener("click", function() {
-            if (S.cash < i.p) return toast("Not enough cash. You need " + money(i.p - S.cash) + " more.");
-            S.cash -= i.p;
-            S.owned.push(i.id);
-            addXP(30);
-            toast("Bought the " + i.n.toLowerCase());
-            save();
-            render();
-          });
-        } else if (locked) {
-          b.addEventListener("click", function() {
-            toast("Unlocks at level " + i.lv);
-          });
-        }
-        g.appendChild(b);
-      });
-      m.appendChild(g);
-    });
-    var n = el("p", "note", "No real money, no in app purchases, no ads. Everything here is bought with play money.");
-    n.style.margin = "16px 0 0";
-    m.appendChild(n);
-  }
-  function renderRanks(m) {
-    var L = el("div", "list");
-    refs._rk = L;
-    m.appendChild(L);
-    var n = el("p", "note", "Rivals trade the same market you do, each with their own habits. Ranking is by net worth.");
-    n.style.marginTop = "12px";
-    m.appendChild(n);
-    paintRanks();
-  }
-  function paintRanks() {
-    var L = refs._rk;
-    if (!L) return;
-    var rows = S.bots.map(function(b) {
-      return { n: b.n, g: botGlyph(b.n), w: botWorth(b), me: false, style: b.style };
-    });
-    rows.push({ n: "You", g: "you", w: netWorth(), me: true, flex: flexPoints() });
-    rows.sort(function(a, b) {
-      return b.w - a.w;
-    });
-    L.textContent = "";
-    rows.forEach(function(r, i) {
-      var row = el("div", "row");
-      var rk = el("div", "coin", String(i + 1));
-      rk.style.background = r.me ? "var(--brass-solid)" : "var(--chip)";
-      rk.style.color = r.me ? "var(--on-brass)" : "var(--muted)";
-      var nm = el("div", "nm");
-      var who = el("b", "who");
-      who.appendChild(glyph(r.g));
-      who.appendChild(document.createTextNode(r.n));
-      nm.appendChild(who);
-      nm.appendChild(el("small", null, r.me ? title() + ", " + flexPoints() + " flex points" : styleLabel(r.style)));
-      var v = el("div", "val");
-      v.appendChild(el("b", null, money(r.w)));
-      row.appendChild(rk);
-      row.appendChild(nm);
-      row.appendChild(v);
-      if (r.me) row.style.background = "var(--panel2)";
-      L.appendChild(row);
-    });
-  }
-  function styleLabel(s) {
-    return {
-      hodl: "Buys and waits",
-      panic: "Sells at the first wobble",
-      momo: "Chases whatever is moving",
-      scalp: "In and out all day",
-      dca: "Buys a little, often",
-      contra: "Buys what everyone hates"
-    }[s] || "";
-  }
-  function paint(changed) {
-    changed = changed || {};
-    var nw = netWorth();
-    $("#nwNum").textContent = moneyFull(nw);
-    var chg = (nw / (S.seedCash || 3e3) - 1) * 100;
-    var e = $("#nwChg");
-    e.textContent = pctStr(chg) + " all time";
-    e.className = "nw-chg " + cls(chg);
-    var hs = $("#hdrStatus");
-    if (hs) {
-      var liveOk = Feed.mode === "live" && Feed.status === "ok";
-      hs.firstChild.className = liveOk ? "live" : "";
-      var full = liveOk ? "Live prices" : Feed.mode === "live" ? "Live feed offline" : "Simulated market";
-      hs.lastChild.textContent = liveOk ? "Live" : Feed.mode === "live" ? "Offline" : "Simulator";
-      if (hs.title !== full) {
-        hs.title = full;
-        hs.setAttribute("aria-label", full);
-      }
-    }
-    if (tab === "market") {
-      COINS.forEach(function(c) {
-        var r = refs[c.s];
-        if (!r) return;
-        var p = S.prices[c.s], gone = noLive(c.s);
-        r.price.textContent = priceStr(p);
-        var d = dayChange(c.s);
-        r.chg.textContent = gone ? "No live price" : pctStr(d);
-        r.chg.className = gone ? "flat" : cls(d);
-        var a = Feed.anchors[c.s], vt = Feed.mode === "live" && Feed.snapped && a && typeof a.vol === "number" ? volStr(a.vol) : "";
-        if (r.vol.textContent !== vt) r.vol.textContent = vt;
-        var sl = daySeries(c.s), pts = "";
-        if (sl && sl.length > 1) {
-          var mn = Math.min.apply(null, sl), mx = Math.max.apply(null, sl), rg = mx - mn || 1;
-          for (var i = 0; i < sl.length; i++) {
-            pts += (i * (52 / (sl.length - 1))).toFixed(1) + "," + (21 - (sl[i] - mn) / rg * 20).toFixed(1) + " ";
-          }
-        }
-        r.line.setAttribute("points", pts.trim());
-        r.line.setAttribute("stroke", d >= 0 ? "var(--up)" : "var(--down)");
-        var svg = r.line.parentNode, noLine = !pts;
-        if (svg.hasAttribute("hidden") !== noLine) {
-          if (noLine) svg.setAttribute("hidden", "");
-          else svg.removeAttribute("hidden");
-        }
-        var mv = changed[c.s];
-        if (mv !== void 0 && Math.abs(mv / p) > 25e-4) {
-          var cell = r.price.parentNode;
-          cell.classList.remove("flash-up", "flash-down");
-          void cell.offsetWidth;
-          cell.classList.add(mv > 0 ? "flash-up" : "flash-down");
-        }
-      });
-      if (refs._volnote) {
-        var byVol = COINS.some(function(c) {
-          var a = Feed.anchors[c.s];
-          return Feed.mode === "live" && Feed.snapped && a && typeof a.vol === "number";
-        });
-        refs._volnote.hidden = !byVol;
-        var vtxt = "Sorted by trading volume over the last 24 hours, on " + (Feed.provider === "gecko" ? "all exchanges CoinGecko tracks" : "Binance");
-        if (byVol && refs._volnote.textContent !== vtxt) refs._volnote.textContent = vtxt;
-      }
-      if (refs._src) {
-        refs._src.hidden = Feed.mode !== "live";
-        refs._src.firstChild.className = Feed.dot();
-        refs._src.lastChild.textContent = Feed.label();
-      }
-      if (refs._attr) {
-        refs._attr.hidden = !(Feed.mode === "live" && Feed.provider === "gecko" && Feed.status === "ok");
-      }
-      paintNews();
-    } else if (tab === "wallet") {
-      paintWallet();
-    } else if (tab === "quests") {
-      paintQuests();
-    } else if (tab === "ranks") {
-      paintRanks();
-    }
-    if (sheetCtx && sheetCtx.kind === "coin") paintCoinSheet();
-    paintTabExtras();
-  }
-  function dayOf(t) {
-    return Math.floor(t / TICKS_PER_DAY) + 1;
-  }
-  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  function whenStr(x) {
-    if (!(x.live && x.at)) return "Day " + dayOf(x.t);
-    var d = new Date(x.at), now = new Date(Date.now());
-    var hm = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-    return d.toDateString() === now.toDateString() ? hm : d.getDate() + " " + MONTHS[d.getMonth()] + " " + hm;
-  }
-  function lotRow(l, onClick) {
-    var p = S.prices[l.s], cost = l.q * (l.b || l.p), val = l.q * p, pnl = val - cost, pp = (val / cost - 1) * 100;
-    var r = el("button", "row lot");
-    r.dataset.lot = l.id;
-    var ic = el("div", "coin", l.s.slice(0, 4));
-    ic.style.background = BYSYM[l.s].c;
-    var nm = el("div", "nm");
-    nm.appendChild(el("b", null, l.s));
-    nm.appendChild(el("small", null, "Entry " + priceStr(l.p)));
-    nm.appendChild(el("small", null, whenStr(l) + (l.sl || l.tp ? ", exit set" : "")));
-    var v = el("div", "val");
-    v.appendChild(el("b", null, moneyFull(val)));
-    v.appendChild(el("small", cls(pnl), moneyFull(pnl) + "  " + pctStr(pp)));
-    r.appendChild(ic);
-    r.appendChild(nm);
-    r.appendChild(v);
-    r.addEventListener("click", onClick);
-    return r;
-  }
-  function exitInputs(entry, sl, tp) {
-    var pr = el("div", "protect");
-    var l1 = el("label");
-    l1.appendChild(document.createTextNode("Stop loss, % below entry"));
-    var i1 = el("input");
-    i1.type = "text";
-    i1.inputMode = "decimal";
-    i1.placeholder = "off";
-    if (sl && entry) i1.value = ((1 - sl / entry) * 100).toFixed(1);
-    l1.appendChild(i1);
-    var l2 = el("label");
-    l2.appendChild(document.createTextNode("Take profit, % above entry"));
-    var i2 = el("input");
-    i2.type = "text";
-    i2.inputMode = "decimal";
-    i2.placeholder = "off";
-    if (tp && entry) i2.value = ((tp / entry - 1) * 100).toFixed(1);
-    l2.appendChild(i2);
-    pr.appendChild(l1);
-    pr.appendChild(l2);
-    var fn = el("p", "note", "Triggered by the price. The buy and sell fees come off the result, so a 2% target nets about " + (2 - 2 * S.fee * 100).toFixed(1) + "%.");
-    fn.style.margin = "6px 0 0";
-    var box = el("div");
-    box.appendChild(pr);
-    box.appendChild(fn);
-    return { box, sl: i1, tp: i2 };
-  }
-  function renderCoinSheet(sym, side, keepAmount, lotId) {
-    var lot = lotId ? lotById(lotId) : null;
-    sheetCtx = { kind: "coin", sym, side: lot ? "sell" : side || "buy", lot: lot ? lot.id : null };
-    var c = BYSYM[sym], h = lot ? { q: lot.q, avg: lot.p } : position(sym);
-    var b = $("#sheetBody");
-    b.textContent = "";
-    var head = el("div", "sheeth");
-    var ic = el("div", "coin", sym.slice(0, 4));
-    ic.style.background = c.c;
-    var nm = el("div", "nm");
-    nm.appendChild(el("b", null, c.n));
-    nm.appendChild(el("small", null, lot ? "Bought " + (lot.live && lot.at ? whenStr(lot) : "on " + whenStr(lot).toLowerCase()) + " at " + priceStr(lot.p) + ", typical day ±" + (c.dv * 100).toFixed(1) + "%" : sym + ", typical day ±" + (c.dv * 100).toFixed(1) + "%"));
-    var v = el("div", "val");
-    var pv = el("b");
-    var ch = el("small");
-    v.appendChild(pv);
-    v.appendChild(ch);
-    head.appendChild(ic);
-    head.appendChild(nm);
-    head.appendChild(v);
-    b.appendChild(head);
-    var crt = el("div", "crt");
-    var cv = el("canvas");
-    cv.id = "chart";
-    crt.appendChild(cv);
-    b.appendChild(crt);
-    if (noLive(sym)) {
-      var nl = el("p", "note nolive", sheetCtx.side === "buy" ? "No live price for " + sym + " from " + (Feed.provider === "gecko" ? "CoinGecko" : "Binance") + " right now, so it cannot be bought. The price shown is the last one the game had." : "No live price for " + sym + " right now. Selling uses the last price the game had, and exit rules wait for a live one.");
-      nl.style.margin = "10px 0 0";
-      b.appendChild(nl);
-    }
-    var seg = el("div", "seg");
-    var bb = el("button", null, "Buy"), sb = el("button", null, "Sell");
-    bb.setAttribute("aria-pressed", sheetCtx.side === "buy");
-    sb.setAttribute("aria-pressed", sheetCtx.side === "sell");
-    bb.addEventListener("click", function() {
-      renderCoinSheet(sym, "buy");
-    });
-    sb.addEventListener("click", function() {
-      renderCoinSheet(sym, "sell");
-    });
-    seg.appendChild(bb);
-    seg.appendChild(sb);
-    if (!lot) b.appendChild(seg);
-    function maxUsdNow() {
-      return sheetCtx.side === "buy" ? S.cash : h ? h.q * S.prices[sym] : 0;
-    }
-    var amt = el("div", "amt");
-    amt.appendChild(el("span", null, "$"));
-    var inp = el("input");
-    inp.type = "text";
-    inp.inputMode = "decimal";
-    inp.placeholder = "0.00";
-    inp.setAttribute("aria-label", "Amount in dollars");
-    amt.appendChild(inp);
-    b.appendChild(amt);
-    var chips = el("div", "chips");
-    [[0.25, "25%"], [0.5, "50%"], [0.75, "75%"], [1, "Max"]].forEach(function(p) {
-      var cb = el("button", null, p[1]);
-      cb.addEventListener("click", function() {
-        inp.value = (Math.floor(maxUsdNow() * p[0] * 100) / 100).toFixed(2);
-        updateSummary();
-      });
-      chips.appendChild(cb);
-    });
-    b.appendChild(chips);
-    var rules = null;
-    if (sheetCtx.side === "buy") {
-      var rh = el("h2", "sec", "Automatic exit, optional");
-      rh.style.marginTop = "14px";
-      b.appendChild(rh);
-      rules = exitInputs(0, 0, 0);
-      b.appendChild(rules.box);
-    }
-    var sumWrap = el("div");
-    b.appendChild(sumWrap);
-    var go2 = el("button", "btn " + (sheetCtx.side === "buy" ? "buy" : "sell"));
-    go2.textContent = sheetCtx.side === "buy" ? "Buy " + sym : lot ? "Sell this trade" : "Sell " + sym;
-    if (sheetCtx.side === "buy" && noLive(sym)) go2.disabled = true;
-    go2.addEventListener("click", function() {
-      var val = parseFloat(inp.value);
-      if (!(val > 0)) return toast("Enter an amount first");
-      if (sheetCtx.side === "buy") {
-        if (val > S.cash + 5e-3) return toast("You only have " + moneyFull(S.cash) + " in cash");
-        if (val > S.cash - 0.01) val = S.cash;
-        buy(sym, val, { sl: parseFloat(rules.sl.value), tp: parseFloat(rules.tp.value) });
-      } else {
-        if (!h) return toast("You do not hold any " + sym);
-        var q = Math.min(h.q, val / S.prices[sym]);
-        if (lot) sellFrom([lot], q);
-        else sell(sym, q);
-      }
-      inp.value = "";
-      updateSummary();
-    });
-    b.appendChild(go2);
-    if (lot) {
-      var hd = el("h2", "sec", "Automatic exit");
-      hd.style.marginTop = "18px";
-      b.appendChild(hd);
-      var ex = exitInputs(lot.p, lot.sl, lot.tp);
-      b.appendChild(ex.box);
-      var sv = el("button", "btn ghost", "Save exit rules");
-      sv.style.marginTop = "9px";
-      sv.addEventListener("click", function() {
-        var a = parseFloat(ex.sl.value), z = parseFloat(ex.tp.value);
-        lot.sl = a > 0 && a < 100 ? lot.p * (1 - a / 100) : 0;
-        lot.tp = z > 0 ? lot.p * (1 + z / 100) : 0;
-        save();
-        toast(lot.sl || lot.tp ? "Exit rules saved" : "Exit rules cleared");
-        paint({});
-        paintCoinSheet();
-      });
-      b.appendChild(sv);
-      var all = el("button", "btn ghost", "All " + sym + " trades");
-      all.style.marginTop = "9px";
-      all.addEventListener("click", function() {
-        renderCoinSheet(sym, "sell");
-      });
-      b.appendChild(all);
-    } else {
-      var mine = lotsOf(sym);
-      if (mine.length) {
-        var th = el("h2", "sec", "Your " + sym + " trades");
-        th.style.marginTop = "18px";
-        b.appendChild(th);
-        if (sheetCtx.side === "sell" && mine.length > 1) {
-          var fifo = el("p", "note", "Selling here takes from your oldest trade first. Open a trade to sell it on its own or set its exit rules.");
-          fifo.style.margin = "0 0 8px";
-          b.appendChild(fifo);
-        }
-        var TL = el("div", "list");
-        mine.forEach(function(l) {
-          TL.appendChild(lotRow(l, function() {
-            renderCoinSheet(sym, "sell", false, l.id);
-          }));
-        });
-        b.appendChild(TL);
-      }
-    }
-    var cl = el("button", "btn ghost", "Close");
-    cl.style.marginTop = "9px";
-    cl.addEventListener("click", closeSheet);
-    b.appendChild(cl);
-    sheetCtx.nodes = { price: pv, chg: ch, canvas: cv, sum: sumWrap, input: inp, update: updateSummary };
-    inp.addEventListener("input", updateSummary);
-    updateSummary();
-    paintCoinSheet();
-    openSheet();
-    function updateSummary() {
-      var val = parseFloat(inp.value) || 0;
-      var p = S.prices[sym];
-      sumWrap.textContent = "";
-      var rows = [];
-      if (sheetCtx.side === "buy") {
-        var fee = val * S.fee, q = (val - fee) / p;
-        rows.push(["You receive", qtyStr(Math.max(0, q)) + " " + sym]);
-        rows.push(["Fee (" + feePct() + ")", moneyFull(fee)]);
-        rows.push(["Cash after", moneyFull(S.cash - val)]);
-      } else {
-        var q2 = Math.min(h ? h.q : 0, val / p);
-        var gross = q2 * p, fee2 = gross * S.fee;
-        rows.push(["You sell", qtyStr(q2) + " " + sym]);
-        rows.push(["Fee (" + feePct() + ")", moneyFull(fee2)]);
-        if (h) {
-          var pr = gross - fee2 - costOf(lot ? [lot] : lotsOf(sym), q2);
-          rows.push(["Profit on this sale", moneyFull(pr), q2 > 0 ? cls(pr) : null]);
-        }
-      }
-      rows.forEach(function(r) {
-        var k = el("div", "kv");
-        k.appendChild(el("span", null, r[0]));
-        k.appendChild(el("b", r[2] || null, r[1]));
-        sumWrap.appendChild(k);
-      });
-      var avail = el("div", "kv");
-      avail.appendChild(el("span", null, sheetCtx.side === "buy" ? "Available cash" : lot ? "Trade value" : "Position value"));
-      avail.appendChild(el("b", null, moneyFull(maxUsdNow())));
-      sumWrap.appendChild(avail);
-    }
-  }
-  function paintCoinSheet() {
-    if (!sheetCtx || sheetCtx.kind !== "coin") return;
-    var sym = sheetCtx.sym, n = sheetCtx.nodes;
-    n.price.textContent = priceStr(S.prices[sym]);
-    var d = dayChange(sym), gone = noLive(sym);
-    n.chg.textContent = gone ? "No live price" : pctStr(d) + " today";
-    n.chg.className = gone ? "flat" : cls(d);
-    var mine = lotsOf(sym), marks = [];
-    var one = sheetCtx.lot && lotById(sheetCtx.lot) || (mine.length === 1 ? mine[0] : null);
-    if (one) {
-      marks.push({ v: one.p, label: "entry", token: "--crt-text", dash: [5, 4] });
-      if (one.sl) marks.push({ v: one.sl, label: "stop", token: "--crt-down", dash: [3, 3] });
-      if (one.tp) marks.push({ v: one.tp, label: "target", token: "--crt-up", dash: [3, 3] });
-    } else if (mine.length) {
-      marks.push({ v: position(sym).avg, label: "avg entry", token: "--crt-text", dash: [5, 4] });
-    }
-    drawChart(n.canvas, S.hist[sym], d >= 0, marks);
-    if (n.update) n.update();
-  }
+
+  // src/ui/chart.js
   function drawChart(cv, hist, up, marks) {
     var dpr = window.devicePixelRatio || 1;
     var w = cv.clientWidth, hh = cv.clientHeight;
@@ -2912,6 +1890,449 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     var r = parseInt(hex.slice(1, 3), 16), g2 = parseInt(hex.slice(3, 5), 16), b2 = parseInt(hex.slice(5, 7), 16);
     return "rgba(" + r + "," + g2 + "," + b2 + "," + a + ")";
   }
+
+  // src/ui/icons.js
+  var GLYPHS = {
+    styl1: '<path d="M3.5 15.5a7 7 0 0 1 14 0"/><path d="M3 15.5h12c3 0 5.5.8 6.5 2.3"/><path d="M8 9.5c1 1.5 1.5 3.5 1.5 6"/><circle cx="10.5" cy="8" r=".9" fill="currentColor" stroke="none"/>',
+    desk1: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 19h19"/>',
+    ride1: '<circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M8 17.5h8.5"/><path d="M18.5 17.5L15 5h-2.5"/>',
+    desk2: '<rect x="2.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="12.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="2.5" y="11" width="9" height="6.5" rx="1"/><rect x="12.5" y="11" width="9" height="6.5" rx="1"/><path d="M12 17.5v3M8.5 20.5h7"/>',
+    styl2: '<path d="M2.5 9h19"/><path d="M3.5 9l.8 5a2.5 2.5 0 0 0 2.5 2h1.4a2.5 2.5 0 0 0 2.4-1.8L11.2 9"/><path d="M20.5 9l-.8 5a2.5 2.5 0 0 1-2.5 2h-1.4a2.5 2.5 0 0 1-2.4-1.8L12.8 9"/>',
+    home1: '<path d="M2.5 20.5h19"/><path d="M4.5 20.5L12 4.5l7.5 16"/><path d="M10 20.5v-5h4v5"/>',
+    ride2: '<path d="M2.5 16v-3.2L5 7.5h9.5l4 4.5 2.5.7V16"/><path d="M3 12h15.5"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/>',
+    desk3: '<rect x="7" y="3" width="10" height="8.5" rx="2"/><path d="M12 11.5v2M5.5 13.5h13M12 13.5v5M6.5 21.5l5.5-3 5.5 3"/>',
+    styl3: '<circle cx="12" cy="12" r="5.5"/><path d="M9 7l.7-4h4.6l.7 4M9 17l.7 4h4.6l.7-4"/><path d="M12 9.5V12l1.7 1.2"/>',
+    home2: '<path d="M3 20.5V9.5l4.5-4.5 4.5 4.5 4.5-4.5 4.5 4.5v11"/><path d="M12 9.5v11M2 20.5h20"/><path d="M6 20.5v-4h3v4M15 20.5v-4h3v4"/>',
+    desk4: '<path d="M4.5 8.5a10 10 0 0 0 11 11z"/><path d="M10 14l4-4"/><circle cx="15" cy="9" r="1.2"/><path d="M16 3.5a4.5 4.5 0 0 1 4.5 4.5"/><path d="M8 18.5l-2 3h6"/>',
+    ride3: '<path d="M2 16.5v-2.7l5-1.3 3.5-3h4.5l5 3.7 2 .6v2.7"/><path d="M2.5 9.5h3.5M4.2 9.5v3.5"/><circle cx="6.5" cy="16.5" r="2"/><circle cx="17.5" cy="16.5" r="2"/><path d="M8.5 16.5h7"/>',
+    styl4: '<circle cx="12" cy="14.5" r="6"/><rect x="9" y="4" width="6" height="4.5" rx="1.2"/>',
+    home3: '<path d="M3 20.5h18"/><rect x="6" y="7" width="12" height="13.5"/><path d="M8.5 7V4h7v3"/><path d="M9 11h1.5M13.5 11H15M9 14.5h1.5M13.5 14.5H15"/><path d="M11 20.5v-3h2v3"/>',
+    ride4: '<path d="M11.5 3v13"/><path d="M11.5 4l7 11h-7"/><path d="M9.5 6.5L5 15h4.5"/><path d="M3 17.5h18l-2.5 3h-13z"/>',
+    styl5: '<path d="M3.5 17.5l-1-10 5 4 4.5-6.5 4.5 6.5 5-4-1 10z"/><path d="M4 20.5h16"/>',
+    home4: '<path d="M5 19a7 3.5 0 0 1 14 0"/><path d="M2.5 21.5h19"/><path d="M12 16.5c.5-3.5-.3-6.5-2-9.5"/><path d="M10 7c-2-1.5-5-1-6.5 1M10 7c1.5-2 4.5-2.5 6.5-1M10 7c2.5 0 4.5 1.5 5 4M10 7c-2 .5-3.5 2-4 4"/>',
+    ride5: '<path d="M12 2.5c1 0 1.5 1.5 1.5 3v4l7.5 4.5v2l-7.5-2.2v4.2l2.5 2v1.5l-4-1-4 1V18l2.5-2v-4.2L3 16v-2l7.5-4.5v-4c0-1.5.5-3 1.5-3z"/>',
+    diamond: '<path d="M6.5 4h11l4 5-9.5 11L2.5 9z"/><path d="M2.5 9h19M9 4L7.5 9 12 20l4.5-11L15 4"/>',
+    worried: '<circle cx="12" cy="12" r="9"/><path d="M8.5 16.5c1-1.2 2.2-1.8 3.5-1.8s2.5.6 3.5 1.8"/><path d="M7.5 8.5l2.5-1M16.5 8.5l-2.5-1"/><g fill="currentColor" stroke="none"><circle cx="9" cy="11.5" r="1"/><circle cx="15" cy="11.5" r="1"/></g>',
+    whale: '<path d="M2.5 14c0-3.3 2.7-5.5 6.5-5.5 3.8 0 6 2 8.3 4.3L19 9.5l1.5-.5.5 1.5-2 3.5c-1.5 3.5-5 5.5-9.5 5.5-4.2 0-7-2.2-7-5.5z"/><path d="M9 6V3.5M9 3.5c-1-.8-2-.8-3 0M9 3.5c1-.8 2-.8 3 0"/><circle cx="6.5" cy="13" r="1" fill="currentColor" stroke="none"/>',
+    bolt: '<path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/>',
+    rocket: '<path d="M12 2.5c3 2 4.5 5.5 4.5 9.5v4h-9v-4c0-4 1.5-7.5 4.5-9.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M7.5 12.5l-3 3v3l3-1.5M16.5 12.5l3 3v3l-3-1.5M10 19.5l2 2 2-2"/>',
+    bag: '<path d="M4.5 9h15L18 20.5H6z"/><path d="M8 9c0-3 1.5-5 4-5s4 2 4 5"/><path d="M12 12.5v5M9.8 15.3l2.2 2.2 2.2-2.2"/>',
+    sideways: '<path d="M3 12h18M6.5 8.5L3 12l3.5 3.5M17.5 8.5L21 12l-3.5 3.5"/>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/><circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/></g>',
+    contra: '<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
+    rug: '<rect x="2.5" y="7" width="12.5" height="10" rx="1"/><path d="M5 10.5h7.5M5 13.5h7.5"/><path d="M15 12h6.5M19 9.5l2.5 2.5-2.5 2.5"/>',
+    cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+    you: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.5-4 3.5-6.5 7.5-6.5s7 2.5 7.5 6.5"/>'
+  };
+  function glyph(key, cls2) {
+    var i = el("i", cls2 || "gl");
+    i.setAttribute("aria-hidden", "true");
+    i.innerHTML = ICON(GLYPHS[key] || GLYPHS.you);
+    return i;
+  }
+  var ICON = function(d) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>";
+  };
+
+  // src/ui/view.js
+  var view = {
+    tab: "market",
+    /* the open tab */
+    sheetCtx: null,
+    /* the open sheet and what it shows, or null */
+    refs: {}
+    /* nodes the current tab paints every tick */
+  };
+
+  // src/ui/tabs.js
+  function checkQuests() {
+    paintTabExtras();
+  }
+  function claimAll() {
+    var idx = readyQuests(), total = 0;
+    if (!idx.length) return;
+    idx.forEach(function(i) {
+      total += claimQuest(i);
+    });
+    save();
+    go("quests");
+    toast("Claimed " + money(total) + (idx.length > 1 ? " from " + idx.length + " quests" : ""));
+  }
+  var TABS = [
+    {
+      id: "market",
+      n: "Market",
+      ic: ICON('<path d="M4 4v16h16"/><path d="M7.5 15l3.5-4 3 2.5 5-6.5"/>'),
+      on: ICON('<path d="M4 4v16h16"/><path d="M7.5 15l3.5-4 3 2.5 5-6.5V20H7.5z" fill="currentColor"/>')
+    },
+    {
+      id: "wallet",
+      n: "Wallet",
+      ic: ICON('<rect x="3" y="6.5" width="18" height="13" rx="2.5"/><path d="M3 10.5h18M15.5 15h2.5"/><path d="M6 6.5l8.5-3 1.2 3"/>'),
+      on: ICON('<path d="M6 6.5l8.5-3 1.2 3"/><rect x="3" y="6.5" width="18" height="13" rx="2.5" fill="currentColor"/><path class="ko" d="M4.6 10.5h14.8M15.5 15h2.5"/>')
+    },
+    {
+      id: "quests",
+      n: "Quests",
+      ic: ICON('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+      on: ICON('<circle cx="12" cy="12" r="8.5" fill="currentColor"/><circle class="ko" cx="12" cy="12" r="4.5"/><circle class="kof" cx="12" cy="12" r="1.3"/>')
+    },
+    {
+      id: "shop",
+      n: "Shop",
+      ic: ICON('<path d="M5 8.5h14l-1.2 11.5H6.2z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>'),
+      on: ICON('<path d="M5 8.5h14l-1.2 11.5H6.2z" fill="currentColor"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>')
+    },
+    {
+      id: "ranks",
+      n: "Ranks",
+      ic: ICON('<path d="M3 20.5h18"/><path d="M4.5 20.5v-5h4.5v5M9.8 20.5V9h4.4v11.5M15 20.5v-7.5h4.5v7.5"/>'),
+      on: ICON('<path d="M3 20.5h18"/><g fill="currentColor" stroke="none"><rect x="3.5" y="14.5" width="5.2" height="6" rx="1"/><rect x="9.4" y="8" width="5.2" height="12.5" rx="1"/><rect x="15.3" y="12" width="5.2" height="8.5" rx="1"/></g>')
+    }
+  ];
+  var newsDot = false;
+  var walletDot = false;
+  var lastReady = -1;
+  function flagWallet() {
+    if (view.tab !== "wallet") {
+      walletDot = true;
+      buildTabs();
+    }
+  }
+  function flagNews() {
+    if (view.tab !== "market") {
+      newsDot = true;
+      buildTabs();
+    }
+  }
+  function buildTabs() {
+    var nav = $("#tabs");
+    nav.textContent = "";
+    TABS.forEach(function(t) {
+      var b = el("button");
+      b.dataset.tab = t.id;
+      if (view.tab === t.id) b.setAttribute("aria-current", "page");
+      var i = el("i");
+      i.innerHTML = view.tab === t.id ? t.on : t.ic;
+      i.setAttribute("aria-hidden", "true");
+      b.appendChild(i);
+      b.appendChild(el("span", null, t.n));
+      if (t.id === "market" && newsDot || t.id === "wallet" && walletDot) b.appendChild(el("span", "dot"));
+      if (t.id === "quests") {
+        var n = readyQuests().length;
+        if (n) {
+          var bg = el("span", "badge", String(n));
+          bg.setAttribute("aria-hidden", "true");
+          b.appendChild(bg);
+          b.setAttribute("aria-label", "Quests, " + n + " reward" + (n > 1 ? "s" : "") + " ready");
+        }
+      }
+      b.addEventListener("click", function() {
+        go(t.id);
+      });
+      nav.appendChild(b);
+    });
+  }
+  function go(id) {
+    view.tab = id;
+    if (id === "market") newsDot = false;
+    if (id === "wallet") walletDot = false;
+    buildTabs();
+    render();
+    window.scrollTo(0, 0);
+  }
+  function paintTabExtras() {
+    var n = readyQuests().length;
+    if (n !== lastReady) {
+      lastReady = n;
+      buildTabs();
+    }
+    var a = $("#action"), show = n > 0 && view.tab !== "quests" && !view.sheetCtx;
+    if (show) {
+      var txt = "Claim " + n + " reward" + (n > 1 ? "s" : "");
+      if (a.textContent !== txt) a.textContent = txt;
+    }
+    if (a.hidden === show) a.hidden = !show;
+    document.body.classList.toggle("has-action", show);
+  }
+  $("#action").addEventListener("click", claimAll);
+
+  // src/ui/sheet.js
+  function openSheet() {
+    $("#sheet").classList.add("on");
+    $("#scrim").classList.add("on");
+    paintTabExtras();
+  }
+  function closeSheet() {
+    $("#sheet").classList.remove("on");
+    $("#scrim").classList.remove("on");
+    view.sheetCtx = null;
+    paintTabExtras();
+  }
+  $("#scrim").addEventListener("click", closeSheet);
+
+  // src/ui/sheets/coin.js
+  function dayOf(t) {
+    return Math.floor(t / TICKS_PER_DAY) + 1;
+  }
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function whenStr(x) {
+    if (!(x.live && x.at)) return "Day " + dayOf(x.t);
+    var d = new Date(x.at), now = new Date(Date.now());
+    var hm = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    return d.toDateString() === now.toDateString() ? hm : d.getDate() + " " + MONTHS[d.getMonth()] + " " + hm;
+  }
+  function lotRow(l, onClick) {
+    var p = S.prices[l.s], cost = l.q * (l.b || l.p), val = l.q * p, pnl = val - cost, pp = (val / cost - 1) * 100;
+    var r = el("button", "row lot");
+    r.dataset.lot = l.id;
+    var ic = el("div", "coin", l.s.slice(0, 4));
+    ic.style.background = BYSYM[l.s].c;
+    var nm = el("div", "nm");
+    nm.appendChild(el("b", null, l.s));
+    nm.appendChild(el("small", null, "Entry " + priceStr(l.p)));
+    nm.appendChild(el("small", null, whenStr(l) + (l.sl || l.tp ? ", exit set" : "")));
+    var v = el("div", "val");
+    v.appendChild(el("b", null, moneyFull(val)));
+    v.appendChild(el("small", cls(pnl), moneyFull(pnl) + "  " + pctStr(pp)));
+    r.appendChild(ic);
+    r.appendChild(nm);
+    r.appendChild(v);
+    r.addEventListener("click", onClick);
+    return r;
+  }
+  function exitInputs(entry, sl, tp) {
+    var pr = el("div", "protect");
+    var l1 = el("label");
+    l1.appendChild(document.createTextNode("Stop loss, % below entry"));
+    var i1 = el("input");
+    i1.type = "text";
+    i1.inputMode = "decimal";
+    i1.placeholder = "off";
+    if (sl && entry) i1.value = ((1 - sl / entry) * 100).toFixed(1);
+    l1.appendChild(i1);
+    var l2 = el("label");
+    l2.appendChild(document.createTextNode("Take profit, % above entry"));
+    var i2 = el("input");
+    i2.type = "text";
+    i2.inputMode = "decimal";
+    i2.placeholder = "off";
+    if (tp && entry) i2.value = ((tp / entry - 1) * 100).toFixed(1);
+    l2.appendChild(i2);
+    pr.appendChild(l1);
+    pr.appendChild(l2);
+    var fn = el("p", "note", "Triggered by the price. The buy and sell fees come off the result, so a 2% target nets about " + (2 - 2 * S.fee * 100).toFixed(1) + "%.");
+    fn.style.margin = "6px 0 0";
+    var box = el("div");
+    box.appendChild(pr);
+    box.appendChild(fn);
+    return { box, sl: i1, tp: i2 };
+  }
+  function renderCoinSheet(sym, side, keepAmount, lotId) {
+    var lot = lotId ? lotById(lotId) : null;
+    view.sheetCtx = { kind: "coin", sym, side: lot ? "sell" : side || "buy", lot: lot ? lot.id : null };
+    var c = BYSYM[sym], h = lot ? { q: lot.q, avg: lot.p } : position(sym);
+    var b = $("#sheetBody");
+    b.textContent = "";
+    var head = el("div", "sheeth");
+    var ic = el("div", "coin", sym.slice(0, 4));
+    ic.style.background = c.c;
+    var nm = el("div", "nm");
+    nm.appendChild(el("b", null, c.n));
+    nm.appendChild(el("small", null, lot ? "Bought " + (lot.live && lot.at ? whenStr(lot) : "on " + whenStr(lot).toLowerCase()) + " at " + priceStr(lot.p) + ", typical day ±" + (c.dv * 100).toFixed(1) + "%" : sym + ", typical day ±" + (c.dv * 100).toFixed(1) + "%"));
+    var v = el("div", "val");
+    var pv = el("b");
+    var ch = el("small");
+    v.appendChild(pv);
+    v.appendChild(ch);
+    head.appendChild(ic);
+    head.appendChild(nm);
+    head.appendChild(v);
+    b.appendChild(head);
+    var crt = el("div", "crt");
+    var cv = el("canvas");
+    cv.id = "chart";
+    crt.appendChild(cv);
+    b.appendChild(crt);
+    if (noLive(sym)) {
+      var nl = el("p", "note nolive", view.sheetCtx.side === "buy" ? "No live price for " + sym + " from " + (Feed.provider === "gecko" ? "CoinGecko" : "Binance") + " right now, so it cannot be bought. The price shown is the last one the game had." : "No live price for " + sym + " right now. Selling uses the last price the game had, and exit rules wait for a live one.");
+      nl.style.margin = "10px 0 0";
+      b.appendChild(nl);
+    }
+    var seg = el("div", "seg");
+    var bb = el("button", null, "Buy"), sb = el("button", null, "Sell");
+    bb.setAttribute("aria-pressed", view.sheetCtx.side === "buy");
+    sb.setAttribute("aria-pressed", view.sheetCtx.side === "sell");
+    bb.addEventListener("click", function() {
+      renderCoinSheet(sym, "buy");
+    });
+    sb.addEventListener("click", function() {
+      renderCoinSheet(sym, "sell");
+    });
+    seg.appendChild(bb);
+    seg.appendChild(sb);
+    if (!lot) b.appendChild(seg);
+    function maxUsdNow() {
+      return view.sheetCtx.side === "buy" ? S.cash : h ? h.q * S.prices[sym] : 0;
+    }
+    var amt = el("div", "amt");
+    amt.appendChild(el("span", null, "$"));
+    var inp = el("input");
+    inp.type = "text";
+    inp.inputMode = "decimal";
+    inp.placeholder = "0.00";
+    inp.setAttribute("aria-label", "Amount in dollars");
+    amt.appendChild(inp);
+    b.appendChild(amt);
+    var chips = el("div", "chips");
+    [[0.25, "25%"], [0.5, "50%"], [0.75, "75%"], [1, "Max"]].forEach(function(p) {
+      var cb = el("button", null, p[1]);
+      cb.addEventListener("click", function() {
+        inp.value = (Math.floor(maxUsdNow() * p[0] * 100) / 100).toFixed(2);
+        updateSummary();
+      });
+      chips.appendChild(cb);
+    });
+    b.appendChild(chips);
+    var rules = null;
+    if (view.sheetCtx.side === "buy") {
+      var rh = el("h2", "sec", "Automatic exit, optional");
+      rh.style.marginTop = "14px";
+      b.appendChild(rh);
+      rules = exitInputs(0, 0, 0);
+      b.appendChild(rules.box);
+    }
+    var sumWrap = el("div");
+    b.appendChild(sumWrap);
+    var go2 = el("button", "btn " + (view.sheetCtx.side === "buy" ? "buy" : "sell"));
+    go2.textContent = view.sheetCtx.side === "buy" ? "Buy " + sym : lot ? "Sell this trade" : "Sell " + sym;
+    if (view.sheetCtx.side === "buy" && noLive(sym)) go2.disabled = true;
+    go2.addEventListener("click", function() {
+      var val = parseFloat(inp.value);
+      if (!(val > 0)) return toast("Enter an amount first");
+      if (view.sheetCtx.side === "buy") {
+        if (val > S.cash + 5e-3) return toast("You only have " + moneyFull(S.cash) + " in cash");
+        if (val > S.cash - 0.01) val = S.cash;
+        buy(sym, val, { sl: parseFloat(rules.sl.value), tp: parseFloat(rules.tp.value) });
+      } else {
+        if (!h) return toast("You do not hold any " + sym);
+        var q = Math.min(h.q, val / S.prices[sym]);
+        if (lot) sellFrom([lot], q);
+        else sell(sym, q);
+      }
+      inp.value = "";
+      updateSummary();
+    });
+    b.appendChild(go2);
+    if (lot) {
+      var hd = el("h2", "sec", "Automatic exit");
+      hd.style.marginTop = "18px";
+      b.appendChild(hd);
+      var ex = exitInputs(lot.p, lot.sl, lot.tp);
+      b.appendChild(ex.box);
+      var sv = el("button", "btn ghost", "Save exit rules");
+      sv.style.marginTop = "9px";
+      sv.addEventListener("click", function() {
+        var a = parseFloat(ex.sl.value), z = parseFloat(ex.tp.value);
+        lot.sl = a > 0 && a < 100 ? lot.p * (1 - a / 100) : 0;
+        lot.tp = z > 0 ? lot.p * (1 + z / 100) : 0;
+        save();
+        toast(lot.sl || lot.tp ? "Exit rules saved" : "Exit rules cleared");
+        paint({});
+        paintCoinSheet();
+      });
+      b.appendChild(sv);
+      var all = el("button", "btn ghost", "All " + sym + " trades");
+      all.style.marginTop = "9px";
+      all.addEventListener("click", function() {
+        renderCoinSheet(sym, "sell");
+      });
+      b.appendChild(all);
+    } else {
+      var mine = lotsOf(sym);
+      if (mine.length) {
+        var th = el("h2", "sec", "Your " + sym + " trades");
+        th.style.marginTop = "18px";
+        b.appendChild(th);
+        if (view.sheetCtx.side === "sell" && mine.length > 1) {
+          var fifo = el("p", "note", "Selling here takes from your oldest trade first. Open a trade to sell it on its own or set its exit rules.");
+          fifo.style.margin = "0 0 8px";
+          b.appendChild(fifo);
+        }
+        var TL = el("div", "list");
+        mine.forEach(function(l) {
+          TL.appendChild(lotRow(l, function() {
+            renderCoinSheet(sym, "sell", false, l.id);
+          }));
+        });
+        b.appendChild(TL);
+      }
+    }
+    var cl = el("button", "btn ghost", "Close");
+    cl.style.marginTop = "9px";
+    cl.addEventListener("click", closeSheet);
+    b.appendChild(cl);
+    view.sheetCtx.nodes = { price: pv, chg: ch, canvas: cv, sum: sumWrap, input: inp, update: updateSummary };
+    inp.addEventListener("input", updateSummary);
+    updateSummary();
+    paintCoinSheet();
+    openSheet();
+    function updateSummary() {
+      var val = parseFloat(inp.value) || 0;
+      var p = S.prices[sym];
+      sumWrap.textContent = "";
+      var rows = [];
+      if (view.sheetCtx.side === "buy") {
+        var fee = val * S.fee, q = (val - fee) / p;
+        rows.push(["You receive", qtyStr(Math.max(0, q)) + " " + sym]);
+        rows.push(["Fee (" + feePct() + ")", moneyFull(fee)]);
+        rows.push(["Cash after", moneyFull(S.cash - val)]);
+      } else {
+        var q2 = Math.min(h ? h.q : 0, val / p);
+        var gross = q2 * p, fee2 = gross * S.fee;
+        rows.push(["You sell", qtyStr(q2) + " " + sym]);
+        rows.push(["Fee (" + feePct() + ")", moneyFull(fee2)]);
+        if (h) {
+          var pr = gross - fee2 - costOf(lot ? [lot] : lotsOf(sym), q2);
+          rows.push(["Profit on this sale", moneyFull(pr), q2 > 0 ? cls(pr) : null]);
+        }
+      }
+      rows.forEach(function(r) {
+        var k = el("div", "kv");
+        k.appendChild(el("span", null, r[0]));
+        k.appendChild(el("b", r[2] || null, r[1]));
+        sumWrap.appendChild(k);
+      });
+      var avail = el("div", "kv");
+      avail.appendChild(el("span", null, view.sheetCtx.side === "buy" ? "Available cash" : lot ? "Trade value" : "Position value"));
+      avail.appendChild(el("b", null, moneyFull(maxUsdNow())));
+      sumWrap.appendChild(avail);
+    }
+  }
+  function paintCoinSheet() {
+    if (!view.sheetCtx || view.sheetCtx.kind !== "coin") return;
+    var sym = view.sheetCtx.sym, n = view.sheetCtx.nodes;
+    n.price.textContent = priceStr(S.prices[sym]);
+    var d = dayChange(sym), gone = noLive(sym);
+    n.chg.textContent = gone ? "No live price" : pctStr(d) + " today";
+    n.chg.className = gone ? "flat" : cls(d);
+    var mine = lotsOf(sym), marks = [];
+    var one = view.sheetCtx.lot && lotById(view.sheetCtx.lot) || (mine.length === 1 ? mine[0] : null);
+    if (one) {
+      marks.push({ v: one.p, label: "entry", token: "--crt-text", dash: [5, 4] });
+      if (one.sl) marks.push({ v: one.sl, label: "stop", token: "--crt-down", dash: [3, 3] });
+      if (one.tp) marks.push({ v: one.tp, label: "target", token: "--crt-up", dash: [3, 3] });
+    } else if (mine.length) {
+      marks.push({ v: position(sym).avg, label: "avg entry", token: "--crt-text", dash: [5, 4] });
+    }
+    drawChart(n.canvas, S.hist[sym], d >= 0, marks);
+    if (n.update) n.update();
+  }
+  window.addEventListener("resize", function() {
+    if (view.sheetCtx && view.sheetCtx.kind === "coin") paintCoinSheet();
+  });
+
+  // src/ui/sheets/intro.js
   var INTRO = [
     {
       t: "You have $3,000 of play money",
@@ -2934,21 +2355,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
   ];
   function introSeen() {
-    try {
-      return localStorage.getItem("pw.intro") === "1";
-    } catch (e) {
-      return true;
-    }
+    return getItem("pw.intro", "1") === "1";
   }
   function markIntro() {
-    try {
-      localStorage.setItem("pw.intro", "1");
-    } catch (e) {
-    }
+    setItem("pw.intro", "1");
   }
   function renderIntro(i) {
     i = i || 0;
-    sheetCtx = { kind: "intro", step: i };
+    view.sheetCtx = { kind: "intro", step: i };
     var st = INTRO[i], b = $("#sheetBody");
     b.textContent = "";
     var head = el("div", "sheeth");
@@ -3000,8 +2414,30 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
     openSheet();
   }
+
+  // src/platform/clock.js
+  var timer = null;
+  function startClock() {
+    if (timer) clearInterval(timer);
+    if (!S.speed) return;
+    timer = setInterval(step, Math.round(1e3 / S.speed));
+  }
+  document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+      if (timer) clearInterval(timer);
+      timer = null;
+      Feed.stop();
+      save();
+    } else {
+      startClock();
+      Feed.start();
+    }
+  });
+
+  // src/ui/sheets/settings.js
+  var PRIVACY_URL = "https://ilya-paskhover.github.io/shallow-whale/privacy.html";
   function renderSettings() {
-    sheetCtx = { kind: "settings" };
+    view.sheetCtx = { kind: "settings" };
     var b = $("#sheetBody");
     b.textContent = "";
     var head = el("div", "sheeth");
@@ -3014,19 +2450,12 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       op.value = o[0];
       th.appendChild(op);
     });
-    var cur = "system";
-    try {
-      cur = localStorage.getItem("pw.theme") || "system";
-    } catch (e) {
-    }
+    var cur = getItem("pw.theme", null) || "system";
     th.value = cur;
     th.addEventListener("change", function() {
       if (th.value === "system") document.documentElement.removeAttribute("data-theme");
       else document.documentElement.setAttribute("data-theme", th.value);
-      try {
-        localStorage.setItem("pw.theme", th.value);
-      } catch (e) {
-      }
+      setItem("pw.theme", th.value);
       paint({});
     });
     b.appendChild(th);
@@ -3114,7 +2543,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       try {
         var o = JSON.parse(ta.value);
         if (!o || o.v !== 1) throw new Error("bad");
-        localStorage.setItem(SAVE_KEY, JSON.stringify(o));
+        if (!setItem(SAVE_KEY, JSON.stringify(o))) throw new Error("storage");
         setState(load() || freshState(Feed.mode === "live"));
         closeSheet();
         render();
@@ -3146,14 +2575,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         }, 4e3);
         return;
       }
-      try {
-        localStorage.removeItem(SAVE_KEY);
-      } catch (e) {
-      }
-      try {
-        localStorage.removeItem("pw.intro");
-      } catch (e) {
-      }
+      removeItem(SAVE_KEY);
+      removeItem("pw.intro");
       setState(freshState(Feed.mode === "live"));
       save();
       closeSheet();
@@ -3161,7 +2584,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.10.3");
+    var ver = el("p", "note", "Shallow Whale 1.10.4");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3183,40 +2606,662 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     openSheet();
   }
   $("#btnSettings").addEventListener("click", renderSettings);
-  function startClock() {
-    if (timer) clearInterval(timer);
-    if (!S.speed) return;
-    timer = setInterval(step, Math.round(1e3 / S.speed));
+
+  // src/ui/screens/market.js
+  function renderMarket(m) {
+    var vn = el("p", "listnote");
+    vn.hidden = true;
+    view.refs._volnote = vn;
+    m.appendChild(vn);
+    var list = el("div", "list");
+    var order = marketOrder();
+    view.refs._order = order.join();
+    order.forEach(function(sym) {
+      var c = BYSYM[sym];
+      var r = el("button", "row");
+      r.dataset.sym = c.s;
+      var ic = el("div", "coin", c.s.slice(0, 4));
+      ic.style.background = c.c;
+      var nm = el("div", "nm");
+      var b = el("b", null, c.s);
+      var sm = el("small", null, c.n);
+      var vl = el("span", "vol");
+      b.appendChild(vl);
+      nm.appendChild(b);
+      nm.appendChild(sm);
+      var sp = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      sp.setAttribute("class", "spark");
+      sp.setAttribute("viewBox", "0 0 52 22");
+      sp.setAttribute("preserveAspectRatio", "none");
+      var pl = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      pl.setAttribute("fill", "none");
+      pl.setAttribute("stroke-width", "1.6");
+      pl.setAttribute("stroke-linejoin", "round");
+      sp.appendChild(pl);
+      var v = el("div", "val");
+      var pv = el("b");
+      var ch = el("small");
+      v.appendChild(pv);
+      v.appendChild(ch);
+      r.appendChild(ic);
+      r.appendChild(nm);
+      r.appendChild(sp);
+      r.appendChild(v);
+      r.addEventListener("click", function() {
+        renderCoinSheet(c.s, "buy");
+      });
+      list.appendChild(r);
+      view.refs[c.s] = { row: r, price: pv, chg: ch, line: pl, vol: vl, last: S.prices[c.s] };
+    });
+    m.appendChild(list);
+    var src = el("div", "srcline");
+    view.refs._src = src;
+    src.appendChild(el("i"));
+    src.appendChild(el("span"));
+    src.addEventListener("click", function(e) {
+      if (e.target.tagName !== "A") renderSettings();
+    });
+    m.appendChild(src);
+    var attr = el("a", "attrib", "Data provided by CoinGecko");
+    attr.href = "https://www.coingecko.com/en/api";
+    attr.target = "_blank";
+    attr.rel = "noopener";
+    attr.hidden = true;
+    view.refs._attr = attr;
+    m.appendChild(attr);
+    m.appendChild(el("h2", "sec", "Headlines"));
+    var nl = el("div", "list");
+    view.refs._news = nl;
+    m.appendChild(nl);
+    paintNews();
   }
-  document.addEventListener("visibilitychange", function() {
-    if (document.hidden) {
-      if (timer) clearInterval(timer);
-      timer = null;
-      Feed.stop();
-      save();
-    } else {
-      startClock();
-      Feed.start();
+  function paintNews() {
+    var nl = view.refs._news;
+    if (!nl) return;
+    var sig = S.news.length ? S.news.length + ":" + S.news[0].t : "0";
+    if (nl._sig === sig) return;
+    nl._sig = sig;
+    nl.textContent = "";
+    if (!S.news.length) {
+      nl.appendChild(el("div", "empty", "Quiet so far."));
+      return;
     }
-  });
-  window.addEventListener("resize", function() {
-    if (sheetCtx && sheetCtx.kind === "coin") paintCoinSheet();
-  });
+    S.news.slice(0, 8).forEach(function(n) {
+      var d = el("div", "news");
+      var day = Math.floor(n.t / TICKS_PER_DAY) + 1;
+      d.appendChild(el("em", null, "Day " + day + (n.s ? ", " + n.s : "")));
+      d.appendChild(document.createTextNode(n.x));
+      nl.appendChild(d);
+    });
+  }
+
+  // src/ui/screens/quests.js
+  function whenAgo(at) {
+    var s = Math.max(0, (Date.now() - (at || 0)) / 1e3);
+    if (!at || !isFinite(s)) return "Earlier";
+    if (s < 60) return "Just now";
+    if (s < 3600) return Math.floor(s / 60) + " min ago";
+    if (s < 86400) return Math.floor(s / 3600) + " h ago";
+    var d = Math.floor(s / 86400);
+    return d === 1 ? "Yesterday" : d + " days ago";
+  }
+  function renderQuests(m) {
+    var c = el("div", "card");
+    c.style.padding = "13px";
+    var top = el("div");
+    top.style.cssText = "display:flex;justify-content:space-between;align-items:baseline";
+    top.appendChild(el("b", null, "Level " + S.level + ", " + title().toLowerCase()));
+    var xt = el("span");
+    xt.style.cssText = "font-size:12px;color:var(--faint)";
+    xt.textContent = S.xp + " / " + xpNeeded(S.level) + " XP";
+    top.appendChild(xt);
+    c.appendChild(top);
+    var bar = el("div", "bar");
+    bar.style.marginTop = "9px";
+    var fill = el("i");
+    fill.style.width = 100 * S.xp / xpNeeded(S.level) + "%";
+    bar.appendChild(fill);
+    c.appendChild(bar);
+    m.appendChild(c);
+    m.appendChild(el("h2", "sec", "Active quests"));
+    var L = el("div", "list");
+    view.refs._q = [];
+    S.quests.forEach(function(q, idx) {
+      var d = el("div", "quest");
+      var qh = el("div", "qh");
+      qh.appendChild(el("b", null, q.txt));
+      qh.appendChild(el("div", "rw", "+" + money(q.reward) + " and " + q.xp + " XP"));
+      d.appendChild(qh);
+      var qm = el("div", "qm");
+      var lbl = el("span"), pc = el("span");
+      qm.appendChild(lbl);
+      qm.appendChild(pc);
+      d.appendChild(qm);
+      var bar2 = el("div", "bar");
+      var f2 = el("i");
+      bar2.appendChild(f2);
+      d.appendChild(bar2);
+      var hint = null;
+      if (q.t === "dip") {
+        hint = el("p", "note");
+        hint.style.margin = "7px 0 0";
+        d.appendChild(hint);
+      } else if (q.live && isDayQuest(q)) {
+        var slow = el("p", "note", "With live prices this usually takes a day or more. Keep it for a later visit, or swap it.");
+        slow.className = "note dayhint";
+        slow.style.margin = "7px 0 0";
+        d.appendChild(slow);
+      }
+      var slot = el("div");
+      d.appendChild(slot);
+      L.appendChild(d);
+      view.refs._q.push({ q, idx, lbl, pc, fill: f2, slot, hint, mode: null });
+    });
+    m.appendChild(L);
+    paintQuests();
+    var note = el("p", "note");
+    note.textContent = "Quests refresh as you finish them, or swap one you do not want for half its reward. Rewards are play money, and nothing here costs anything real.";
+    note.style.marginTop = "12px";
+    m.appendChild(note);
+    var hh = el("h2", "sec", "Completed");
+    hh.style.marginTop = "18px";
+    m.appendChild(hh);
+    if (!S.questLog.length && !S.questSwaps) {
+      m.appendChild(el("p", "note", "Claimed quests show up here."));
+      return;
+    }
+    var tot = el("p", "note");
+    tot.id = "questTotals";
+    tot.style.margin = "0 0 8px";
+    tot.textContent = S.questDone + (S.questDone === 1 ? " quest" : " quests") + " completed, " + money(S.questEarned) + " earned in rewards." + (S.questSwaps ? " " + S.questSwaps + (S.questSwaps === 1 ? " swap" : " swaps") + ", " + money(S.swapSpent) + " spent on swapping." : "");
+    m.appendChild(tot);
+    renderQuestStats(m);
+    if (!S.questLog.length) return;
+    var H = el("div", "list");
+    H.id = "questLog";
+    H.style.marginTop = "12px";
+    S.questLog.forEach(function(e) {
+      var d = el("div", "quest");
+      var qh = el("div", "qh");
+      qh.appendChild(el("b", null, e.txt));
+      qh.appendChild(el("div", "rw", "+" + money(e.reward) + " and " + e.xp + " XP"));
+      d.appendChild(qh);
+      var qm = el("div", "qm");
+      qm.style.marginBottom = "0";
+      qm.appendChild(el("span", null, whenAgo(e.at)));
+      qm.appendChild(el("span", null, e.live ? "Live prices" : "Simulator"));
+      d.appendChild(qm);
+      H.appendChild(d);
+    });
+    m.appendChild(H);
+  }
+  function durStr(ms) {
+    var mn = ms / 6e4;
+    if (mn < 1) return "under a minute";
+    if (mn < 90) return Math.round(mn) + " min";
+    if (mn < 48 * 60) return Math.round(mn / 60) + " h";
+    return Math.round(mn / 1440) + " days";
+  }
+  function renderQuestStats(m) {
+    var keys = Object.keys(S.questStats).filter(function(k) {
+      var e = S.questStats[k];
+      return e.done || e.swap;
+    });
+    if (!keys.length) return;
+    keys.sort(function(a, b) {
+      var x = S.questStats[a], y = S.questStats[b];
+      return y.done + y.swap - (x.done + x.swap);
+    });
+    var L = el("div", "list");
+    L.id = "questStats";
+    keys.forEach(function(k) {
+      var e = S.questStats[k], mode = k.split(":")[0], def = QUEST_DEF[k.split(":")[1]];
+      var d = el("div", "quest");
+      var qh = el("div", "qh");
+      qh.appendChild(el("b", null, def.n));
+      qh.appendChild(el("div", "rw", e.done + " done, " + e.swap + " swapped"));
+      d.appendChild(qh);
+      var qm = el("div", "qm");
+      qm.style.marginBottom = "0";
+      qm.appendChild(el("span", null, mode === "live" ? "Live prices" : "Simulator"));
+      qm.appendChild(el("span", null, e.done ? durStr(e.ms / e.done) + " on average to finish" : "None finished yet"));
+      d.appendChild(qm);
+      L.appendChild(d);
+    });
+    m.appendChild(L);
+  }
+  function paintQuests() {
+    var arr = view.refs._q;
+    if (!arr) return;
+    arr.forEach(function(r) {
+      var q = r.q, prog = clamp(questProgress(q), 0, q.target);
+      r.lbl.textContent = (q.money ? money(prog) : Math.floor(prog)) + " of " + (q.money ? money(q.target) : q.target);
+      var frac = q.t === "nw" && q.base < q.target ? clamp((prog - q.base) / (q.target - q.base), 0, 1) : prog / q.target;
+      r.pc.textContent = Math.round(100 * frac) + "%";
+      r.fill.style.width = 100 * frac + "%";
+      if (r.hint) {
+        var bd = biggestDrop(), pct = q.own ? q.pct : 4;
+        r.hint.textContent = bd && bd.ch <= -pct ? bd.s + " is down " + Math.abs(bd.ch).toFixed(1) + "% today, so a buy counts now." : "Nothing is down " + pct + "% yet. The market list shows each coin's change today, or swap this quest below.";
+      }
+      var mode = prog >= q.target ? "claim" : "swap";
+      if (r.mode !== mode) {
+        r.mode = mode;
+        r.slot.textContent = "";
+        if (mode === "claim") {
+          var btn = el("button", "claim", "Claim reward");
+          btn.addEventListener("click", function() {
+            toast("Claimed " + money(claimQuest(r.idx)));
+            save();
+            render();
+          });
+          r.slot.appendChild(btn);
+        } else r.slot.appendChild(swapButton(r));
+      }
+    });
+  }
+  function swapButton(r) {
+    var fee = swapFee(r.q), idle = "Swap for " + money(fee);
+    var row = el("div", "swaprow"), b = el("button", "swap", idle);
+    b.type = "button";
+    b.addEventListener("click", function() {
+      if (!b.classList.contains("armed")) {
+        b.classList.add("armed");
+        b.textContent = "Tap again to pay " + money(fee);
+        clearTimeout(b._t);
+        b._t = setTimeout(function() {
+          b.classList.remove("armed");
+          b.textContent = idle;
+        }, 3e3);
+        return;
+      }
+      clearTimeout(b._t);
+      if (!swapQuest(r.idx)) {
+        b.classList.remove("armed");
+        b.textContent = idle;
+        toast("Not enough cash to swap. Sell something first.");
+        return;
+      }
+      save();
+      render();
+      toast("Swapped for " + money(fee));
+    });
+    row.appendChild(b);
+    return row;
+  }
+
+  // src/ui/screens/ranks.js
+  function renderRanks(m) {
+    var L = el("div", "list");
+    view.refs._rk = L;
+    m.appendChild(L);
+    var n = el("p", "note", "Rivals trade the same market you do, each with their own habits. Ranking is by net worth.");
+    n.style.marginTop = "12px";
+    m.appendChild(n);
+    paintRanks();
+  }
+  function paintRanks() {
+    var L = view.refs._rk;
+    if (!L) return;
+    var rows = S.bots.map(function(b) {
+      return { n: b.n, g: botGlyph(b.n), w: botWorth(b), me: false, style: b.style };
+    });
+    rows.push({ n: "You", g: "you", w: netWorth(), me: true, flex: flexPoints() });
+    rows.sort(function(a, b) {
+      return b.w - a.w;
+    });
+    L.textContent = "";
+    rows.forEach(function(r, i) {
+      var row = el("div", "row");
+      var rk = el("div", "coin", String(i + 1));
+      rk.style.background = r.me ? "var(--brass-solid)" : "var(--chip)";
+      rk.style.color = r.me ? "var(--on-brass)" : "var(--muted)";
+      var nm = el("div", "nm");
+      var who = el("b", "who");
+      who.appendChild(glyph(r.g));
+      who.appendChild(document.createTextNode(r.n));
+      nm.appendChild(who);
+      nm.appendChild(el("small", null, r.me ? title() + ", " + flexPoints() + " flex points" : styleLabel(r.style)));
+      var v = el("div", "val");
+      v.appendChild(el("b", null, money(r.w)));
+      row.appendChild(rk);
+      row.appendChild(nm);
+      row.appendChild(v);
+      if (r.me) row.style.background = "var(--panel2)";
+      L.appendChild(row);
+    });
+  }
+  function styleLabel(s) {
+    return {
+      hodl: "Buys and waits",
+      panic: "Sells at the first wobble",
+      momo: "Chases whatever is moving",
+      scalp: "In and out all day",
+      dca: "Buys a little, often",
+      contra: "Buys what everyone hates"
+    }[s] || "";
+  }
+
+  // src/ui/screens/shop.js
+  function renderShop(m) {
+    var c = el("div", "card");
+    c.style.padding = "13px";
+    var head = el("div");
+    head.style.cssText = "display:flex;justify-content:space-between;align-items:baseline";
+    head.appendChild(el("b", null, "Your flex score"));
+    head.appendChild(el("span", "pill", flexPoints() + " pts"));
+    c.appendChild(head);
+    var tc = el("div", "trophycase");
+    if (!S.owned.length) {
+      var p = el("p", "note", "Nothing bought yet. Items are cosmetic and add to your flex score.");
+      p.style.margin = "6px 0 0";
+      c.appendChild(p);
+    } else S.owned.forEach(function(id) {
+      var it = SHOP.filter(function(x) {
+        return x.id === id;
+      })[0];
+      if (it) {
+        var sp = el("span");
+        sp.title = it.n;
+        sp.appendChild(glyph(it.id));
+        tc.appendChild(sp);
+      }
+    });
+    c.appendChild(tc);
+    m.appendChild(c);
+    ["Desk", "Ride", "Home", "Style"].forEach(function(cat) {
+      m.appendChild(el("h2", "sec", cat));
+      var g = el("div", "grid");
+      SHOP.filter(function(i) {
+        return i.cat === cat;
+      }).forEach(function(i) {
+        var owned = S.owned.indexOf(i.id) >= 0;
+        var locked = S.level < i.lv;
+        var b = el("button", "item" + (owned ? " owned" : locked ? " locked" : ""));
+        b.appendChild(glyph(i.id, "ic"));
+        b.appendChild(el("b", null, i.n));
+        b.appendChild(el("small", null, owned ? "Owned" : locked ? "Level " + i.lv : money(i.p)));
+        if (!owned && !locked) {
+          b.addEventListener("click", function() {
+            if (S.cash < i.p) return toast("Not enough cash. You need " + money(i.p - S.cash) + " more.");
+            S.cash -= i.p;
+            S.owned.push(i.id);
+            addXP(30);
+            toast("Bought the " + i.n.toLowerCase());
+            save();
+            render();
+          });
+        } else if (locked) {
+          b.addEventListener("click", function() {
+            toast("Unlocks at level " + i.lv);
+          });
+        }
+        g.appendChild(b);
+      });
+      m.appendChild(g);
+    });
+    var n = el("p", "note", "No real money, no in app purchases, no ads. Everything here is bought with play money.");
+    n.style.margin = "16px 0 0";
+    m.appendChild(n);
+  }
+
+  // src/ui/screens/wallet.js
+  function renderWallet(m) {
+    var c = el("div", "card");
+    c.style.padding = "13px";
+    var kv1 = el("div", "kv");
+    kv1.appendChild(el("span", null, "Cash"));
+    var cv = el("b");
+    kv1.appendChild(cv);
+    var kv2 = el("div", "kv");
+    kv2.appendChild(el("span", null, "Positions"));
+    var hv = el("b");
+    kv2.appendChild(hv);
+    var kv3 = el("div", "kv");
+    kv3.appendChild(el("span", null, "Realised profit"));
+    var rv = el("b");
+    kv3.appendChild(rv);
+    c.appendChild(kv1);
+    c.appendChild(kv2);
+    c.appendChild(kv3);
+    var alloc = el("div", "alloc");
+    c.appendChild(alloc);
+    var leg = el("div");
+    leg.style.cssText = "font-size:11.5px;color:var(--faint);margin-top:4px";
+    c.appendChild(leg);
+    m.appendChild(c);
+    view.refs._w = { cash: cv, hold: hv, real: rv, alloc, leg };
+    m.appendChild(el("h2", "sec", "Open positions"));
+    var po = el("p", "note", "By coin, oldest first, the order selling takes them.");
+    po.style.margin = "-2px 0 8px";
+    m.appendChild(po);
+    var list = el("div", "list");
+    view.refs._pos = list;
+    m.appendChild(list);
+    m.appendChild(el("h2", "sec", "What happened next"));
+    var rv = el("div", "list");
+    view.refs._rv = rv;
+    m.appendChild(rv);
+    m.appendChild(el("h2", "sec", "Recent trades"));
+    var tl = el("div", "list");
+    view.refs._tr = tl;
+    m.appendChild(tl);
+    paintWallet();
+  }
+  function paintWallet() {
+    var w = view.refs._w;
+    if (!w) return;
+    w.cash.textContent = moneyFull(S.cash);
+    w.hold.textContent = moneyFull(holdingsValue());
+    w.real.textContent = moneyFull(S.realised);
+    w.real.className = cls(S.realised);
+    var nw = netWorth();
+    w.alloc.textContent = "";
+    var parts = [["Cash", S.cash, "var(--chip)"]];
+    heldSyms(S).forEach(function(s) {
+      parts.push([s, position(s).q * S.prices[s], BYSYM[s].c]);
+    });
+    parts.forEach(function(p) {
+      var i = el("i");
+      i.style.width = 100 * p[1] / nw + "%";
+      i.style.background = p[2];
+      w.alloc.appendChild(i);
+    });
+    w.leg.textContent = parts.filter(function(p) {
+      return p[1] / nw > 0.02;
+    }).map(function(p) {
+      return p[0] + " " + Math.round(100 * p[1] / nw) + "%";
+    }).join("   ");
+    var L = view.refs._pos;
+    L.textContent = "";
+    if (!S.lots.length) {
+      var e = el("div", "empty");
+      e.appendChild(el("b", null, "No positions yet"));
+      e.appendChild(document.createTextNode("Open the Market tab and place your first buy."));
+      L.appendChild(e);
+    } else {
+      var rank = {};
+      marketOrder().forEach(function(s, i) {
+        rank[s] = i;
+      });
+      S.lots.slice().sort(function(a, b) {
+        return rank[a.s] - rank[b.s] || a.id - b.id;
+      }).forEach(function(l) {
+        L.appendChild(lotRow(l, function() {
+          renderCoinSheet(l.s, "sell", false, l.id);
+        }));
+      });
+    }
+    var R = view.refs._rv;
+    if (R) {
+      var rsig = S.reviews.length ? S.reviews.length + ":" + S.reviews[0].t : "0";
+      if (R._sig !== rsig) {
+        R._sig = rsig;
+        R.textContent = "";
+        if (!S.reviews.length) {
+          var re0 = el("div", "empty");
+          re0.appendChild(el("b", null, "Nothing to review yet"));
+          re0.appendChild(document.createTextNode("A third of a game day after each sale, the price you sold at gets checked against where it went."));
+          R.appendChild(re0);
+        } else {
+          S.reviews.forEach(function(r) {
+            var row = el("div", "row");
+            var ic = el("div", "coin", r.s.slice(0, 4));
+            ic.style.background = BYSYM[r.s] ? BYSYM[r.s].c : "var(--chip)";
+            var nm = el("div", "nm");
+            nm.appendChild(el("b", null, r.s + " is " + (r.chg >= 0 ? "up " : "down ") + Math.abs(r.chg).toFixed(2) + "% since you sold"));
+            var how = r.auto ? "Closed by your exit rule at " : "You sold at ";
+            var det = el("small", null, how + priceStr(r.p) + ", now " + priceStr(r.now));
+            det.style.whiteSpace = "normal";
+            nm.appendChild(det);
+            var v = el("div", "val");
+            v.appendChild(el("b", cls(-r.chg), r.chg >= 0 ? "left on the table" : "avoided"));
+            row.appendChild(ic);
+            row.appendChild(nm);
+            row.appendChild(v);
+            R.appendChild(row);
+          });
+        }
+      }
+    }
+    var T = view.refs._tr;
+    T.textContent = "";
+    if (!S.trades.length) {
+      T.appendChild(el("div", "empty", "Your trade history shows up here."));
+      return;
+    }
+    S.trades.slice(0, 12).forEach(function(t) {
+      var r = el("div", "row");
+      var ic = el("div", "coin", t.side === "buy" ? "BUY" : "SELL");
+      ic.style.background = t.side === "buy" ? "var(--up)" : "var(--down)";
+      ic.style.color = t.side === "buy" ? "var(--on-up)" : "var(--on-down)";
+      ic.style.fontSize = "9.5px";
+      var nm = el("div", "nm");
+      nm.appendChild(el("b", null, t.s + "  " + qtyStr(t.q)));
+      nm.appendChild(el("small", null, whenStr(t) + " at " + priceStr(t.p)));
+      var v = el("div", "val");
+      v.appendChild(el("b", null, moneyFull(t.usd)));
+      if (t.side === "sell") v.appendChild(el("small", cls(t.pnl), moneyFull(t.pnl)));
+      r.appendChild(ic);
+      r.appendChild(nm);
+      r.appendChild(v);
+      T.appendChild(r);
+    });
+  }
+
+  // src/ui/render.js
+  function render() {
+    var m = $("#screen");
+    m.textContent = "";
+    view.refs = {};
+    if (view.tab === "market") renderMarket(m);
+    else if (view.tab === "wallet") renderWallet(m);
+    else if (view.tab === "quests") renderQuests(m);
+    else if (view.tab === "shop") renderShop(m);
+    else renderRanks(m);
+    paint({});
+  }
+  function paint(changed) {
+    changed = changed || {};
+    var nw = netWorth();
+    $("#nwNum").textContent = moneyFull(nw);
+    var chg = (nw / (S.seedCash || 3e3) - 1) * 100;
+    var e = $("#nwChg");
+    e.textContent = pctStr(chg) + " all time";
+    e.className = "nw-chg " + cls(chg);
+    var hs = $("#hdrStatus");
+    if (hs) {
+      var liveOk = Feed.mode === "live" && Feed.status === "ok";
+      hs.firstChild.className = liveOk ? "live" : "";
+      var full = liveOk ? "Live prices" : Feed.mode === "live" ? "Live feed offline" : "Simulated market";
+      hs.lastChild.textContent = liveOk ? "Live" : Feed.mode === "live" ? "Offline" : "Simulator";
+      if (hs.title !== full) {
+        hs.title = full;
+        hs.setAttribute("aria-label", full);
+      }
+    }
+    if (view.tab === "market") {
+      COINS.forEach(function(c) {
+        var r = view.refs[c.s];
+        if (!r) return;
+        var p = S.prices[c.s], gone = noLive(c.s);
+        r.price.textContent = priceStr(p);
+        var d = dayChange(c.s);
+        r.chg.textContent = gone ? "No live price" : pctStr(d);
+        r.chg.className = gone ? "flat" : cls(d);
+        var a = Feed.anchors[c.s], vt = Feed.mode === "live" && Feed.snapped && a && typeof a.vol === "number" ? volStr(a.vol) : "";
+        if (r.vol.textContent !== vt) r.vol.textContent = vt;
+        var sl = daySeries(c.s), pts = "";
+        if (sl && sl.length > 1) {
+          var mn = Math.min.apply(null, sl), mx = Math.max.apply(null, sl), rg = mx - mn || 1;
+          for (var i = 0; i < sl.length; i++) {
+            pts += (i * (52 / (sl.length - 1))).toFixed(1) + "," + (21 - (sl[i] - mn) / rg * 20).toFixed(1) + " ";
+          }
+        }
+        r.line.setAttribute("points", pts.trim());
+        r.line.setAttribute("stroke", d >= 0 ? "var(--up)" : "var(--down)");
+        var svg = r.line.parentNode, noLine = !pts;
+        if (svg.hasAttribute("hidden") !== noLine) {
+          if (noLine) svg.setAttribute("hidden", "");
+          else svg.removeAttribute("hidden");
+        }
+        var mv = changed[c.s];
+        if (mv !== void 0 && Math.abs(mv / p) > 25e-4) {
+          var cell = r.price.parentNode;
+          cell.classList.remove("flash-up", "flash-down");
+          void cell.offsetWidth;
+          cell.classList.add(mv > 0 ? "flash-up" : "flash-down");
+        }
+      });
+      if (view.refs._volnote) {
+        var byVol = COINS.some(function(c) {
+          var a = Feed.anchors[c.s];
+          return Feed.mode === "live" && Feed.snapped && a && typeof a.vol === "number";
+        });
+        view.refs._volnote.hidden = !byVol;
+        var vtxt = "Sorted by trading volume over the last 24 hours, on " + (Feed.provider === "gecko" ? "all exchanges CoinGecko tracks" : "Binance");
+        if (byVol && view.refs._volnote.textContent !== vtxt) view.refs._volnote.textContent = vtxt;
+      }
+      if (view.refs._src) {
+        view.refs._src.hidden = Feed.mode !== "live";
+        view.refs._src.firstChild.className = Feed.dot();
+        view.refs._src.lastChild.textContent = Feed.label();
+      }
+      if (view.refs._attr) {
+        view.refs._attr.hidden = !(Feed.mode === "live" && Feed.provider === "gecko" && Feed.status === "ok");
+      }
+      paintNews();
+    } else if (view.tab === "wallet") {
+      paintWallet();
+    } else if (view.tab === "quests") {
+      paintQuests();
+    } else if (view.tab === "ranks") {
+      paintRanks();
+    }
+    if (view.sheetCtx && view.sheetCtx.kind === "coin") paintCoinSheet();
+    paintTabExtras();
+  }
+
+  // src/platform/native.js
+  function onBackButton(handler) {
+    var cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (!cap || !cap.addListener) return;
+    cap.addListener("backButton", function() {
+      if (handler()) return;
+      if (cap.exitApp) cap.exitApp();
+    });
+  }
+
+  // src/main.js
   ui.toast = toast;
   ui.traded = function() {
     checkQuests();
     save();
     paint({});
-    if (sheetCtx && sheetCtx.kind === "coin") renderCoinSheet(sheetCtx.sym, sheetCtx.side, true, sheetCtx.lot);
+    if (view.sheetCtx && view.sheetCtx.kind === "coin") renderCoinSheet(view.sheetCtx.sym, view.sheetCtx.side, true, view.sheetCtx.lot);
   };
   ui.ticked = paint;
   ui.news = flagNews;
-  ui.reviewed = function() {
-    if (tab !== "wallet") {
-      walletDot = true;
-      buildTabs();
-    }
-  };
+  ui.reviewed = flagWallet;
   Feed.onModeChange = function() {
     if (S) {
       refreshQuests(S, true, Feed.mode === "live");
@@ -3226,7 +3271,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
   Feed.onFirstPrices = snapToLive;
   Feed.onChange = function(kind) {
-    if (kind === "prices" && tab === "market" && !sheetCtx && refs._order !== marketOrder().join()) render();
+    if (kind === "prices" && view.tab === "market" && !view.sheetCtx && view.refs._order !== marketOrder().join()) render();
     else paint({});
   };
   Feed.load();
@@ -3241,21 +3286,17 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   Feed.start();
   checkQuests();
   if (!introSeen()) renderIntro(0);
-  (function() {
-    var cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-    if (!cap || !cap.addListener) return;
-    cap.addListener("backButton", function() {
-      if (sheetCtx) {
-        closeSheet();
-        return;
-      }
-      if (tab !== "market") {
-        go("market");
-        return;
-      }
-      if (cap.exitApp) cap.exitApp();
-    });
-  })();
+  onBackButton(function() {
+    if (view.sheetCtx) {
+      closeSheet();
+      return true;
+    }
+    if (view.tab !== "market") {
+      go("market");
+      return true;
+    }
+    return false;
+  });
 })();
 </script>
 </body>
