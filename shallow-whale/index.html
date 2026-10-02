@@ -193,6 +193,8 @@ button.row:active{background:var(--recess)}
   font-size:11px;font-weight:700;font-stretch:85%;color:#1A1410;border:2px solid var(--edge)}
 .nm{flex:1;min-width:0}
 .nm b{display:block;font-size:15px;font-weight:650;line-height:1.25}
+.nm b.who{display:flex;align-items:center;gap:7px}
+.nm .gl{width:18px;height:18px;flex:none;color:var(--muted)}
 .nm small{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .val{text-align:right;flex:none;border-radius:6px;padding:2px 5px;margin-right:-5px}
 .val b{display:block;font-size:15px;font-weight:650;line-height:1.25}
@@ -249,7 +251,8 @@ button.row:active{background:var(--recess)}
 .item{background:var(--plate);border:2px solid var(--edge);border-radius:10px;padding:10px 8px 9px;text-align:center;
   box-shadow:0 3px 0 var(--hard);transition:transform .06s,box-shadow .06s}
 .item:active{transform:translateY(3px);box-shadow:0 0 0 var(--hard)}
-.item .ic{font-size:26px;line-height:1.3}
+.item .ic{display:block;width:30px;height:30px;margin:2px auto 3px;color:var(--text)}
+.item .ic svg,.trophycase svg,.nm .gl svg{display:block;width:100%;height:100%}
 .item b{display:block;font-size:13px;font-weight:650;margin-top:2px}
 .item small{display:block;font-size:12px;font-weight:700;margin-top:3px;color:var(--navy)}
 .item.owned{background:var(--recess);box-shadow:none;transform:none}
@@ -258,8 +261,9 @@ button.row:active{background:var(--recess)}
 .item.locked small{color:var(--faint)}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .item small{color:#8FB8E6} }
 :root[data-theme="dark"] .item small{color:#8FB8E6}
-.trophycase{display:flex;flex-wrap:wrap;gap:7px;font-size:20px;margin-top:9px}
-.trophycase span{width:36px;height:36px;border-radius:8px;background:var(--recess);display:grid;place-items:center;border:2px solid var(--edge)}
+.trophycase{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.trophycase span{width:36px;height:36px;border-radius:8px;background:var(--recess);display:grid;place-items:center;border:2px solid var(--edge);color:var(--text)}
+.trophycase .gl{width:22px;height:22px}
 
 /* ---------- news ---------- */
 .news{padding:11px 12px;border-bottom:1.5px solid var(--seam);font-size:13.5px}
@@ -469,42 +473,89 @@ var BAD_MKT = [
   "A leveraged fund unwinds and everything wobbles"
 ];
 
+/* Line icons for shop items and rivals, drawn on the same 24px grid and
+   stroke as the tab bar so they match the station look on every platform
+   (emoji render differently per OS and clash with the palette). Keyed by
+   shop id, by rival g, and "you". Paths only; glyph() wraps them. */
+var GLYPHS = {
+  styl1:'<path d="M3.5 15.5a7 7 0 0 1 14 0"/><path d="M3 15.5h12c3 0 5.5.8 6.5 2.3"/><path d="M8 9.5c1 1.5 1.5 3.5 1.5 6"/><circle cx="10.5" cy="8" r=".9" fill="currentColor" stroke="none"/>',
+  desk1:'<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 19h19"/>',
+  ride1:'<circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M8 17.5h8.5"/><path d="M18.5 17.5L15 5h-2.5"/>',
+  desk2:'<rect x="2.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="12.5" y="3.5" width="9" height="6.5" rx="1"/><rect x="2.5" y="11" width="9" height="6.5" rx="1"/><rect x="12.5" y="11" width="9" height="6.5" rx="1"/><path d="M12 17.5v3M8.5 20.5h7"/>',
+  styl2:'<path d="M2.5 9h19"/><path d="M3.5 9l.8 5a2.5 2.5 0 0 0 2.5 2h1.4a2.5 2.5 0 0 0 2.4-1.8L11.2 9"/><path d="M20.5 9l-.8 5a2.5 2.5 0 0 1-2.5 2h-1.4a2.5 2.5 0 0 1-2.4-1.8L12.8 9"/>',
+  home1:'<path d="M2.5 20.5h19"/><path d="M4.5 20.5L12 4.5l7.5 16"/><path d="M10 20.5v-5h4v5"/>',
+  ride2:'<path d="M2.5 16v-3.2L5 7.5h9.5l4 4.5 2.5.7V16"/><path d="M3 12h15.5"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/>',
+  desk3:'<rect x="7" y="3" width="10" height="8.5" rx="2"/><path d="M12 11.5v2M5.5 13.5h13M12 13.5v5M6.5 21.5l5.5-3 5.5 3"/>',
+  styl3:'<circle cx="12" cy="12" r="5.5"/><path d="M9 7l.7-4h4.6l.7 4M9 17l.7 4h4.6l.7-4"/><path d="M12 9.5V12l1.7 1.2"/>',
+  home2:'<path d="M3 20.5V9.5l4.5-4.5 4.5 4.5 4.5-4.5 4.5 4.5v11"/><path d="M12 9.5v11M2 20.5h20"/><path d="M6 20.5v-4h3v4M15 20.5v-4h3v4"/>',
+  desk4:'<path d="M4.5 8.5a10 10 0 0 0 11 11z"/><path d="M10 14l4-4"/><circle cx="15" cy="9" r="1.2"/><path d="M16 3.5a4.5 4.5 0 0 1 4.5 4.5"/><path d="M8 18.5l-2 3h6"/>',
+  ride3:'<path d="M2 16.5v-2.7l5-1.3 3.5-3h4.5l5 3.7 2 .6v2.7"/><path d="M2.5 9.5h3.5M4.2 9.5v3.5"/><circle cx="6.5" cy="16.5" r="2"/><circle cx="17.5" cy="16.5" r="2"/><path d="M8.5 16.5h7"/>',
+  styl4:'<circle cx="12" cy="14.5" r="6"/><rect x="9" y="4" width="6" height="4.5" rx="1.2"/>',
+  home3:'<path d="M3 20.5h18"/><rect x="6" y="7" width="12" height="13.5"/><path d="M8.5 7V4h7v3"/><path d="M9 11h1.5M13.5 11H15M9 14.5h1.5M13.5 14.5H15"/><path d="M11 20.5v-3h2v3"/>',
+  ride4:'<path d="M11.5 3v13"/><path d="M11.5 4l7 11h-7"/><path d="M9.5 6.5L5 15h4.5"/><path d="M3 17.5h18l-2.5 3h-13z"/>',
+  styl5:'<path d="M3.5 17.5l-1-10 5 4 4.5-6.5 4.5 6.5 5-4-1 10z"/><path d="M4 20.5h16"/>',
+  home4:'<path d="M5 19a7 3.5 0 0 1 14 0"/><path d="M2.5 21.5h19"/><path d="M12 16.5c.5-3.5-.3-6.5-2-9.5"/><path d="M10 7c-2-1.5-5-1-6.5 1M10 7c1.5-2 4.5-2.5 6.5-1M10 7c2.5 0 4.5 1.5 5 4M10 7c-2 .5-3.5 2-4 4"/>',
+  ride5:'<path d="M12 2.5c1 0 1.5 1.5 1.5 3v4l7.5 4.5v2l-7.5-2.2v4.2l2.5 2v1.5l-4-1-4 1V18l2.5-2v-4.2L3 16v-2l7.5-4.5v-4c0-1.5.5-3 1.5-3z"/>',
+  diamond:'<path d="M6.5 4h11l4 5-9.5 11L2.5 9z"/><path d="M2.5 9h19M9 4L7.5 9 12 20l4.5-11L15 4"/>',
+  worried:'<circle cx="12" cy="12" r="9"/><path d="M8.5 16.5c1-1.2 2.2-1.8 3.5-1.8s2.5.6 3.5 1.8"/><path d="M7.5 8.5l2.5-1M16.5 8.5l-2.5-1"/><g fill="currentColor" stroke="none"><circle cx="9" cy="11.5" r="1"/><circle cx="15" cy="11.5" r="1"/></g>',
+  whale:'<path d="M2.5 14c0-3.3 2.7-5.5 6.5-5.5 3.8 0 6 2 8.3 4.3L19 9.5l1.5-.5.5 1.5-2 3.5c-1.5 3.5-5 5.5-9.5 5.5-4.2 0-7-2.2-7-5.5z"/><path d="M9 6V3.5M9 3.5c-1-.8-2-.8-3 0M9 3.5c1-.8 2-.8 3 0"/><circle cx="6.5" cy="13" r="1" fill="currentColor" stroke="none"/>',
+  bolt:'<path d="M13.5 2.5L5 13.5h6l-1 8 8.5-11h-6z"/>',
+  rocket:'<path d="M12 2.5c3 2 4.5 5.5 4.5 9.5v4h-9v-4c0-4 1.5-7.5 4.5-9.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M7.5 12.5l-3 3v3l3-1.5M16.5 12.5l3 3v3l-3-1.5M10 19.5l2 2 2-2"/>',
+  bag:'<path d="M4.5 9h15L18 20.5H6z"/><path d="M8 9c0-3 1.5-5 4-5s4 2 4 5"/><path d="M12 12.5v5M9.8 15.3l2.2 2.2 2.2-2.2"/>',
+  sideways:'<path d="M3 12h18M6.5 8.5L3 12l3.5 3.5M17.5 8.5L21 12l-3.5 3.5"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><g fill="currentColor" stroke="none"><circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/><circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/></g>',
+  contra:'<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
+  rug:'<rect x="2.5" y="7" width="12.5" height="10" rx="1"/><path d="M5 10.5h7.5M5 13.5h7.5"/><path d="M15 12h6.5M19 9.5l2.5 2.5-2.5 2.5"/>',
+  cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+  you:'<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.5-4 3.5-6.5 7.5-6.5s7 2.5 7.5 6.5"/>'
+};
+function glyph(key, cls){
+  var i=el("i",cls||"gl"); i.setAttribute("aria-hidden","true");
+  i.innerHTML=ICON(GLYPHS[key]||GLYPHS.you);
+  return i;
+}
+
 /* Priced as multiples of the $3,000 starting stake, on a smooth log curve, so
    there is always a next thing rather than a flat stretch and then a wall. */
 var SHOP = [
-  {id:"styl1", cat:"Style", ic:"\uD83E\uDDE2", n:"Lucky cap",    p:360,    lv:1, f:1},
-  {id:"desk1", cat:"Desk",  ic:"\uD83D\uDCBB", n:"Laptop",       p:450,    lv:1, f:1},
-  {id:"ride1", cat:"Ride",  ic:"\uD83D\uDEF5", n:"Scooter",      p:1050,   lv:1, f:2},
-  {id:"desk2", cat:"Desk",  ic:"\uD83D\uDDA5\uFE0F", n:"Monitor wall", p:1800, lv:2, f:3},
-  {id:"styl2", cat:"Style", ic:"\uD83D\uDD76\uFE0F", n:"Shades",  p:2400,  lv:2, f:3},
-  {id:"home1", cat:"Home",  ic:"\uD83C\uDFD5\uFE0F", n:"Cabin",   p:3000,  lv:2, f:4},
-  {id:"ride2", cat:"Ride",  ic:"\uD83D\uDE97", n:"Hatchback",    p:4200,   lv:3, f:5},
-  {id:"desk3", cat:"Desk",  ic:"\uD83E\uDE91", n:"Good chair",   p:6600,   lv:3, f:6},
-  {id:"styl3", cat:"Style", ic:"\u231A",       n:"Steel watch",   p:10500,  lv:4, f:8},
-  {id:"home2", cat:"Home",  ic:"\uD83C\uDFE0", n:"Townhouse",    p:15000,  lv:4, f:10},
-  {id:"desk4", cat:"Desk",  ic:"\uD83D\uDCE1", n:"Private feed", p:27000,  lv:5, f:14},
-  {id:"ride3", cat:"Ride",  ic:"\uD83C\uDFCE\uFE0F", n:"Track car", p:42000, lv:6, f:16},
-  {id:"styl4", cat:"Style", ic:"\uD83D\uDC8D", n:"Signet ring",  p:60000,  lv:7, f:20},
-  {id:"home3", cat:"Home",  ic:"\uD83C\uDFE2", n:"Penthouse",    p:90000,  lv:8, f:26},
-  {id:"ride4", cat:"Ride",  ic:"\uD83D\uDEE5\uFE0F", n:"Sailboat", p:135000, lv:8, f:34},
-  {id:"styl5", cat:"Style", ic:"\uD83D\uDC51", n:"Actual crown", p:270000, lv:10,f:52},
-  {id:"home4", cat:"Home",  ic:"\uD83C\uDFDD\uFE0F", n:"Island",  p:420000, lv:12,f:78},
-  {id:"ride5", cat:"Ride",  ic:"\u2708\uFE0F", n:"Jet share",    p:660000, lv:12,f:110}
+  {id:"styl1", cat:"Style", n:"Lucky cap",    p:360,    lv:1, f:1},
+  {id:"desk1", cat:"Desk",  n:"Laptop",       p:450,    lv:1, f:1},
+  {id:"ride1", cat:"Ride",  n:"Scooter",      p:1050,   lv:1, f:2},
+  {id:"desk2", cat:"Desk",  n:"Monitor wall", p:1800,   lv:2, f:3},
+  {id:"styl2", cat:"Style", n:"Shades",       p:2400,   lv:2, f:3},
+  {id:"home1", cat:"Home",  n:"Cabin",        p:3000,   lv:2, f:4},
+  {id:"ride2", cat:"Ride",  n:"Hatchback",    p:4200,   lv:3, f:5},
+  {id:"desk3", cat:"Desk",  n:"Good chair",   p:6600,   lv:3, f:6},
+  {id:"styl3", cat:"Style", n:"Steel watch",  p:10500,  lv:4, f:8},
+  {id:"home2", cat:"Home",  n:"Townhouse",    p:15000,  lv:4, f:10},
+  {id:"desk4", cat:"Desk",  n:"Private feed", p:27000,  lv:5, f:14},
+  {id:"ride3", cat:"Ride",  n:"Track car",    p:42000,  lv:6, f:16},
+  {id:"styl4", cat:"Style", n:"Signet ring",  p:60000,  lv:7, f:20},
+  {id:"home3", cat:"Home",  n:"Penthouse",    p:90000,  lv:8, f:26},
+  {id:"ride4", cat:"Ride",  n:"Sailboat",     p:135000, lv:8, f:34},
+  {id:"styl5", cat:"Style", n:"Actual crown", p:270000, lv:10,f:52},
+  {id:"home4", cat:"Home",  n:"Island",       p:420000, lv:12,f:78},
+  {id:"ride5", cat:"Ride",  n:"Jet share",    p:660000, lv:12,f:110}
 ];
 
 var BOT_DEFS = [
-  {n:"Diamond Dana",  e:"\uD83D\uDC8E", style:"hodl",   skill: 0.000055},
-  {n:"Panic Pete",    e:"\uD83D\uDE30", style:"panic",  skill:-0.000090},
-  {n:"Whale Watson",  e:"\uD83D\uDC0B", style:"momo",   skill: 0.000075},
-  {n:"Scalper Sue",   e:"\u26A1",       style:"scalp",  skill: 0.000040},
-  {n:"Moonboy Mo",    e:"\uD83D\uDE80", style:"momo",   skill:-0.000030},
-  {n:"Bagholder Bea", e:"\uD83D\uDECD\uFE0F", style:"hodl", skill:-0.000060},
-  {n:"Sideways Sam",  e:"\uD83E\uDD7A", style:"scalp",  skill: 0.000005},
-  {n:"DCA Dmitri",    e:"\uD83D\uDCC5", style:"dca",    skill: 0.000060},
-  {n:"Contrarian Coy",e:"\uD83D\uDD04", style:"contra", skill: 0.000035},
-  {n:"Rugpull Rick",  e:"\uD83E\uDDF2", style:"panic",  skill:-0.000110},
-  {n:"Quiet Quinn",   e:"\uD83E\uDDCA", style:"dca",    skill: 0.000030}
+  {n:"Diamond Dana",  g:"diamond",  style:"hodl",   skill: 0.000055},
+  {n:"Panic Pete",    g:"worried",  style:"panic",  skill:-0.000090},
+  {n:"Whale Watson",  g:"whale",    style:"momo",   skill: 0.000075},
+  {n:"Scalper Sue",   g:"bolt",     style:"scalp",  skill: 0.000040},
+  {n:"Moonboy Mo",    g:"rocket",   style:"momo",   skill:-0.000030},
+  {n:"Bagholder Bea", g:"bag",      style:"hodl",   skill:-0.000060},
+  {n:"Sideways Sam",  g:"sideways", style:"scalp",  skill: 0.000005},
+  {n:"DCA Dmitri",    g:"calendar", style:"dca",    skill: 0.000060},
+  {n:"Contrarian Coy",g:"contra",   style:"contra", skill: 0.000035},
+  {n:"Rugpull Rick",  g:"rug",      style:"panic",  skill:-0.000110},
+  {n:"Quiet Quinn",   g:"cube",     style:"dca",    skill: 0.000030}
 ];
+/* Rivals are looked up by name, so saves never carry the icon itself. */
+function botGlyph(name){
+  var d=BOT_DEFS.filter(function(b){ return b.n===name; })[0];
+  return d ? d.g : "you";
+}
 
 /* Live prices move at real speed, while the simulator packs a game day into
    four minutes. A target sized for the simulator ("grow net worth 30%", "close
@@ -687,7 +738,7 @@ var Feed = {
 
 /* ============================ state ============================ */
 /* set by tools/sync-version.js from package.json; do not edit by hand */
-var APP_VERSION = "1.3.0";
+var APP_VERSION = "1.4.0";
 var SAVE_KEY = "pw.save.v1";
 var S = null;
 var refs = {};
@@ -697,7 +748,7 @@ var sheetCtx = null;
 
 function defaultBots(prices){
   return BOT_DEFS.map(function(b){
-    var o={n:b.n,e:b.e,style:b.style,skill:b.skill,cash:0,h:{}};
+    var o={n:b.n,style:b.style,skill:b.skill,cash:0,h:{}};
     var worth = 1800*Math.pow(12, Math.random());   /* 1.8k to ~21k, a ladder to climb */
     var n = 2+Math.floor(Math.random()*4);
     var picks = COINS.slice().sort(function(){ return Math.random()-0.5; }).slice(0,n);
@@ -1098,6 +1149,7 @@ function heal(o){
   if(!o.bots.length) o.bots = defaultBots(o.prices);
   o.bots = o.bots.filter(function(b){ return b && typeof b.cash==="number" && isFinite(b.cash) && b.h; });
   o.bots.forEach(function(b){
+    delete b.e;   /* rivals used to carry their emoji; icons now come from BOT_DEFS */
     Object.keys(b.h).forEach(function(s){
       var q=b.h[s];
       if(!BYSYM[s] || typeof q!=="number" || !isFinite(q) || q<=0){
@@ -1493,7 +1545,7 @@ function renderShop(m){
   if(!S.owned.length){ var p=el("p","note","Nothing bought yet. Items are cosmetic and add to your flex score."); p.style.margin="6px 0 0"; c.appendChild(p); }
   else S.owned.forEach(function(id){
     var it=SHOP.filter(function(x){return x.id===id;})[0];
-    if(it) tc.appendChild(el("span",null,it.ic));
+    if(it){ var sp=el("span"); sp.title=it.n; sp.appendChild(glyph(it.id)); tc.appendChild(sp); }
   });
   c.appendChild(tc);
   m.appendChild(c);
@@ -1505,7 +1557,7 @@ function renderShop(m){
       var owned=S.owned.indexOf(i.id)>=0;
       var locked=S.level<i.lv;
       var b=el("button","item"+(owned?" owned":(locked?" locked":"")));
-      b.appendChild(el("div","ic",i.ic));
+      b.appendChild(glyph(i.id,"ic"));
       b.appendChild(el("b",null,i.n));
       b.appendChild(el("small",null, owned?"Owned":(locked?"Level "+i.lv:money(i.p))));
       if(!owned && !locked){
@@ -1535,8 +1587,8 @@ function renderRanks(m){
 }
 function paintRanks(){
   var L=refs._rk; if(!L) return;
-  var rows=S.bots.map(function(b){ return {n:b.n,e:b.e,w:botWorth(b),me:false,style:b.style}; });
-  rows.push({n:"You",e:"\uD83D\uDC64",w:netWorth(),me:true,flex:flexPoints()});
+  var rows=S.bots.map(function(b){ return {n:b.n,g:botGlyph(b.n),w:botWorth(b),me:false,style:b.style}; });
+  rows.push({n:"You",g:"you",w:netWorth(),me:true,flex:flexPoints()});
   rows.sort(function(a,b){ return b.w-a.w; });
   L.textContent="";
   rows.forEach(function(r,i){
@@ -1545,7 +1597,7 @@ function paintRanks(){
     rk.style.background = r.me? "var(--brass-solid)" : "var(--chip)";
     rk.style.color = r.me? "var(--on-brass)" : "var(--muted)";
     var nm=el("div","nm");
-    nm.appendChild(el("b",null, r.e+"  "+r.n));
+    var who=el("b","who"); who.appendChild(glyph(r.g)); who.appendChild(document.createTextNode(r.n)); nm.appendChild(who);
     nm.appendChild(el("small",null, r.me ? (title()+", "+flexPoints()+" flex points") : styleLabel(r.style)));
     var v=el("div","val"); v.appendChild(el("b",null, money(r.w)));
     row.appendChild(rk); row.appendChild(nm); row.appendChild(v);
