@@ -44,7 +44,7 @@
       "At 375x800 click 'Menu', then click 'ABOUT': /about/ loads and the menu panel is closed."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

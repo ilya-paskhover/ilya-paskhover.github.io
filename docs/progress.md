@@ -1,4 +1,4 @@
-Next task: T02
+Next task: T03
 
 # Progress: jekyll-ui-redesign
 
@@ -42,3 +42,36 @@ COMMANDS:
 FAILURE OUTPUT: none
 BROWSER: Steps 1 to 4 PASS (dark background, off-white text; Skip to content visible on Tab and URL ends #main; inline code bordered mono and code block hairline; no horizontal overflow at 375x800, code box did not need to scroll). Console: only 404 /favicon.ico (T09).
 CHANGES: 8 files changed, 261 insertions(+), 174 deletions(-) (tokens, base, syntax, layout shell, foundation test, tasks.json).
+
+## QA report T02
+
+TASK: T02
+VERDICT: PASS
+COMMANDS:
+- ( test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb ) -> exit 0
+- ( docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/header_test.rb ) -> exit 0
+- ( docker compose down ) -> exit 0
+- ( git diff --cached --stat ) -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (1280x800, /): header shows mono 'Ilya Paskhover' at left with no logo image. Nav shows '[H] HOME' (bold), '[P] PROJECTS', '[A] ABOUT', '[G] GITHUB'. At the right is a solid light 'Get in touch ›' button. No Menu button is visible.
+- Step 2 (keys): 'a' loaded /about/ and '[A] ABOUT' became the bold item. 'p' loaded /projects/, which lists 'Shallow Whale' (and 'Interactive AI CV'). 'h' loaded /.
+- Step 3 (theme): clicking 'Switch to light theme' gave a near-white background with dark text. After a reload it stayed light and the toggle read 'Switch to dark theme'. Clicking it returned the page to dark.
+- Step 4 (375x800 reload): header shows 'Ilya Paskhover', the theme toggle and a 'MENU' button. The nav items are hidden. Clicking Menu opened a panel with HOME, PROJECTS, ABOUT, GITHUB and 'Get in touch ›'. Escape closed the panel and Menu was collapsed (screenshot shows the panel gone and focus back on the Menu button). The snapshot showed no expanded state on the button. I did not read aria-expanded directly, and the tools I'm allowed don't expose it.
+- Step 5 (375x800): Menu then ABOUT loaded /about/ with the panel closed.
+- Cosmetic note: when the mobile panel is open, its top edge overlaps the bottom of the header bar slightly. This does not contradict any acceptance step.
+- Console errors: only 'Failed to load resource: 404 /favicon.ico', which is a browser resource and is noted only. No app errors.
+CHANGES:
+ _data/navigation.yml  |  13 +++++++
+ _data/profile.yml     |  10 +++++
+ _data/projects.yml    |  35 +++++++++++++++++
+ _includes/head.html   |   1 +
+ _includes/header.html |  29 +++++----------
+ _sass/_header.scss    | 101 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ _sass/_layout.scss    |  90 --------------------------------------------
+ assets/js/site.js     |  61 ++++++++++++++++++++++++++++++
+ css/main.scss         |   1 +
+ docs/tasks.json       |   2 +-
+ projects.md           |  10 +++++
+ test/header_test.rb   |  52 ++++++++++++++++++++++++++
+ 12 files changed, 295 insertions(+), 110 deletions(-)

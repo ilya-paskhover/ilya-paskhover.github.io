@@ -1,0 +1,101 @@
+/**
+ * Site header
+ */
+.site-header {
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+}
+
+.site-header-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 64px;
+
+    &::after { display: none; }
+}
+
+.site-brand {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--color-text);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav-toggle,
+.theme-toggle {
+    font: inherit;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    transition: border-color 150ms;
+
+    &:hover { border-color: var(--color-accent); }
+}
+
+.nav-toggle { display: none; }
+
+.site-nav {
+    flex: 1;
+}
+
+.site-nav-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+.nav-link {
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 150ms;
+
+    .kbd-hint { color: var(--color-text-dim); }
+    &:hover { color: var(--color-text); }
+    &[aria-current="page"] { color: var(--color-text); font-weight: 700; }
+}
+
+.nav-cta {
+    margin-left: auto;
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: var(--color-cta-text);
+    background: var(--color-cta-bg);
+    border-radius: 2px;
+    padding: var(--space-2) var(--space-4);
+    white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+    .site-header-inner {
+        flex-wrap: wrap;
+        row-gap: 0;
+    }
+    .site-brand { flex: 1; }
+    .js .nav-toggle { display: inline-block; order: 2; }
+    .theme-toggle { order: 1; }
+    .site-nav { order: 3; flex-basis: 100%; }
+    .js .site-nav-menu { display: none; }
+    .js .site-nav-menu.is-open { display: flex; }
+    .site-nav-menu {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding-bottom: var(--space-4);
+    }
+    .nav-link {
+        padding: var(--space-3) 0;
+        border-top: 1px solid var(--color-border);
+    }
+    .nav-cta { margin: var(--space-3) 0 0; text-align: center; }
+}
