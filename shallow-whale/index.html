@@ -1527,8 +1527,13 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (lv >= 3) return "Apprentice";
     return "Paper hands";
   }
+  function tickAnchors() {
+    if (Feed.mode !== "live") return null;
+    if (Feed.snapped) return Feed.anchors;
+    return Feed.status === "error" ? null : {};
+  }
   function step() {
-    var r = marketTick(S, Feed.mode === "live" && Feed.snapped ? Feed.anchors : null);
+    var r = marketTick(S, tickAnchors());
     if (r.fired) ui.news();
     S.bots.forEach(function(b) {
       stepBot(b, S);
@@ -2589,7 +2594,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.11.0");
+    var ver = el("p", "note", "Shallow Whale 1.11.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
