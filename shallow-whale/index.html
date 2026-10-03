@@ -248,7 +248,11 @@ button.row:active{background:var(--recess)}
 .claim{margin-top:11px;padding:9px;border-radius:9px;width:100%;font-weight:700;font-size:14px;font-stretch:92%;
   background:var(--navy);color:var(--on-navy);border:2px solid var(--edge);box-shadow:0 3px 0 var(--hard);transition:transform .06s,box-shadow .06s}
 .claim:active{transform:translateY(3px);box-shadow:0 0 0 var(--hard)}
-.swaprow{display:flex;justify-content:flex-end;margin-top:9px}
+/* an unfinished quest: Trade (go and do it) on the left, Swap on the right */
+.swaprow{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-top:9px}
+.trade{padding:6px 16px;border-radius:8px;font-size:12.5px;font-weight:700;font-stretch:92%;
+  background:var(--navy);color:var(--on-navy);border:1.5px solid var(--edge);box-shadow:0 2px 0 var(--hard);transition:transform .06s,box-shadow .06s}
+.trade:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
 .swap{padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:700;font-stretch:92%;color:var(--text);
   background:var(--recess);border:1.5px solid var(--edge);box-shadow:0 2px 0 var(--hard);transition:transform .06s,box-shadow .06s}
 .swap:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
@@ -1032,6 +1036,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   var LIVE_MARKET_CAP = 2;
   var LIVE_DAY_CAP = 1;
   var LIVE_TUNE = { quickReward: 5e-3, marketReward: 0.01, rewardFloor: 10, profitScale: 1, winnerPct: 2 };
+  var QUEST_TIER = 0;
   var QUEST_POOL = [
     {
       t: "trades",
@@ -1146,7 +1151,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       if (short.length) pool = short;
     }
     var def = pick(pool.length ? pool : QUEST_POOL);
-    var lv = clamp(Math.floor((st.level - 1) / 2), 0, 3);
+    var lv = QUEST_TIER;
     var nw = netWorthOf(st);
     var target = def.vals[lv];
     if (live && def.t === "profit") target = Math.max(10, Math.round(nw * def.live[lv] * LIVE_TUNE.profitScale / 10) * 10);
@@ -2584,7 +2589,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.10.5");
+    var ver = el("p", "note", "Shallow Whale 1.11.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -2775,11 +2780,12 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     tot.style.margin = "0 0 8px";
     tot.textContent = S.questDone + (S.questDone === 1 ? " quest" : " quests") + " completed, " + money(S.questEarned) + " earned in rewards." + (S.questSwaps ? " " + S.questSwaps + (S.questSwaps === 1 ? " swap" : " swaps") + ", " + money(S.swapSpent) + " spent on swapping." : "");
     m.appendChild(tot);
+    if (S.questLog.length) renderQuestLog(m);
     renderQuestStats(m);
-    if (!S.questLog.length) return;
+  }
+  function renderQuestLog(m) {
     var H = el("div", "list");
     H.id = "questLog";
-    H.style.marginTop = "12px";
     S.questLog.forEach(function(e) {
       var d = el("div", "quest");
       var qh = el("div", "qh");
@@ -2812,6 +2818,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var x = S.questStats[a], y = S.questStats[b];
       return y.done + y.swap - (x.done + x.swap);
     });
+    var hs = el("h2", "sec", "By kind");
+    hs.style.marginTop = "18px";
+    m.appendChild(hs);
     var L = el("div", "list");
     L.id = "questStats";
     keys.forEach(function(k) {
@@ -2855,13 +2864,51 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
             render();
           });
           r.slot.appendChild(btn);
-        } else r.slot.appendChild(swapButton(r));
+        } else {
+          var row = el("div", "swaprow");
+          row.appendChild(tradeButton(r.q));
+          row.appendChild(swapButton(r));
+          r.slot.appendChild(row);
+        }
       }
     });
   }
+  function tradeTarget(q) {
+    if (q.t === "dip") {
+      var bd = biggestDrop();
+      if (bd) return { sym: bd.s, side: "buy" };
+    }
+    if (q.t === "winner" || q.t === "profit") {
+      var best = null;
+      S.lots.forEach(function(l) {
+        if (noLive(l.s)) return;
+        var g = S.prices[l.s] / l.p;
+        if (!best || g > best.g) best = { l, g };
+      });
+      if (best) return { sym: best.l.s, side: "sell", lot: best.l.id };
+    }
+    if (q.t === "spread") {
+      var held = heldSyms(S);
+      var next = marketOrder().filter(function(s) {
+        return held.indexOf(s) < 0 && !noLive(s);
+      })[0];
+      if (next) return { sym: next, side: "buy" };
+    }
+    return null;
+  }
+  function tradeButton(q) {
+    var b = el("button", "trade", "Trade");
+    b.type = "button";
+    b.addEventListener("click", function() {
+      var t = tradeTarget(q);
+      if (t) renderCoinSheet(t.sym, t.side, false, t.lot);
+      else go("market");
+    });
+    return b;
+  }
   function swapButton(r) {
     var fee = swapFee(r.q), idle = "Swap for " + money(fee);
-    var row = el("div", "swaprow"), b = el("button", "swap", idle);
+    var b = el("button", "swap", idle);
     b.type = "button";
     b.addEventListener("click", function() {
       if (!b.classList.contains("armed")) {
@@ -2885,8 +2932,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       render();
       toast("Swapped for " + money(fee));
     });
-    row.appendChild(b);
-    return row;
+    return b;
   }
 
   // src/ui/screens/ranks.js
