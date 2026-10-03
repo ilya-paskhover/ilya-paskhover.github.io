@@ -323,6 +323,8 @@ canvas#chart{width:100%;height:172px;display:block}
 .protect input{width:100%;margin-top:4px;border:2px solid var(--edge);border-radius:9px;padding:8px 10px;background:var(--recess);font-size:15px;font-weight:650;outline:none}
 select.sel{width:100%;border:2px solid var(--edge);border-radius:9px;padding:9px 10px;background:var(--recess);font-size:14.5px;font-weight:650}
 .note{font-size:13px;color:var(--muted);line-height:1.5}
+ul.notes{margin:0 0 6px;padding-left:18px}
+ul.notes li{margin:0 0 6px}
 textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9px;padding:9px;background:var(--recess);font-size:11.5px;font-family:ui-monospace,monospace;outline:none;resize:vertical}
 
 /* toast */
@@ -383,6 +385,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
   };
+
+  // <define:RELEASE_NOTES>
+  var define_RELEASE_NOTES_default = [{ v: "1.11.2", items: ["After an update, a short What's new lists what changed since your last visit, one line per change.", "The intro no longer comes back on every visit after you closed it by tapping outside it."] }, { v: "1.11.1", items: ["Fix: in live mode, prices no longer jump right after the game opens or reloads."] }, { v: "1.11.0", items: ["Quests no longer get harder as you level up.", "A Trade button on every unfinished quest takes you to the move it needs.", "On the Quests tab your claimed quests now sit right under Completed, and the per-kind totals moved to their own section, By kind, at the bottom."] }, { v: "1.10.0", items: ["Toncoin is now Gram (GRAM).", 'A coin the live feed returns no price for, or only a price over an hour old, now says "No live price".', "With live prices, each coin shows its 24 hour trading volume and the market is sorted by it.", "BNB joins the market, fifth by volume.", "Gram's volatility and its link to Bitcoin are re-measured over the same year, with Toncoin's prices up to the rename and Gram's after.", "npm run verify:feed asks Binance and CoinGecko for every coin and fails if one has no fresh price, as TON did after the rename.", "The sparkline beside each coin now covers the same 24 hours as the percentage next to it.", "The privacy policy says the game also asks for volume and the day's prices."] }, { v: "1.9.4", items: ["npm test takes about 20s instead of 88s, with the same checks."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -2074,10 +2079,12 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     paintTabExtras();
   }
   function closeSheet() {
+    var ctx = view.sheetCtx;
     $("#sheet").classList.remove("on");
     $("#scrim").classList.remove("on");
     view.sheetCtx = null;
     paintTabExtras();
+    if (ctx && ctx.onClose) ctx.onClose();
   }
   $("#scrim").addEventListener("click", closeSheet);
 
@@ -2372,7 +2379,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   }
   function renderIntro(i) {
     i = i || 0;
-    view.sheetCtx = { kind: "intro", step: i };
+    view.sheetCtx = { kind: "intro", step: i, onClose: markIntro };
     var st = INTRO[i], b = $("#sheetBody");
     b.textContent = "";
     var head = el("div", "sheeth");
@@ -2400,10 +2407,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     var go2 = el("button", "btn", i === INTRO.length - 1 ? "Start trading" : "Next");
     go2.style.marginTop = "16px";
     go2.addEventListener("click", function() {
-      if (i === INTRO.length - 1) {
-        markIntro();
-        closeSheet();
-      } else renderIntro(i + 1);
+      if (i === INTRO.length - 1) closeSheet();
+      else renderIntro(i + 1);
     });
     b.appendChild(go2);
     if (i > 0) {
@@ -2416,10 +2421,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     } else {
       var skip = el("button", "btn ghost", "Skip");
       skip.style.marginTop = "8px";
-      skip.addEventListener("click", function() {
-        markIntro();
-        closeSheet();
-      });
+      skip.addEventListener("click", closeSheet);
       b.appendChild(skip);
     }
     openSheet();
@@ -2594,7 +2596,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.11.1");
+    var ver = el("p", "note", "Shallow Whale 1.11.2");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3292,6 +3294,61 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     paintTabExtras();
   }
 
+  // src/core/notes.js
+  function cmpVersion(a, b) {
+    var x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
+    for (var i = 0; i < 3; i++) {
+      var d = (x[i] || 0) - (y[i] || 0);
+      if (d) return d < 0 ? -1 : 1;
+    }
+    return 0;
+  }
+  function notesSince(notes, seen, current) {
+    return (notes || []).filter(function(n) {
+      if (cmpVersion(n.v, current) > 0) return false;
+      return seen ? cmpVersion(n.v, seen) > 0 : cmpVersion(n.v, current) === 0;
+    });
+  }
+
+  // src/ui/sheets/whatsnew.js
+  var SEEN_KEY = "pw.seen";
+  function greet(returning) {
+    var seen = getItem(SEEN_KEY, "1.11.2");
+    setItem(SEEN_KEY, "1.11.2");
+    if (!introSeen()) {
+      if (!returning) {
+        renderIntro(0);
+        return;
+      }
+      markIntro();
+    }
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.11.2");
+    if (list.length) renderWhatsNew(list);
+  }
+  function renderWhatsNew(list) {
+    view.sheetCtx = { kind: "whatsnew" };
+    var b = $("#sheetBody");
+    b.textContent = "";
+    var head = el("div", "sheeth"), nm = el("div", "nm");
+    nm.appendChild(el("b", null, "What's new"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.11.2"));
+    head.appendChild(nm);
+    b.appendChild(head);
+    list.forEach(function(n) {
+      if (list.length > 1) b.appendChild(el("h2", "sec", n.v));
+      var ul = el("ul", "notes");
+      n.items.forEach(function(t) {
+        ul.appendChild(el("li", "note", t));
+      });
+      b.appendChild(ul);
+    });
+    var ok = el("button", "btn", "Got it");
+    ok.style.marginTop = "12px";
+    ok.addEventListener("click", closeSheet);
+    b.appendChild(ok);
+    openSheet();
+  }
+
   // src/platform/native.js
   function onBackButton(handler) {
     var cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
@@ -3326,7 +3383,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     else paint({});
   };
   Feed.load();
-  setState(load() || freshState(Feed.mode === "live"));
+  var saved = load();
+  setState(saved || freshState(Feed.mode === "live"));
   if (typeof S.speed !== "number") S.speed = 1;
   if (!Array.isArray(S.quests)) S.quests = [];
   refreshQuests(S, false, Feed.mode === "live");
@@ -3336,7 +3394,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   startClock();
   Feed.start();
   checkQuests();
-  if (!introSeen()) renderIntro(0);
+  greet(!!saved);
   onBackButton(function() {
     if (view.sheetCtx) {
       closeSheet();
