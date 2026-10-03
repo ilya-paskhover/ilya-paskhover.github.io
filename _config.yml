@@ -13,3 +13,15 @@ markdown: kramdown
 host: localhost
 port: 4000
 
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - Dockerfile
+  - docker-compose.yml
+  - docs
+  - test
+  - vendor
+  - node_modules
+  - .poc-artifacts

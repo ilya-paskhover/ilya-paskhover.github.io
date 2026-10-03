@@ -11,7 +11,7 @@
       "Open http://localhost:14000/shallow-whale/: the browser tab title is 'Shallow Whale'."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

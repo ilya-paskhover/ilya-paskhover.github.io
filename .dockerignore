@@ -1,0 +1,15 @@
+.git
+_site
+.jekyll-cache
+.sass-cache
+.jekyll-metadata
+Gemfile.lock
+.claude
+.github
+.vscode
+docs
+.poc-artifacts
+vendor
+node_modules
+.env*
+*.pem
