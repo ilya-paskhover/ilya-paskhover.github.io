@@ -1,4 +1,4 @@
-Next task: T11
+Next task: T12
 
 # Progress: jekyll-ui-redesign
 
@@ -280,3 +280,53 @@ CHANGES:
  docs/tasks.json                                    |  2 +-
  test/content_test.rb                               | 33 ++++++++++
  5 files changed, 106 insertions(+), 12 deletions(-)
+
+## QA report T11 (attempt 1)
+
+TASK: T11
+VERDICT: FAIL
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T11) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/a11y_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none (both verify commands exit 0: smoke 5 runs, 146 assertions, 0 failures; a11y 7 runs, 765 assertions, 0 failures)
+BROWSER:
+- Step 1 (Tab order at 1280x800): PASS. Tab order was Skip to content, Ilya Paskhover, Home, Projects, About, GitHub, Get in touch, theme toggle, then the All tab. Screenshots of the skip link and the theme toggle show a visible accent-coloured (orange) outline. The other elements were confirmed focused through the snapshot's active marker.
+- Step 2 (accessible names): FAIL on a literal reading. The nav links are named "Home", "Projects", "About", and the [H]/[P]/[A]/[G] hints are not part of the names. But the GitHub link is named "GitHub (opens in a new tab)", not "GitHub", because of an added visually hidden "(opens in a new tab)" span. "Get in touch" and the other external links carry the same suffix. The "All" tab is reported as [pressed], as required.
+- Step 3 (shortcut switch): PASS. The footer button "Keyboard shortcuts: on" changed to "Keyboard shortcuts: off". Pressing 'a' kept the page on /. Clicking again gave "Keyboard shortcuts: on", and pressing 'a' loaded /about/.
+- Step 4 (one h1 per page): PASS. Each of the four pages has exactly one level-1 heading: / has "Ilya Paskhover", /projects/ has "Projects", /about/ has "About", and the base44 post has "Base44 projects".
+- Console: one error, a 404 for /favicon.ico. That is a browser resource, not app code, so it is noted only. No errors from app code.
+- The only failure is the step 2 naming difference. The hidden "(opens in a new tab)" text is arguably an intended accessibility improvement, but it differs from the acceptance text, which names the links 'GitHub'. Decide whether to amend the acceptance wording or the markup.
+CHANGES:
+ _includes/footer.html |  1 +
+ _sass/_footer.scss    | 13 +++++++
+ assets/js/site.js     | 15 ++++++++
+ docs/tasks.json       |  2 +-
+ test/a11y_test.rb     | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 124 insertions(+), 1 deletion(-)
+
+## QA report T11
+
+TASK: T11
+VERDICT: PASS
+COMMANDS:
+- ( test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb ) -> exit 0
+- ( docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/a11y_test.rb ) -> exit 0
+- ( docker compose down ) -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (1280x800): Tab order was Skip to content, Ilya Paskhover, Home, Projects, About, GitHub, Get in touch, theme toggle, All tab. I checked each stop by the [active] marker in the accessibility tree. I confirmed the visible accent-coloured (orange) outline on a screenshot at Home. I did not screenshot each of the other stops.
+- Step 2: The accessible names are exactly "Home", "Projects", "About", "GitHub" and "Get in touch". The "[H]" style hints are not part of the names. The "All" tab is reported as button "All" [pressed]. The snapshot also shows a banner-level text node "Opens in a new tab", which is the aria-describedby target. It is not part of any link name.
+- Step 3: Clicking "Keyboard shortcuts: on" changed it to "Keyboard shortcuts: off". Pressing "a" left the page on /, with a single tab. Clicking the button again gave "Keyboard shortcuts: on" [pressed]. Pressing "a" then loaded /about/.
+- Step 4: / has one level-1 heading, "Ilya Paskhover". /projects/ has one, "Projects". /about/ has one, "About". /2025/05/23/base44-projects.html has one, "Base44 projects".
+- Console: one error, 404 for /favicon.ico. That is a browser resource, not app code, so it is noted only. There are no app errors and no warnings.
+- The stack was left stopped with docker compose down.
+CHANGES:
+ _includes/footer.html |  1 +
+ _includes/header.html |  5 +--
+ _sass/_footer.scss    | 13 +++++++
+ assets/js/site.js     | 15 ++++++++
+ docs/progress.md      | 24 +++++++++++++++++++++++
+ docs/tasks.json       |  2 +-
+ test/a11y_test.rb     | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 151 insertions(+), 3 deletions(-)

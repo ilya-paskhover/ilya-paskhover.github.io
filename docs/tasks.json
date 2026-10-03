@@ -186,8 +186,8 @@
       "Take a snapshot of http://localhost:14000/, http://localhost:14000/projects/, http://localhost:14000/about/ and http://localhost:14000/2025/05/23/base44-projects.html: each shows exactly one level-1 heading."
     ],
     "manual_check": false,
-    "status": "failing",
-    "attempts": 0
+    "status": "passing",
+    "attempts": 1
   },
   {
     "id": "T12",

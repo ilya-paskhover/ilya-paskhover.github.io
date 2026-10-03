@@ -136,6 +136,21 @@
     return !r || r.hidden;
   }
 
+  // Keyboard shortcuts opt-out (WCAG 2.1.4)
+  var scBtn = document.getElementById("shortcuts-toggle");
+  function syncShortcuts() {
+    var on = read("shortcuts") !== "off";
+    scBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    scBtn.textContent = "Keyboard shortcuts: " + (on ? "on" : "off");
+  }
+  if (scBtn) {
+    syncShortcuts();
+    scBtn.addEventListener("click", function () {
+      store("shortcuts", read("shortcuts") === "off" ? "on" : "off");
+      syncShortcuts();
+    });
+  }
+
   // Keyboard shortcuts
   document.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;

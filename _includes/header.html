@@ -1,4 +1,5 @@
 <header class="site-header">
+  <span id="new-tab-hint" class="visually-hidden">Opens in a new tab</span>
   <div class="wrapper site-header-inner">
     <a class="site-brand" href="{{ site.baseurl }}/">{{ site.data.profile.name }}</a>
 
@@ -7,9 +8,9 @@
     <nav class="site-nav" aria-label="Primary">
       <div id="site-nav-menu" class="site-nav-menu">
         {%- for item in site.data.navigation %}
-        <a class="nav-link" href="{{ item.url }}" aria-keyshortcuts="{{ item.key }}"{% if page.url == item.url %} aria-current="page"{% endif %}{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %}><span class="kbd-hint" aria-hidden="true">[{{ item.key | upcase }}]</span> {{ item.title }}{% if item.external %}<span class="visually-hidden"> (opens in a new tab)</span>{% endif %}</a>
+        <a class="nav-link" href="{{ item.url }}" aria-keyshortcuts="{{ item.key }}"{% if page.url == item.url %} aria-current="page"{% endif %}{% if item.external %} target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-hint"{% endif %}><span class="kbd-hint" aria-hidden="true">[{{ item.key | upcase }}]</span> {{ item.title }}</a>
         {%- endfor %}
-        <a class="nav-cta" href="{{ site.data.profile.linkedin }}" target="_blank" rel="noopener noreferrer">{{ site.data.profile.cta_label }} <span class="chevron" aria-hidden="true">›</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+        <a class="nav-cta" href="{{ site.data.profile.linkedin }}" target="_blank" rel="noopener noreferrer" aria-describedby="new-tab-hint">{{ site.data.profile.cta_label }} <span class="chevron" aria-hidden="true">›</span></a>
       </div>
     </nav>
 
