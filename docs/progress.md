@@ -1,4 +1,4 @@
-Next task: T09
+Next task: T10
 
 # Progress: jekyll-ui-redesign
 
@@ -235,3 +235,27 @@ CHANGES:
  docs/tasks.json     |  2 +-
  test/about_test.rb  | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++++
  6 files changed, 196 insertions(+), 4 deletions(-)
+
+## QA report T09
+
+TASK: T09
+VERDICT: PASS
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T09) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/meta_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+1. / tab title: 'Ilya Paskhover | Senior software developer'. Matches.
+2. /about/ title 'About | Ilya Paskhover'; /projects/ title 'Projects | Ilya Paskhover'; /2025/06/24/ai-agents.html title 'AI agents | Ilya Paskhover'. All start with the expected text.
+3. /feed.xml renders the Atom feed and includes the entries 'Vibe coding apps' and 'Base44 projects', with https://ilya-paskhover.github.io links. /sitemap.xml lists https://ilya-paskhover.github.io/about/ and https://ilya-paskhover.github.io/projects/.
+4. /favicon.svg renders the letters 'IP' in orange on a near-black rounded square, with no other artwork. The browser_navigate call to the .svg timed out after 30s (a tool quirk), but the page loaded and the screenshot confirmed the rendering.
+Console errors, all sessions: 1. 404 for http://localhost:14000/favicon.ico. This is the browser's automatic request when the bare favicon.svg document was opened, so it comes from the browser and is noted only. No errors from app code or its own API calls. The earlier favicon 404 on regular pages is gone.
+CHANGES:
+ _config.yml         | 22 ++++++++++++++++++++--
+ _includes/head.html |  8 ++++----
+ docs/tasks.json     |  2 +-
+ favicon.svg         |  1 +
+ feed.xml            | 30 ------------------------------
+ test/meta_test.rb   | 43 +++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 69 insertions(+), 37 deletions(-)

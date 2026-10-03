@@ -156,7 +156,7 @@
       "Open http://localhost:14000/favicon.svg: it shows the letters 'IP' on a near-black square, with no other artwork."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

@@ -1,11 +1,25 @@
 # Site settings
-title: Ilya Paskhover's blog/projects
+title: Ilya Paskhover
+tagline: Senior software developer
 description: > # this means to ignore newlines until "baseurl:"
   Blog and projects by Ilya Paskhover — senior software developer with 15+ years
   of experience. Posts about AI, software engineering, and side projects.
 baseurl: "" # the subpath of your site, e.g. /blog/
-url: "http://ilya-paskhover.github.io" # the base hostname & protocol for your site
+url: "https://ilya-paskhover.github.io" # the base hostname & protocol for your site
 github_username: ilya-paskhover
+author: Ilya Paskhover
+lang: en
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-feed
+  - jekyll-sitemap
+
+social:
+  name: Ilya Paskhover
+  links:
+    - https://www.linkedin.com/in/ilyapaskhover/
+    - https://github.com/ilya-paskhover
 
 # Build settings
 markdown: kramdown
@@ -30,6 +44,10 @@ exclude:
   - .poc-artifacts
 
 defaults:
+  - scope:
+      path: "googlec97749bedfe403e3.html"
+    values:
+      sitemap: false
   - scope:
       path: ""
       type: posts
