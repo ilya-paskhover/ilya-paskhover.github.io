@@ -1,4 +1,4 @@
-Next task: T08
+Next task: T09
 
 # Progress: jekyll-ui-redesign
 
@@ -211,3 +211,27 @@ CHANGES:
  docs/tasks.json                             |   2 +-
  test/post_test.rb                           |  62 ++++++++
  11 files changed, 449 insertions(+), 12 deletions(-)
+
+## QA report T08
+
+TASK: T08
+VERDICT: PASS
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T08) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/about_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (1280x800, key 'a' from /): navigated to /about/. The page shows the chip ABOUT, the h1 About and a lead paragraph. Three mono columns ROLE, EXPERIENCE and ELSEWHERE hold "Senior software developer", "15+ years", and the links LinkedIn and GitHub. OK.
+- Step 2: the intro paragraph contains "more than 15 years of experience". The section "What I work on" has 3 rows divided by thin lines: AI agents and automation, Web apps and prototypes, Systems and fundamentals. OK.
+- Step 3: the section "Selected projects" shows 3 cards: Shallow Whale, Interactive AI CV, YouTube Videos Summarizer. Clicking the Shallow Whale card loaded /shallow-whale/. Back returned to /about/. OK.
+- Step 4: a box at the bottom has the links "Get in touch" and "GitHub". At 375x800 the meta columns, rows and cards stack in one column. The full-page screenshot is 375 px wide, so there is no horizontal overflow. OK.
+- Console: 1 error, a 404 for /favicon.ico. It comes from the browser, so it is noted only. There are no app errors.
+CHANGES:
+ _layouts/about.html | 60 +++++++++++++++++++++++++++++++++++++++++++
+ _sass/_about.scss   | 74 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ about.md            | 13 +++++++---
+ css/main.scss       |  1 +
+ docs/tasks.json     |  2 +-
+ test/about_test.rb  | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 196 insertions(+), 4 deletions(-)

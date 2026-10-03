@@ -140,7 +140,7 @@
       "At the bottom a box shows the links 'Get in touch' and 'GitHub'. Resize to 375x800: the meta columns, rows and cards stack in one column and the page has no horizontal scrollbar."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

@@ -1,0 +1,74 @@
+.about-page {
+    .post-meta-grid dd a { margin-right: var(--space-3); }
+
+    .about-intro {
+        max-width: var(--width-prose);
+        padding: var(--space-6) 0 var(--space-5);
+    }
+
+    .section-title {
+        margin: 0 0 var(--space-4);
+        font-size: 1.125rem;
+        font-weight: 500;
+    }
+
+    .focus-areas { padding: var(--space-5) 0; }
+
+    .focus-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-2);
+        padding: var(--space-4) 0;
+        border-top: 1px solid var(--color-border);
+
+        &:last-child { border-bottom: 1px solid var(--color-border); }
+
+        h3 { margin: 0; font-size: 1.125rem; font-weight: 500; }
+        .focus-text p { margin: 0; color: var(--color-text-muted); }
+
+        @media screen and (min-width: 768px) {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+            gap: var(--space-5);
+        }
+    }
+
+    .about-projects { padding: var(--space-5) 0; }
+
+    .project-cards {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-4);
+
+        @media screen and (min-width: 768px) {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    > .cta {
+        margin: var(--space-5) 0 var(--space-7);
+        padding: var(--space-5);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+
+        .cta-title { margin: 0 0 var(--space-2); font-size: 1.25rem; font-weight: 500; }
+        p { margin: 0 0 var(--space-4); color: var(--color-text-muted); }
+
+        .cta-link {
+            display: inline-block;
+            margin: 0 var(--space-2) var(--space-2) 0;
+            padding: var(--space-2) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            text-decoration: none;
+            color: var(--color-cta-text);
+            background: var(--color-cta-bg);
+            border-radius: 2px;
+        }
+
+        .cta-link-secondary {
+            color: var(--color-text);
+            background: transparent;
+            border: 1px solid var(--color-border);
+        }
+    }
+}
