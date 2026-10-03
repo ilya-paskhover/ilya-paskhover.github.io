@@ -387,12 +387,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }, { v: "1.11.2", items: ["After an update, a short What's new lists what changed since your last visit, one line per change.", "The intro no longer comes back on every visit after you closed it by tapping outside it."] }, { v: "1.11.1", items: ["Fix: in live mode, prices no longer jump right after the game opens or reloads."] }, { v: "1.11.0", items: ["Quests no longer get harder as you level up.", "A Trade button on every unfinished quest takes you to the move it needs.", "On the Quests tab your claimed quests now sit right under Completed, and the per-kind totals moved to their own section, By kind, at the bottom."] }, { v: "1.10.0", items: ["Toncoin is now Gram (GRAM).", 'A coin the live feed returns no price for, or only a price over an hour old, now says "No live price".', "With live prices, each coin shows its 24 hour trading volume and the market is sorted by it.", "BNB joins the market, fifth by volume.", "Gram's volatility and its link to Bitcoin are re-measured over the same year, with Toncoin's prices up to the rename and Gram's after.", "npm run verify:feed asks Binance and CoinGecko for every coin and fails if one has no fresh price, as TON did after the rename.", "The sparkline beside each coin now covers the same 24 hours as the percentage next to it.", "The privacy policy says the game also asks for volume and the day's prices."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }, { v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }, { v: "1.11.2", items: ["After an update, a short What's new lists what changed since your last visit, one line per change.", "The intro no longer comes back on every visit after you closed it by tapping outside it."] }, { v: "1.11.1", items: ["Fix: in live mode, prices no longer jump right after the game opens or reloads."] }, { v: "1.11.0", items: ["Quests no longer get harder as you level up.", "A Trade button on every unfinished quest takes you to the move it needs.", "On the Quests tab your claimed quests now sit right under Completed, and the per-kind totals moved to their own section, By kind, at the bottom."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
   var HISTORY = 300;
   var FEE_DEFAULT = 1e-3;
+  var REVIEW_LAG_DEFAULT = 80;
+  var REVIEW_LAG_CHOICES = [[80, "About a minute"], [300, "5 minutes"], [900, "15 minutes"], [3600, "An hour"], [14400, "4 hours"]];
   var FEE_CHOICES = [[0, "No fee"], [5e-4, "0.05%"], [1e-3, "0.10%, typical of large exchanges"], [25e-4, "0.25%"], [6e-3, "0.60%, like a pricier app"]];
   var COINS = [
     { s: "BTC", n: "Bitcoin", p0: 78e3, dv: 0.0184, corr: 0.45, dr: 15e-6, c: "#F0B23C" },
@@ -1341,6 +1343,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     });
     o.lotSeq = top;
     if (!fin(o.fee) || o.fee < 0 || o.fee > 0.01) o.fee = FEE_DEFAULT;
+    if (!REVIEW_LAG_CHOICES.some(function(c) {
+      return c[0] === o.reviewLag;
+    })) o.reviewLag = REVIEW_LAG_DEFAULT;
     o.trades = o.trades.filter(function(t) {
       return t && typeof t.s === "string" && typeof t.q === "number";
     }).slice(0, 40);
@@ -1550,12 +1555,20 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     ui.ticked(r.changed);
     if (S.tick % 6 === 0) save();
   }
-  var REVIEW_LAG = 80;
+  var REVIEW_LAG = REVIEW_LAG_DEFAULT;
+  function reviewRipe(r) {
+    var lag = S.reviewLag || REVIEW_LAG;
+    if (r.live && r.at && Feed.mode === "live") {
+      if (Feed.snapped) return Date.now() - r.at >= lag * 1e3;
+      if (Feed.status !== "error") return false;
+    }
+    return S.tick - r.t >= lag;
+  }
   function checkReviews() {
     if (!S.pending.length) return;
     var ripe = [];
     S.pending = S.pending.filter(function(r) {
-      if (S.tick - r.t < REVIEW_LAG) return true;
+      if (!reviewRipe(r)) return true;
       ripe.push(r);
       return false;
     });
@@ -1773,6 +1786,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       lotSeq: 0,
       /* one per buy: {id, s, q, p (entry), t, sl, tp} */
       fee: FEE_DEFAULT,
+      reviewLag: REVIEW_LAG_DEFAULT,
       trades: [],
       news: [],
       pending: [],
@@ -2385,7 +2399,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       t: "Decide your exit before you need it",
       p: [
         "Tap any coin to trade. On a position you hold you can set a stop loss and a take profit as a percent from your entry, and the game closes it for you when the price gets there.",
-        "A third of a game day after every sale, the Wallet tab tells you what the price did next. Selling early and selling well look identical at the moment you press the button."
+        "Shortly after every sale (you pick how long in Settings), the Wallet tab tells you what the price did next. Selling early and selling well look identical at the moment you press the button."
       ]
     }
   ];
@@ -2537,6 +2551,27 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     fnote.style.margin = "7px 0 0";
     fnote.textContent = "Charged on every buy and sell, as a share of its value. Large exchanges charge about 0.10% on small accounts.";
     b.appendChild(fnote);
+    b.appendChild(el("h2", "sec", "What happened next"));
+    var lagSel = el("select", "sel");
+    REVIEW_LAG_CHOICES.forEach(function(o) {
+      var op = el("option", null, o[1]);
+      op.value = String(o[0]);
+      lagSel.appendChild(op);
+    });
+    lagSel.value = String(S.reviewLag);
+    lagSel.addEventListener("change", function() {
+      S.reviewLag = parseInt(lagSel.value, 10);
+      save();
+      var pick2 = REVIEW_LAG_CHOICES.filter(function(o) {
+        return o[0] === S.reviewLag;
+      })[0];
+      toast("Sales are checked after " + pick2[1].toLowerCase());
+    });
+    b.appendChild(lagSel);
+    var rnote = el("p", "note");
+    rnote.style.margin = "7px 0 0";
+    rnote.textContent = "How long after a sale the Wallet checks where the price went. With live prices the clock counts, and a sale that came due while the app was closed is checked when you next open it. In the simulator it counts ticks.";
+    b.appendChild(rnote);
     b.appendChild(el("h2", "sec", "Market speed"));
     var sp = el("select", "sel");
     [[1, "Normal, one tick a second"], [2, "Fast, two ticks a second"], [4, "Very fast, four ticks a second"], [0, "Paused"]].forEach(function(o) {
@@ -2614,7 +2649,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.11.3");
+    var ver = el("p", "note", "Shallow Whale 1.11.4");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3178,7 +3213,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         if (!S.reviews.length) {
           var re0 = el("div", "empty");
           re0.appendChild(el("b", null, "Nothing to review yet"));
-          re0.appendChild(document.createTextNode("A third of a game day after each sale, the price you sold at gets checked against where it went."));
+          re0.appendChild(document.createTextNode("Shortly after each sale (the wait is in Settings), the price you sold at gets checked against where it went."));
           R.appendChild(re0);
         } else {
           S.reviews.forEach(function(r) {
@@ -3343,8 +3378,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.11.3");
-    setItem(SEEN_KEY, "1.11.3");
+    var seen = getItem(SEEN_KEY, "1.11.4");
+    setItem(SEEN_KEY, "1.11.4");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3352,7 +3387,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.11.3");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.11.4");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3361,7 +3396,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.11.3"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.11.4"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
