@@ -1,4 +1,4 @@
-Next task: T10
+Next task: T11
 
 # Progress: jekyll-ui-redesign
 
@@ -259,3 +259,24 @@ CHANGES:
  feed.xml            | 30 ------------------------------
  test/meta_test.rb   | 43 +++++++++++++++++++++++++++++++++++++++++++++
  6 files changed, 69 insertions(+), 37 deletions(-)
+
+## QA report T10
+
+TASK: T10
+VERDICT: PASS
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T10) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/content_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (linux-kernel-course post): the list has 4 bullets and none is empty. The text reads "...include /sbin directory as well", so "direcroy" is gone.
+- Step 2 (about-this-blog post): the note reads "for running Jekyll server (with jekyll serve –watch) I had to enter 'code/jekyll' directory." "with" is spelled correctly and "wiht" is gone. One small difference from the step as written: the browser shows "–watch" with a typographic en dash, not "--watch". I judged this as the site's smart-quote rendering, not a typo, and did not count it as a failure. The caller may want to confirm that.
+- Console: 1 error, a 404 on http://localhost:14000/favicon.ico. This is a browser request for a missing favicon, so it is noted only. There are no errors from the app's own code.
+CHANGES:
+ README.md                                          | 72 ++++++++++++++++++++--
+ _posts/2016-03-17-about-this-blog.markdown         |  2 +-
+ ...-small-summary-for-linux-kernel-course.markdown |  9 ++-
+ docs/tasks.json                                    |  2 +-
+ test/content_test.rb                               | 33 ++++++++++
+ 5 files changed, 106 insertions(+), 12 deletions(-)

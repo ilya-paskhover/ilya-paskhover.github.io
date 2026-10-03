@@ -170,7 +170,7 @@
       "Open http://localhost:14000/jekyll/update/2016/03/17/about-this-blog.html: the note reads 'with jekyll serve --watch' (not 'wiht')."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {
