@@ -9,6 +9,9 @@ github_username: ilya-paskhover
 
 # Build settings
 markdown: kramdown
+kramdown:
+  auto_ids: true
+  toc_levels: "2"
 
 host: localhost
 port: 4000

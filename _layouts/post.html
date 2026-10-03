@@ -1,15 +1,69 @@
 ---
 layout: default
 ---
-<div class="post">
+{%- include post-tree.html content=content -%}
+{%- capture post_lead -%}{%- if page.description -%}{{ page.description }}{%- else -%}{{ page.excerpt | strip_html | strip | truncatewords: 30 }}{%- endif -%}{%- endcapture -%}
+<article class="post">
 
-  <header class="post-header">
+  <header class="post-hero">
+    <a class="back-link label" href="{{ site.baseurl }}/">All writing</a>
+    {%- if page.topic %}
+    <span class="chip post-topic">{{ page.topic }}</span>
+    {%- endif %}
     <h1 class="post-title">{{ page.title }}</h1>
-    <p class="post-meta">{{ page.date | date: "%b %-d, %Y" }}{% if page.author %} • {{ page.author }}{% endif %}{% if page.meta %} • {{ page.meta }}{% endif %}</p>
+    <p class="post-lead">{{ post_lead | strip }}</p>
+    {%- if page.archived %}
+    <p class="post-archived-note">This is an archived note from 2016.</p>
+    {%- endif %}
+    <dl class="post-meta-grid">
+      <div>
+        <dt class="label">Author</dt>
+        <dd><span class="tree-glyph" aria-hidden="true">└</span> {{ page.author }}</dd>
+      </div>
+      <div>
+        <dt class="label">Published</dt>
+        <dd><span class="tree-glyph" aria-hidden="true">└</span> <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time></dd>
+      </div>
+      <div>
+        <dt class="label">Reading time</dt>
+        <dd><span class="tree-glyph" aria-hidden="true">└</span> {% include reading-time.html content=post_body_html format="short" %}</dd>
+      </div>
+    </dl>
   </header>
 
-  <article class="post-content">
-    {{ content }}
-  </article>
+  <hr class="post-rule">
 
-</div>
+  <div class="post-layout">
+    <aside class="post-aside">
+      <p class="label">Tree</p>
+      <nav class="post-tree" aria-label="Table of contents">
+        {{ post_tree_html }}
+      </nav>
+      <div class="read-progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span class="progress-glyphs" aria-hidden="true">░░░░░░░░░░░░░░░░░░░░</span>
+        <span class="progress-value">00%</span>
+      </div>
+      <p class="scroll-hint label">Press ↑ / ↓ to scroll</p>
+    </aside>
+
+    <div class="post-content" id="post-body">
+      {{ post_body_html }}
+    </div>
+  </div>
+
+  <nav class="post-nav" aria-label="More posts">
+    {%- if page.previous %}
+    <a class="post-nav-older" href="{{ page.previous.url | relative_url }}"><span class="label">Older</span><span class="post-nav-title">{{ page.previous.title }}</span></a>
+    {%- endif %}
+    {%- if page.next %}
+    <a class="post-nav-newer" href="{{ page.next.url | relative_url }}"><span class="label">Newer</span><span class="post-nav-title">{{ page.next.title }}</span></a>
+    {%- endif %}
+  </nav>
+
+  <aside class="cta">
+    <h2 class="cta-title">Let's work together</h2>
+    <p>Have a project or a role in mind? I'm happy to talk.</p>
+    <a class="cta-link" href="{{ site.data.profile.linkedin }}" target="_blank" rel="noopener noreferrer">{{ site.data.profile.cta_label }} <span class="chevron" aria-hidden="true">›</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+  </aside>
+
+</article>

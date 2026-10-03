@@ -124,7 +124,7 @@
       "Open http://localhost:14000/jekyll/update/2016/03/17/welcome-to-jekyll.html: the text 'This is an archived note from 2016.' appears in the header area, and the TREE shows a single entry 'Overview'."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

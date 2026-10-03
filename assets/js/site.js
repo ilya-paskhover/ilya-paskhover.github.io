@@ -83,6 +83,54 @@
     render();
   }
 
+  // Post page: reading progress and active TREE entry
+  var progress = document.querySelector(".read-progress");
+  var postBody = document.getElementById("post-body");
+  if (progress && postBody) {
+    var glyphs = progress.querySelector(".progress-glyphs");
+    var valueEl = progress.querySelector(".progress-value");
+    var treeLinks = Array.prototype.slice.call(document.querySelectorAll(".post-tree a"));
+    var targets = treeLinks.map(function (a) {
+      var id = decodeURIComponent((a.getAttribute("href") || "").slice(1));
+      return id && id !== "post-body" ? document.getElementById(id) : null;
+    });
+    var setActive = function (idx) {
+      treeLinks.forEach(function (a, i) {
+        var on = i === idx;
+        a.classList.toggle("is-active", on);
+        if (on) a.setAttribute("aria-current", "location"); else a.removeAttribute("aria-current");
+      });
+    };
+    var update = function () {
+      var rect = postBody.getBoundingClientRect();
+      var vh = window.innerHeight || doc.clientHeight;
+      var top = rect.top + window.pageYOffset;
+      var span = rect.height - vh;
+      var pct = span <= 0 ? 100 : Math.round(((window.pageYOffset - top) / span) * 100);
+      pct = Math.max(0, Math.min(100, pct));
+      var filled = Math.floor(pct / 5);
+      glyphs.textContent = new Array(filled + 1).join("█") + new Array(21 - filled).join("░");
+      valueEl.textContent = (pct < 10 ? "0" : "") + pct + "%";
+      progress.setAttribute("aria-valuenow", String(pct));
+
+      var active = -1;
+      var atEnd = window.pageYOffset + vh >= doc.scrollHeight - 2 && doc.scrollHeight > vh;
+      targets.forEach(function (el, i) {
+        if (el && el.getBoundingClientRect().top <= vh * 0.3) active = i;
+      });
+      if (atEnd) {
+        for (var i = targets.length - 1; i >= 0; i--) { if (targets[i]) { active = i; break; } }
+      }
+      setActive(active);
+    };
+    treeLinks.forEach(function (a, i) {
+      a.addEventListener("click", function () { setActive(i); });
+    });
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  }
+
   function moreRow_hidden() {
     var r = document.querySelector("#writing .load-more-row");
     return !r || r.hidden;

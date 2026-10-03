@@ -1,4 +1,4 @@
-Next task: T07
+Next task: T08
 
 # Progress: jekyll-ui-redesign
 
@@ -180,3 +180,34 @@ CHANGES:
  index.html              | 21 +++++++++++++++-
  test/home_intro_test.rb | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
  4 files changed, 138 insertions(+), 2 deletions(-)
+
+## QA report T07
+
+TASK: T07
+VERDICT: PASS
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T07) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/post_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (base44-projects at 1280x800): OK. 'All writing', chip 'Apps', large title 'Base44 projects', lead paragraph, and mono columns AUTHOR / PUBLISHED / READING TIME with '└ Ilya Paskhover', '└ May 23, 2025', '└ 1 min'.
+- Step 2: OK. A thin full-width line sits below the header. The left side shows 'TREE' with 'Interactive AI CV' and 'Epoch converter', each with an L-shaped connector. Below that are a block-glyph bar with a percentage and 'PRESS ↑ / ↓ TO SCROLL'. The body is a narrow column and does not repeat the contents list.
+- Step 3: OK. Clicking 'Epoch converter' scrolled to that section and put '#epoch-converter' in the URL. The TREE entry became bold and the percentage read 100%, which is above 00%. The aside stayed in view at the top of the viewport after the scroll. In the long Jekyll post the aside also stayed at the top of the viewport after PageDown, so it is sticky.
+- Step 4 (ai-agents, scrolled to the bottom): OK. 'Older' links to 'Base44 projects' and 'Newer' links to 'Vibe coding apps'. Below them is a box 'Let's work together' with a 'Get in touch' link. Clicking 'Newer' loaded /2025/11/22/vibe-coding-apps.html (title 'Vibe coding apps').
+- Step 5 (welcome-to-jekyll): OK. 'This is an archived note from 2016.' appears in the header area, and the TREE shows a single entry 'Overview'.
+- Observation, not a step failure: on all three pages tested, the progress bar read 100% at scroll position 0. Each page's body ends within or near the first viewport. The long Jekyll post still showed 100% after PageDown, and I did not see a value below 100% at any point. I could not check a mid-scroll percentage or a change in the active TREE entry on a post long enough to scroll with several sections. The bar's percentage is therefore not demonstrated to vary with scroll.
+- Console: one error, 404 on /favicon.ico (browser resource, noted only). No errors from the app's own code or API calls.
+CHANGES:
+ _config.yml                                 |   3 +
+ _includes/post-tree.html                    |  15 ++
+ _layouts/post.html                          |  68 ++++++++-
+ _posts/2025-05-23-base44-projects.markdown  |  18 ++-
+ _posts/2025-06-24-ai-agents.markdown        |  11 +-
+ _posts/2025-11-22-vibe-coding-apps.markdown |  11 +-
+ _sass/_post.scss                            | 222 ++++++++++++++++++++++++++++
+ assets/js/site.js                           |  48 ++++++
+ css/main.scss                               |   1 +
+ docs/tasks.json                             |   2 +-
+ test/post_test.rb                           |  62 ++++++++
+ 11 files changed, 449 insertions(+), 12 deletions(-)
