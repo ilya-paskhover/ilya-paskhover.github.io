@@ -25,3 +25,11 @@ exclude:
   - vendor
   - node_modules
   - .poc-artifacts
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      author: Ilya Paskhover

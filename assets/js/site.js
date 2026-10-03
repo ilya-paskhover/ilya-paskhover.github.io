@@ -42,6 +42,52 @@
     });
   }
 
+  // Home feed: topic tabs and load more
+  var feed = document.getElementById("writing");
+  var moreBtn = feed && feed.querySelector(".load-more");
+  if (feed && moreBtn) {
+    var tabs = feed.querySelectorAll(".topic-tab");
+    var rows = feed.querySelectorAll(".post-row");
+    var featured = feed.querySelector(".post-featured");
+    var moreRow = moreBtn.closest(".load-more-row");
+    var size = parseInt(moreBtn.getAttribute("data-page-size"), 10) || 3;
+    var topic = "all";
+    var shown = size;
+
+    var render = function () {
+      var all = topic === "all";
+      if (featured) featured.hidden = !(all || featured.getAttribute("data-topic") === topic);
+      var count = 0, hiddenLeft = 0;
+      rows.forEach(function (row) {
+        var match = all || row.getAttribute("data-topic") === topic;
+        var show = match && (!all || count < shown);
+        if (match) count++;
+        row.hidden = !show;
+        row.classList.toggle("is-shown", show);
+        if (match && !show) hiddenLeft++;
+      });
+      moreRow.hidden = hiddenLeft === 0;
+    };
+    var loadMore = function () { shown = rows.length; render(); };
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        topic = tab.getAttribute("data-topic");
+        shown = size;
+        tabs.forEach(function (t) { t.setAttribute("aria-pressed", t === tab ? "true" : "false"); });
+        render();
+      });
+    });
+    moreBtn.addEventListener("click", loadMore);
+    feed.loadMore = loadMore;
+    render();
+  }
+
+  function moreRow_hidden() {
+    var r = document.querySelector("#writing .load-more-row");
+    return !r || r.hidden;
+  }
+
   // Keyboard shortcuts
   document.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
@@ -50,7 +96,10 @@
     if (t && t.closest && t.closest("input, textarea, select, [contenteditable]")) return;
     var key = (e.key || "").toLowerCase();
     var link = document.querySelector('.nav-link[aria-keyshortcuts="' + key + '"]');
-    if (link) {
+    if (key === "r" && feed && feed.loadMore && !moreRow_hidden()) {
+      e.preventDefault();
+      feed.loadMore();
+    } else if (link) {
       e.preventDefault();
       link.click();
     } else if (key === "s" && location.pathname !== "/") {

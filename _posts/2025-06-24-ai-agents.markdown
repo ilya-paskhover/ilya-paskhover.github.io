@@ -2,5 +2,7 @@
 layout: post
 title:  "AI agents"
 date:   2025-06-24 10:54:57
+topic: AI agents
+description: "AI agents I have built, starting with a Gemini gem that summarizes YouTube videos."
 ---
 1. [YouTube videos summarizer](https://gemini.google.com/gem/1TxqGF2P6zAIuV9c5rC9PMW7NFHq7XqG7?usp=sharing)

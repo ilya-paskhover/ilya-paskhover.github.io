@@ -2,6 +2,8 @@
 layout: post
 title:  "A small summary of 'Linux Kernel' course - day 2!"
 date:   2016-03-17 11:03:57
+topic: Notes
+archived: true
 categories: jekyll update
 ---
 We continued/started with building our own module 'mymodule'. Here are some useful things i have learned/recalled:

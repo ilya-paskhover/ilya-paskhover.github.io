@@ -91,7 +91,7 @@
       "Click 'AI agents' in the feed: the post page at /2025/06/24/ai-agents.html loads with the heading 'AI agents'."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

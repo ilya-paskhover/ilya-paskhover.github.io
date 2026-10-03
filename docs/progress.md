@@ -1,4 +1,4 @@
-Next task: T05
+Next task: T06
 
 # Progress: jekyll-ui-redesign
 
@@ -125,3 +125,36 @@ CHANGES:
  projects.md                 |   8 +--
  test/projects_test.rb       |  50 +++++++++++++++
  9 files changed, 236 insertions(+), 7 deletions(-)
+
+## QA report T05
+
+TASK: T05
+VERDICT: PASS
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T05) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/writing_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER: 1280x800.
+- Step 1: The feed matched the acceptance text. Tabs ALL (bold), AI AGENTS, APPS, NOTES. Featured chip, "Vibe coding apps", "Ilya Paskhover · Apps", and "1 minute" at the right. Exactly 3 rows with thin dividers: AI agents (Jun 24, 2025), Base44 projects (May 23, 2025), "A small summary of 'Linux Kernel' course - day 2!". Each row had "1 minute" at the right. LOAD MORE at the left and "Press R to load more" at the right.
+- Step 2: A real click on LOAD MORE added "About this blog!" and "Welcome to Jekyll!" below the rows. The button and its hint were gone. After a reload, pressing "r" added the same two rows.
+- Step 3: After a reload, clicking APPS made it the bold, pressed tab. Only the featured "Vibe coding apps" and "Base44 projects" showed, and LOAD MORE was hidden. Clicking NOTES showed the three 2016 posts and hid the featured row. Clicking ALL restored the featured row, the 3 rows and LOAD MORE with its hint.
+- Step 4: Clicking "AI agents" loaded /2025/06/24/ai-agents.html. The page heading was "AI agents" (h1).
+- Console: no JS errors from the app. The only error was a 404 for /favicon.ico, which comes from the browser and is noted only.
+CHANGES:
+ _config.yml                                        |   8 ++
+ _includes/post-row.html                            |   8 ++
+ _includes/reading-time.html                        |   4 +
+ _posts/2016-03-17-about-this-blog.markdown         |   2 +
+ ...-small-summary-for-linux-kernel-course.markdown |   2 +
+ _posts/2016-03-17-welcome-to-jekyll.markdown       |   2 +
+ _posts/2025-05-23-base44-projects.markdown         |   2 +
+ _posts/2025-06-24-ai-agents.markdown               |   2 +
+ _posts/2025-11-22-vibe-coding-apps.markdown        |   3 +
+ _sass/_writing.scss                                | 146 +++++++++++++++++++++
+ assets/js/site.js                                  |  51 ++++++-
+ css/main.scss                                      |   1 +
+ docs/tasks.json                                    |   2 +-
+ index.html                                         |  51 +++++--
+ test/writing_test.rb                               |  62 +++++++++
+ 15 files changed, 332 insertions(+), 14 deletions(-)

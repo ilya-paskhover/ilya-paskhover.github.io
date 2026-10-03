@@ -1,20 +1,47 @@
 ---
 layout: default
 ---
+{%- assign topics = site.posts | map: "topic" | compact | uniq | sort -%}
+{%- assign featured = site.posts | where: "featured", true | first -%}
+{%- assign rows = site.posts | where_exp: "p", "p.featured != true" -%}
 
-<div class="home">
+<div class="home-grid">
 
-  <h1 class="page-heading">Posts</h1>
+  <aside class="home-intro"></aside>
 
-  <ul class="post-list">
-    {% for post in site.posts %}
-      <li>
-        <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+  <section id="writing" class="home-feed">
+    <h2 class="visually-hidden">Writing</h2>
 
-        <h2>
-          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
-        </h2>
-      </li>
-    {% endfor %}
-  </ul>
+    <div class="feed-toolbar">
+      <div class="topic-tabs" aria-label="Filter by topic">
+        <button type="button" class="topic-tab label" data-topic="all" aria-pressed="true">All</button>
+        {%- for t in topics %}
+        <button type="button" class="topic-tab label" data-topic="{{ t | slugify }}" aria-pressed="false">{{ t }}</button>
+        {%- endfor %}
+      </div>
+    </div>
+
+    {%- if featured %}
+    <article class="post-featured" data-topic="{{ featured.topic | slugify }}">
+      <div class="post-featured-main">
+        <span class="chip">Featured</span>
+        <h3 class="post-row-title"><a href="{{ featured.url | relative_url }}">{{ featured.title | escape }}</a></h3>
+        <p class="post-featured-meta label">{{ featured.author }} · {{ featured.topic }}</p>
+      </div>
+      <span class="reading-time label">{% include reading-time.html content=featured.content format="long" %}</span>
+    </article>
+    {%- endif %}
+
+    <ol class="post-list">
+      {%- for p in rows %}
+      {% include post-row.html post=p index=forloop.index0 %}
+      {%- endfor %}
+    </ol>
+
+    <div class="load-more-row">
+      <button type="button" class="load-more label" data-page-size="3">Load more</button>
+      <span class="load-more-hint label">Press <kbd>R</kbd> to load more</span>
+    </div>
+  </section>
+
 </div>

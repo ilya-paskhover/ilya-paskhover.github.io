@@ -1,0 +1,8 @@
+{%- assign p = include.post -%}
+<li class="post-row{% if include.index >= 3 %} is-extra{% endif %}" data-topic="{{ p.topic | slugify }}" data-search="{{ p.title | append: ' ' | append: p.description | downcase | escape }}">
+  <div class="post-row-main">
+    <time class="post-date label" datetime="{{ p.date | date_to_xmlschema }}">{{ p.date | date: "%b %d, %Y" }}</time>
+    <h3 class="post-row-title"><a href="{{ p.url | relative_url }}">{{ p.title | escape }}</a></h3>
+  </div>
+  <span class="reading-time label">{% include reading-time.html content=p.content format="long" %}</span>
+</li>

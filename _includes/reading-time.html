@@ -1,0 +1,4 @@
+{%- assign rt_words = include.content | number_of_words -%}
+{%- assign rt_min = rt_words | plus: 199 | divided_by: 200 -%}
+{%- if rt_min < 1 -%}{%- assign rt_min = 1 -%}{%- endif -%}
+{%- if include.format == "short" -%}{{ rt_min }} min{%- elsif rt_min == 1 -%}1 minute{%- else -%}{{ rt_min }} minutes{%- endif -%}
