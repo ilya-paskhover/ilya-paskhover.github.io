@@ -6,20 +6,20 @@
 
 
 // Our variables
-$base-font-family: Helvetica, Arial, sans-serif;
+$base-font-family: sans-serif;
 $base-font-size:   16px;
 $small-font-size:  $base-font-size * 0.875;
 $base-line-height: 1.5;
 
 $spacing-unit:     30px;
 
-$text-color:       #111;
-$background-color: #fdfdfd;
-$brand-color:      #2a7ae2;
+$text-color:       var(--color-text);
+$background-color: var(--color-bg);
+$brand-color:      var(--color-accent);
 
-$grey-color:       #828282;
-$grey-color-light: lighten($grey-color, 40%);
-$grey-color-dark:  darken($grey-color, 25%);
+$grey-color:       var(--color-text-muted);
+$grey-color-light: var(--color-border);
+$grey-color-dark:  var(--color-text-muted);
 
 // Width of the content area
 $content-width:    800px;
@@ -46,6 +46,7 @@ $on-laptop:        800px;
 
 // Import partials from `sass_dir` (defaults to `_sass`)
 @import
+        "tokens",
         "base",
         "layout",
         "syntax-highlighting"

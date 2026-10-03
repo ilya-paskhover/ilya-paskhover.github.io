@@ -27,7 +27,7 @@
       "Resize to 375x800 on the same post: the page has no horizontal scrollbar, and the code block scrolls horizontally inside its own box if its lines are too long."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {

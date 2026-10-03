@@ -1,4 +1,4 @@
-Next task: T01
+Next task: T02
 
 # Progress: jekyll-ui-redesign
 
@@ -30,3 +30,15 @@ BROWSER: Viewport 1280x800.
 - Step 3, http://localhost:14000/shallow-whale/: the tab title is "Shallow Whale". OK.
 - Console errors: one, "Failed to load resource: 404 /favicon.ico". Noted only (favicon comes in T09).
 CHANGES: 10 files changed, 164 insertions(+), 1 deletion(-) (Docker scaffold, test harness, .gitignore, Gemfile, _config.yml exclude list, tasks.json status).
+
+## QA report T01
+
+TASK: T01
+VERDICT: PASS
+COMMANDS:
+- smoke (T00 verify) -> exit 0
+- docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/foundation_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER: Steps 1 to 4 PASS (dark background, off-white text; Skip to content visible on Tab and URL ends #main; inline code bordered mono and code block hairline; no horizontal overflow at 375x800, code box did not need to scroll). Console: only 404 /favicon.ico (T09).
+CHANGES: 8 files changed, 261 insertions(+), 174 deletions(-) (tokens, base, syntax, layout shell, foundation test, tasks.json).
