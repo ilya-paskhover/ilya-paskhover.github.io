@@ -1,10 +1,6 @@
 ---
-layout: page
+layout: projects
 title: Projects
 permalink: /projects/
+description: "Apps, games and AI agents I have built."
 ---
-<ul>
-{% for p in site.data.projects %}
-  <li><a href="{{ p.url }}">{{ p.title }}</a></li>
-{% endfor %}
-</ul>

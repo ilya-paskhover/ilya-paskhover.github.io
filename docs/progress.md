@@ -1,4 +1,4 @@
-Next task: T04
+Next task: T05
 
 # Progress: jekyll-ui-redesign
 
@@ -98,3 +98,30 @@ CHANGES:
  docs/tasks.json       |  2 +-
  test/footer_test.rb   | 45 ++++++++++++++++++++++++++++++++
  6 files changed, 139 insertions(+), 109 deletions(-)
+
+## QA report T04
+
+TASK: T04
+VERDICT: PASS
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T04) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/projects_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- 1280x800 /projects/: left column has the heading "Projects" and "Apps, games and AI agents I have built." The right column has 5 rows with thin dividers. Row 1 is Shallow Whale with "A simulated crypto trading game. No ads, no purchases, no real money.", mono chips Game and PWA, and the mono label "Web game" at the right. The chips and label render uppercase, which I take to be CSS text-transform, since the snapshot text is "Game", "PWA" and "Web game". "[P] PROJECTS" is bold in the header.
+- Link names in the snapshot: "Epoch Converter (opens in a new tab)" ends with the suffix. "Shallow Whale" has no suffix. The other external links also carry the suffix, and Math Bubbles does not.
+- Clicking the Math Bubbles title loaded /assets/html_apps/math_bubbles.html in the same tab. Going back returned to /projects/. Clicking the Shallow Whale title loaded /shallow-whale/ with the tab title "Shallow Whale".
+- 375x800: the heading is above the rows in one column. All 5 rows are fully visible in the full-page screenshot, and I saw no horizontal scrollbar.
+- Console: 0 errors.
+CHANGES:
+ _includes/project-card.html |   5 ++
+ _includes/project-link.html |   6 ++
+ _includes/project-row.html  |  12 ++++
+ _layouts/projects.html      |  14 +++++
+ _sass/_projects.scss        | 145 ++++++++++++++++++++++++++++++++++++++++++++
+ css/main.scss               |   1 +
+ docs/tasks.json             |   2 +-
+ projects.md                 |   8 +--
+ test/projects_test.rb       |  50 +++++++++++++++
+ 9 files changed, 236 insertions(+), 7 deletions(-)
