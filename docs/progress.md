@@ -1,4 +1,4 @@
-Next task: T03
+Next task: T04
 
 # Progress: jekyll-ui-redesign
 
@@ -75,3 +75,26 @@ CHANGES:
  projects.md           |  10 +++++
  test/header_test.rb   |  52 ++++++++++++++++++++++++++
  12 files changed, 295 insertions(+), 110 deletions(-)
+
+## QA report T03
+
+TASK: T03
+VERDICT: PASS
+COMMANDS:
+- (test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb) -> exit 0
+- (docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/footer_test.rb) -> exit 0
+- (docker compose down) -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (1280x800, bottom of /): a thin divider sits above the footer. The footer shows "Ilya Paskhover" with the tagline "Senior software developer". The Site column has Home, Projects, About and RSS. The Elsewhere column has GitHub and LinkedIn. All of it is in a monospace face. The last line reads "© 2026 Ilya Paskhover. Built with Jekyll." Matches.
+- Step 2: clicking the footer RSS link went to http://localhost:14000/feed.xml. The page shows feed XML containing the title "Vibe coding apps". Matches.
+- Step 3 (375x800, bottom of /): the columns are stacked vertically in this order: wordmark, Site, Elsewhere, copyright. All links are fully visible. No horizontal scrollbar was visible in the screenshot. Matches.
+- Console errors: only a 404 for /favicon.ico, a browser resource. Noted, not a failure. No app errors.
+CHANGES:
+ _includes/footer.html | 64 +++++++++++++++-------------------------------
+ _sass/_footer.scss    | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ _sass/_layout.scss    | 65 +---------------------------------------------
+ css/main.scss         |  1 +
+ docs/tasks.json       |  2 +-
+ test/footer_test.rb   | 45 ++++++++++++++++++++++++++++++++
+ 6 files changed, 139 insertions(+), 109 deletions(-)

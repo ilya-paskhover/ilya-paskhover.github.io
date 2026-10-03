@@ -59,7 +59,7 @@
       "Resize to 375x800, open http://localhost:14000/ and scroll to the bottom: the footer columns are stacked vertically, every footer link is fully visible, and the page has no horizontal scrollbar."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {
