@@ -1,0 +1,240 @@
+[
+  {
+    "id": "T00",
+    "name": "Scaffold: Docker build and serve, test harness, smoke test, .gitignore and .env.example",
+    "agent": "backend-infra-dev",
+    "size": "M",
+    "verify": "test -z \"$(git status --porcelain -- shallow-whale/)\" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800: the page loads and shows a link titled 'Vibe coding apps' in the list of posts.",
+      "Click the 'Vibe coding apps' link: the post page loads with the heading 'Vibe coding apps' and a link 'math bubble'.",
+      "Open http://localhost:14000/shallow-whale/: the browser tab title is 'Shallow Whale'."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T01",
+    "name": "Dark-first design tokens (light as secondary), mono and sans system font stacks, base typography, page shell (lang, skip link, main)",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/foundation_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800: the page background is near-black and the body text is off-white.",
+      "On http://localhost:14000/ press Tab once: a link 'Skip to content' becomes visible near the top-left of the viewport. Press Enter: the address bar URL ends with '#main'.",
+      "Open http://localhost:14000/jekyll/update/2016/03/17/welcome-to-jekyll.html: the inline code 'jekyll serve' renders in a monospace face inside a thin bordered box, and the Ruby code block has a hairline border on a slightly lighter dark background.",
+      "Resize to 375x800 on the same post: the page has no horizontal scrollbar, and the code block scrolls horizontally inside its own box if its lines are too long."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T02",
+    "name": "Header: mono text wordmark, bracketed nav hints [H]/[P]/[A]/[G] from _data/navigation.yml with working shortcuts, 'Get in touch' CTA, mobile Menu, light/dark toggle, data files and /projects/ stub",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/header_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800: the header shows the monospace text 'Ilya Paskhover' at the left (no logo image), then mono nav items '[H] HOME' (bold), '[P] PROJECTS', '[A] ABOUT', '[G] GITHUB', and at the right a solid light button 'Get in touch' with a chevron; no 'Menu' button is visible.",
+      "On http://localhost:14000/ press the key 'a': the About page loads at /about/ and '[A] ABOUT' is now the bold item. Press 'p': /projects/ loads and lists 'Shallow Whale'. Press 'h': the home page loads.",
+      "At 1280x800 on http://localhost:14000/, click the theme toggle labelled 'Switch to light theme': the background turns near-white and the text dark. Reload: it stays light. Click the toggle (now 'Switch to dark theme'): the page is dark again.",
+      "Resize to 375x800 and reload http://localhost:14000/: the header shows 'Ilya Paskhover', the theme toggle and a 'Menu' button, and the nav items are hidden. Click 'Menu': a panel shows HOME, PROJECTS, ABOUT, GITHUB and 'Get in touch'. Press Escape: the panel closes and the snapshot shows 'Menu' collapsed (expanded = false).",
+      "At 375x800 click 'Menu', then click 'ABOUT': /about/ loads and the menu panel is closed."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T03",
+    "name": "Footer: mono hairline footer with text wordmark, Site column from _data/navigation.yml, Elsewhere column, RSS, copyright",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/footer_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800 and scroll to the bottom: above a thin divider line the footer shows the text 'Ilya Paskhover', the links 'Home', 'Projects', 'About', 'RSS', 'GitHub' and 'LinkedIn' in a monospace face, and a line starting with '©' followed by the current year and 'Ilya Paskhover'.",
+      "Click the footer link 'RSS': the address bar shows /feed.xml and the page shows feed content that includes 'Vibe coding apps'.",
+      "Resize to 375x800, open http://localhost:14000/ and scroll to the bottom: the footer columns are stacked vertically, every footer link is fully visible, and the page has no horizontal scrollbar."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T04",
+    "name": "Projects page /projects/ from _data/projects.yml via project-row include: hairline rows, kinds, tag chips, external-link handling",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/projects_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/projects/ at 1280x800: the left column shows the heading 'Projects' and 'Apps, games and AI agents I have built.'; the right column shows 5 rows divided by thin lines, the first 'Shallow Whale' with the description 'A simulated crypto trading game. No ads, no purchases, no real money.', mono chips 'Game' and 'PWA', and the mono label 'Web game' at the right. '[P] PROJECTS' is bold in the header.",
+      "In the page snapshot, the 'Epoch Converter' link's accessible name ends with '(opens in a new tab)' and the 'Shallow Whale' link's name does not.",
+      "Click the 'Math Bubbles' row title: /assets/html_apps/math_bubbles.html loads in the same tab. Go back, then click the 'Shallow Whale' row title: /shallow-whale/ loads with the tab title 'Shallow Whale'.",
+      "Resize to 375x800 on http://localhost:14000/projects/: the heading sits above the rows in one column, every row is fully visible, and the page has no horizontal scrollbar."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T05",
+    "name": "Home feed via Liquid (where/where_exp/map/uniq/slugify, front matter defaults, reading-time include): mono topic tabs with filtering, featured row, hairline rows, Load more with R shortcut",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/writing_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800: the feed shows the tabs 'ALL' (bold), 'AI AGENTS', 'APPS', 'NOTES'; then a featured row with a 'Featured' chip, the title 'Vibe coding apps', 'Ilya Paskhover' and 'Apps' beneath it, and '1 minute' at the right; then exactly 3 rows divided by thin lines: 'AI agents' (date 'Jun 24, 2025'), 'Base44 projects' (date 'May 23, 2025'), and 'A small summary of 'Linux Kernel' course - day 2!', each with '1 minute' at the right; then 'LOAD MORE' at the left and 'Press R to load more' at the right.",
+      "Click 'LOAD MORE': the rows 'About this blog!' and 'Welcome to Jekyll!' appear below, and 'LOAD MORE' and its hint disappear. Reload the page and press the key 'r': the same two rows appear.",
+      "Reload http://localhost:14000/ and click the tab 'APPS': it becomes the bold tab, only 'Vibe coding apps' (featured) and 'Base44 projects' are shown, and 'LOAD MORE' is hidden. Click 'NOTES': only the three 2016 posts are shown and the featured row is hidden. Click 'ALL': the original featured row, 3 rows and 'LOAD MORE' are back.",
+      "Click 'AI agents' in the feed: the post page at /2025/06/24/ai-agents.html loads with the heading 'AI agents'."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T06",
+    "name": "Home two-column layout: mono name, tagline and tree-glyph facts from _data/profile.yml on the left; Featured projects strip (where featured, limit 3, project-card include) below",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/home_intro_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800: the left column shows the monospace heading 'Ilya Paskhover', the tagline 'Notes, apps and AI agents from a senior software developer with more than 15 years of experience.', and three lines each starting with '└'; the topic tabs and post rows sit in the right column, which is about twice as wide as the left one.",
+      "Scroll below the post rows: a section 'Featured projects' shows 3 cards: 'Shallow Whale', 'Interactive AI CV' and 'YouTube Videos Summarizer', followed by a link 'View all projects'.",
+      "Click 'View all projects': /projects/ loads. Go back and click the 'Shallow Whale' card: /shallow-whale/ loads.",
+      "Resize to 375x800 and reload http://localhost:14000/: the heading 'Ilya Paskhover' and the tagline appear above the tabs and rows in a single column, and the page has no horizontal scrollbar."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T07",
+    "name": "Post page: hero with topic chip, lead and AUTHOR/PUBLISHED/READING TIME grid; sticky TREE from kramdown {:toc} moved into the aside, text progress bar, scroll hint; 2025 post bodies split into h2 sections",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/post_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/2025/05/23/base44-projects.html at 1280x800: the header area shows 'All writing', the chip 'Apps', the large title 'Base44 projects', a lead paragraph, and three mono columns 'AUTHOR', 'PUBLISHED', 'READING TIME' with the values '└ Ilya Paskhover', '└ May 23, 2025', '└ 1 min'.",
+      "Below a full-width thin line, the left side shows 'TREE' with the entries 'Interactive AI CV' and 'Epoch converter', each preceded by an L-shaped connector line, then a text bar made of block glyphs followed by a percentage, and 'PRESS ↑ / ↓ TO SCROLL'; the body text sits in a narrow centred column and does not repeat the contents list.",
+      "Click 'Epoch converter' in the TREE: the page scrolls to the 'Epoch converter' section, that TREE entry becomes bold, and the percentage is greater than 00%.",
+      "Open http://localhost:14000/2025/06/24/ai-agents.html and scroll to the bottom: an 'Older' link to 'Base44 projects' and a 'Newer' link to 'Vibe coding apps' are shown, followed by a box 'Let's work together' with a 'Get in touch' link. Click 'Newer': the 'Vibe coding apps' post loads.",
+      "Open http://localhost:14000/jekyll/update/2016/03/17/welcome-to-jekyll.html: the text 'This is an archived note from 2016.' appears in the header area, and the TREE shows a single entry 'Overview'."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T08",
+    "name": "About page: post-style hero with ROLE/EXPERIENCE/ELSEWHERE grid, rewritten intro (typo fixed), 'What I work on' rows from front matter, selected projects, CTA",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/about_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800 and press the key 'a': the About page shows the chip 'About', the heading 'About', a lead paragraph, and three mono columns 'ROLE', 'EXPERIENCE', 'ELSEWHERE' with 'Senior software developer', '15+ years' and the links 'LinkedIn' and 'GitHub'.",
+      "Below, the intro paragraph contains 'more than 15 years of experience', and a section 'What I work on' shows 3 rows divided by thin lines: 'AI agents and automation', 'Web apps and prototypes', 'Systems and fundamentals'.",
+      "A section 'Selected projects' shows 3 cards: 'Shallow Whale', 'Interactive AI CV', 'YouTube Videos Summarizer'. Click the 'Shallow Whale' card: /shallow-whale/ loads. Go back.",
+      "At the bottom a box shows the links 'Get in touch' and 'GitHub'. Resize to 375x800: the meta columns, rows and cards stack in one column and the page has no horizontal scrollbar."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T09",
+    "name": "Metadata via plugins: jekyll-seo-tag, jekyll-feed (replaces hand-written feed.xml), jekyll-sitemap; https url, new title and tagline, text monogram SVG favicon, theme-color",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/meta_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/: the browser tab title is 'Ilya Paskhover | Senior software developer'.",
+      "Open http://localhost:14000/about/: the tab title starts with 'About'. Open http://localhost:14000/projects/: the tab title starts with 'Projects'. Open http://localhost:14000/2025/06/24/ai-agents.html: the tab title starts with 'AI agents'.",
+      "Open http://localhost:14000/feed.xml: the feed text includes 'Vibe coding apps' and 'Base44 projects'. Open http://localhost:14000/sitemap.xml: it lists https://ilya-paskhover.github.io/projects/ and https://ilya-paskhover.github.io/about/.",
+      "Open http://localhost:14000/favicon.svg: it shows the letters 'IP' on a near-black square, with no other artwork."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T10",
+    "name": "Content fixes in the 2016 posts and README (Docker run, tests, shortcuts, topic/featured front matter, TOC marker)",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/content_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/jekyll/update/2016/03/17/small-summary-for-linux-kernel-course.html: the bullet list has no empty bullet and the text reads 'directory' (not 'direcroy').",
+      "Open http://localhost:14000/jekyll/update/2016/03/17/about-this-blog.html: the note reads 'with jekyll serve --watch' (not 'wiht')."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T11",
+    "name": "Accessibility pass: one h1 per page, heading order, unique ids, accessible names, hidden decorative glyphs, keyboard-shortcut off switch",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/a11y_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800 and press Tab repeatedly: focus moves in this order: 'Skip to content', 'Ilya Paskhover', 'Home', 'Projects', 'About', 'GitHub', 'Get in touch', the theme toggle, then the 'All' tab. Each focused element shows a visible accent-coloured outline.",
+      "In the snapshot of http://localhost:14000/, the nav links are named 'Home', 'Projects', 'About', 'GitHub' (the '[H]' style hints are not part of the names), and the 'All' tab is reported as pressed.",
+      "Scroll to the footer of http://localhost:14000/ and click 'Keyboard shortcuts: on': it changes to 'Keyboard shortcuts: off'. Press the key 'a': the page stays on /. Click the button again ('Keyboard shortcuts: on') and press 'a': /about/ loads.",
+      "Take a snapshot of http://localhost:14000/, http://localhost:14000/projects/, http://localhost:14000/about/ and http://localhost:14000/2025/05/23/base44-projects.html: each shows exactly one level-1 heading."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T12",
+    "name": "Responsive layout at 375, 768, 1024 and 1280 px: stacking columns, scrollable tabs, TREE above body on small screens, 44 px tap targets",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/responsive_test.rb",
+    "acceptance": [
+      "At 375x800 open http://localhost:14000/, http://localhost:14000/projects/, http://localhost:14000/about/ and http://localhost:14000/jekyll/update/2016/03/17/small-summary-for-linux-kernel-course.html: none has a horizontal page scrollbar and no text is cut off at the right edge.",
+      "At 375x800 on http://localhost:14000/: each feed row shows its date line (with the reading time) above the title, and the 'Menu' button and theme toggle are each at least 44 px tall in a screenshot.",
+      "At 768x1024 on http://localhost:14000/: the header shows all four nav items and 'Get in touch' (no 'Menu' button), and the intro column sits above the feed.",
+      "At 1024x768 on http://localhost:14000/2025/05/23/base44-projects.html, click 'Epoch converter' in the TREE: after the page scrolls, the TREE block is still visible at the left of the viewport. At 768x1024 on the same post, the TREE appears above the body text rather than beside it."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T13",
+    "name": "Motion and interaction polish: row and card hover states, tab underline, CTA hover, one-time feed fade-in, smooth TOC scroll, reduced-motion support",
+    "agent": "web-dev",
+    "size": "M",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/motion_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800 and hover the 'AI agents' row: the row background becomes slightly lighter and its title turns the accent colour.",
+      "Hover the 'Shallow Whale' card in 'Featured projects': its border turns the accent colour.",
+      "Open http://localhost:14000/2025/05/23/base44-projects.html and click 'Epoch converter' in the TREE: the page scrolls to that section and its heading is fully visible, not touching the top edge of the viewport.",
+      "Reload http://localhost:14000/, wait 2 seconds, take a screenshot, wait 2 more seconds, and take another: the two screenshots are identical (nothing keeps animating)."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  },
+  {
+    "id": "T14",
+    "name": "Home search: [S] SEARCH toggle and S shortcut open a search field that filters the feed by Liquid-built data-search attributes, with empty state and Escape to close",
+    "agent": "web-dev",
+    "size": "S",
+    "verify": "docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/search_test.rb",
+    "acceptance": [
+      "Open http://localhost:14000/ at 1280x800: '[S] SEARCH' is shown at the right end of the tab row. Press the key 's': a search field labelled 'Search posts' appears and has focus.",
+      "Type 'kernel' into the search field: only the row 'A small summary of 'Linux Kernel' course - day 2!' is shown; the featured row and 'LOAD MORE' are hidden. Typing the letters did not trigger any shortcut (the page stayed on /).",
+      "Clear the field and type 'zzz': the text 'No posts match.' is shown. Press Escape: the field closes, the featured row, 3 rows and 'LOAD MORE' are back, and focus is on '[S] SEARCH'.",
+      "Open http://localhost:14000/about/ and press 's': the home page loads with the search field open and focused."
+    ],
+    "manual_check": false,
+    "status": "failing",
+    "attempts": 0
+  }
+]
