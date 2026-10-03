@@ -1,4 +1,4 @@
-Next task: T06
+Next task: T07
 
 # Progress: jekyll-ui-redesign
 
@@ -158,3 +158,25 @@ CHANGES:
  index.html                                         |  51 +++++--
  test/writing_test.rb                               |  62 +++++++++
  15 files changed, 332 insertions(+), 14 deletions(-)
+
+## QA report T06
+
+TASK: T06
+VERDICT: PASS
+COMMANDS:
+- (test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb) -> exit 0
+- (docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/home_intro_test.rb) -> exit 0
+- (docker compose down) -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (1280x800): The left column shows the heading "Ilya Paskhover" in monospace and the tagline "Notes, apps and AI agents from a senior software developer with more than 15 years of experience." It also shows three lines, each starting with "└". The topic tabs and post rows are in the right column. By eye the right column is about 768px wide and the left about 360px, so roughly twice as wide. This matches the step.
+- Step 2: Below the post rows, a "Featured projects" section shows 3 cards in a row: Shallow Whale, Interactive AI CV and YouTube Videos Summarizer. A "View all projects" link follows. This matches the step.
+- Step 3: Clicking "View all projects" loaded /projects/. After going back, clicking the Shallow Whale card loaded /shallow-whale/. This matches the step.
+- Step 4 (375x800, reloaded): The heading and tagline sit above the tabs and rows in a single column, and the project cards are stacked. The full-page screenshot is exactly 375px wide, so there is no horizontal scrollbar. This matches the step.
+- Console: the only error was a 404 for /favicon.ico, which is a browser resource and not from the app's own code, so it is noted only. There were no other errors.
+CHANGES:
+ _sass/_writing.scss     | 67 +++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/tasks.json         |  2 +-
+ index.html              | 21 +++++++++++++++-
+ test/home_intro_test.rb | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 138 insertions(+), 2 deletions(-)

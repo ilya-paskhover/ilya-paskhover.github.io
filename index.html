@@ -7,7 +7,15 @@ layout: default
 
 <div class="home-grid">
 
-  <aside class="home-intro"></aside>
+  <aside class="home-intro">
+    <h1 class="home-title">{{ site.data.profile.name }}</h1>
+    <p class="home-tagline">{{ site.data.profile.tagline }}</p>
+    <ul class="home-facts">
+      {%- for fact in site.data.profile.facts %}
+      <li><span class="tree-glyph" aria-hidden="true">└</span> {{ fact }}</li>
+      {%- endfor %}
+    </ul>
+  </aside>
 
   <section id="writing" class="home-feed">
     <h2 class="visually-hidden">Writing</h2>
@@ -45,3 +53,14 @@ layout: default
   </section>
 
 </div>
+
+{%- assign featured_projects = site.data.projects | where: "featured", true %}
+<section id="featured-projects" class="featured-projects">
+  <h2 class="section-title">Featured projects</h2>
+  <div class="project-cards">
+    {%- for p in featured_projects limit: 3 %}
+    {% include project-card.html project=p %}
+    {%- endfor %}
+  </div>
+  <a class="view-all label" href="{{ '/projects/' | relative_url }}">View all projects</a>
+</section>

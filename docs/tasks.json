@@ -107,7 +107,7 @@
       "Resize to 375x800 and reload http://localhost:14000/: the heading 'Ilya Paskhover' and the tagline appear above the tabs and rows in a single column, and the page has no horizontal scrollbar."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   },
   {
