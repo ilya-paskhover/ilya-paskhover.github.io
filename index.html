@@ -39,10 +39,12 @@ layout: default
     {%- for featured in featured_posts %}
     {%- capture rt_label -%}{%- include reading-time.html content=featured.content format="long" -%}{%- endcapture %}
     <article class="post-featured" data-topic="{{ featured.topic | slugify }}" data-search="{{ featured.title | append: ' ' | append: featured.topic | append: ' ' | append: featured.description | downcase | escape }}">
-      <div class="post-featured-main">
-        <span class="chip">Featured</span>
+      <div class="post-row-main post-featured-main">
+        <div class="post-date-cell">
+          <time class="post-date label" datetime="{{ featured.date | date_to_xmlschema }}">{{ featured.date | date: "%b %d, %Y" }}</time>
+          <span class="chip">Featured</span>
+        </div>
         <h3 class="post-row-title"><a href="{{ featured.url | relative_url }}">{{ featured.title | escape }}</a></h3>
-        <p class="post-featured-meta label">{{ featured.author }} · {{ featured.topic }}</p>
       </div>
       {%- if rt_label != "" %}
       <span class="reading-time label">{{ rt_label }}</span>

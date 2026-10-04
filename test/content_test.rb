@@ -4,7 +4,7 @@ class ContentTest < Minitest::Test
   POSTS = %w[
     /jekyll/update/2016/03/17/about-this-blog.html
     /jekyll/update/2016/03/17/small-summary-for-linux-kernel-course.html
-    /jekyll/update/2016/03/17/welcome-to-jekyll.html
+    /jekyll/update/2015/12/29/welcome-to-jekyll.html
   ].freeze
 
   def test_no_typos_in_2016_posts
@@ -22,6 +22,14 @@ class ContentTest < Minitest::Test
     assert items.size >= 4
     items.each { |li| refute_empty li.text.strip, "empty li" }
     assert_includes doc.text, "directory"
+  end
+
+  def test_no_old_account_name_anywhere_in_the_site
+    files = Dir.glob(File.join(SITE, "**", "*.{html,xml,txt,json}")).reject { |f| f.include?("/shallow-whale/") }
+    refute_empty files
+    files.each do |f|
+      refute_match(/ushastikin/i, File.read(f, encoding: "UTF-8"), f.sub("#{SITE}/", ""))
+    end
   end
 
   def test_readme

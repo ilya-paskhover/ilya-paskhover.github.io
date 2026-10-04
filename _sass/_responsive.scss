@@ -104,14 +104,31 @@ h1, h2, h3, h4, .post-title, .post-row-title, .page-title, .post-content, .post-
         grid-area: title;
     }
 
+    /* Featured rows follow the same layout, with the chip next to the date. */
     .post-featured {
-        flex-direction: column-reverse;
-        align-items: flex-start;
-        gap: var(--space-2);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "date time" "title title";
+        align-items: baseline;
+        column-gap: var(--space-3);
+        row-gap: 0;
+    }
+
+    .post-featured .post-row-main {
+        display: contents;
+    }
+
+    .post-featured .post-date-cell {
+        grid-area: date;
     }
 
     .post-featured .reading-time {
-        text-align: left;
+        grid-area: time;
+        margin-bottom: var(--space-1);
+    }
+
+    .post-featured .post-row-title {
+        grid-area: title;
     }
 
     /* Tap targets of at least 44px. */
