@@ -1,4 +1,4 @@
-Next task: FINISH
+Next task: none (all tasks passing)
 
 # Progress: jekyll-ui-redesign
 
@@ -477,3 +477,19 @@ CHANGES:
  index.html              |  9 +++++++-
  test/search_test.rb     | 38 +++++++++++++++++++++++++++++++++++++++++++++
  7 files changed, 156 insertions(+), 4 deletions(-)
+
+## QA report FINISH
+
+TASK: FINISH
+VERDICT: PASS
+COMMANDS: T00 to T14 verify commands -> exit 0 each; git status --porcelain -- shallow-whale/ -> empty; docker compose down -> exit 0. (QA ran T04 and T05 concurrently; the main thread re-ran both sequentially: exit 0.)
+BROWSER: home, a post, /projects/, /about/ and /shallow-whale/ load with correct titles; 0 console errors.
+
+## Summary
+
+- Stack: existing Jekyll 3.x site (github-pages gem, Liquid, kramdown, libsass SCSS, jekyll-seo-tag, jekyll-feed, jekyll-sitemap) with a dark-first, mono "terminal" design; small hand-written JS in assets/js/site.js (theme, menu, shortcuts, tabs, Load more, search, reading progress). No backend, no database. shallow-whale/ untouched.
+- Start: `docker compose up -d --build --force-recreate --wait` (site at http://localhost:14000/). Stop: `docker compose down`. Needs Docker; no Ruby on the host.
+- Tests: `docker compose exec -T site bundle exec ruby -Itest test/<name>_test.rb` (15 test files in test/).
+- Tasks with manual_check: none.
+- Retries: T11, T12, T13 each failed QA once and passed on attempt 2.
+- For the user to review: copy written by the planner (tagline, hero/intro lines, topic per post, project descriptions, About focus areas); 2025 posts were restructured into h2 sections with a `* TOC` marker; feed moved from RSS to Atom (jekyll-feed), so subscribers may see old posts once; text "IP" favicon; fonts are system stacks (JetBrains Mono / Inter first), so they differ per OS.
