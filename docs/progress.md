@@ -1,4 +1,4 @@
-Next task: T14
+Next task: FINISH
 
 # Progress: jekyll-ui-redesign
 
@@ -442,3 +442,38 @@ CHANGES:
  docs/tasks.json     |  4 +--
  test/motion_test.rb | 76 ++++++++++++++++++++++++++++++++++++++++++++++++++++
  6 files changed, 215 insertions(+), 7 deletions(-)
+
+## QA report T14
+
+TASK: T14
+VERDICT: PASS
+COMMANDS:
+- ( test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb ) -> exit 0
+- ( docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/search_test.rb ) -> exit 0
+- ( docker compose down ) -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Acceptance 1 (1280x800): "[S] SEARCH" sits at the right end of the tab row. Pressing 's' opened the field "Search posts", and it had focus.
+- Acceptance 2: typing 'kernel' left only "A small summary of 'Linux Kernel' course - day 2!". The featured row and LOAD MORE were hidden. The URL stayed on /.
+- Acceptance 3: 'zzz' showed "NO POSTS MATCH." (the text is "No posts match." and the page uppercases it). Escape closed the field. The featured row, 3 rows and LOAD MORE came back, and focus was on the [S] SEARCH button.
+- Acceptance 4: from /about/, pressing 's' loaded /#search. The home page showed the search field open and focused.
+- Extra checks:
+  - Typing 's' inside the input (slowly typed 'zzzs' and 's') did not retrigger anything. The page stayed on the home page.
+  - Matching is case-insensitive ('WELCOME' found "Welcome to Jekyll!").
+  - Load more, then search, then Escape restored all 6 rows. LOAD MORE stays hidden, since paging was already fully loaded.
+  - Query 's' with the Apps tab clicked listed all matching posts across topics. Search seems to ignore the topic tab. Clicking All and then Escape (with focus on the tab button) did not close the search; Escape only closed it when focus was in the input. Spec line 615 says Escape closes, without saying where focus must be. Noted, not treated as a fail.
+  - After Escape the URL stays /#search (minor).
+  - With shortcuts off, pressing 's' did nothing, and clicking the toggle still opened and focused the field.
+  - I turned shortcuts back on at the end.
+- Console: 0 errors and 0 warnings.
+- Screenshots and snapshots were saved by the tool to a .poc-artifacts folder outside the repo. `git ls-files --others --exclude-standard` printed nothing, so nothing is untracked.
+- The stack is down (docker compose down, exit 0).
+CHANGES:
+ README.md               |  2 +-
+ _includes/post-row.html |  2 +-
+ _sass/_writing.scss     | 51 ++++++++++++++++++++++++++++++++++++++++++++
+ assets/js/site.js       | 56 +++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/tasks.json         |  2 +-
+ index.html              |  9 +++++++-
+ test/search_test.rb     | 38 +++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 156 insertions(+), 4 deletions(-)

@@ -54,8 +54,32 @@
     var topic = "all";
     var shown = size;
 
+    var searchBtn = feed.querySelector(".search-toggle");
+    var panel = document.getElementById("post-search-panel");
+    var input = document.getElementById("post-search");
+    var empty = feed.querySelector(".search-empty");
+    var query = "";
+
     var render = function () {
       var all = topic === "all";
+      if (query) {
+        // Search looks at every row, ignoring the topic tab and paging.
+        var found = 0;
+        var test = function (el) {
+          var hit = (el.getAttribute("data-search") || "").indexOf(query) !== -1;
+          el.hidden = !hit;
+          if (hit) found++;
+          return hit;
+        };
+        if (featured) test(featured);
+        rows.forEach(function (row) {
+          row.classList.toggle("is-shown", test(row));
+        });
+        moreRow.hidden = true;
+        empty.hidden = found > 0;
+        return;
+      }
+      empty.hidden = true;
       if (featured) featured.hidden = !(all || featured.getAttribute("data-topic") === topic);
       var count = 0, hiddenLeft = 0;
       rows.forEach(function (row) {
@@ -80,6 +104,35 @@
     });
     moreBtn.addEventListener("click", loadMore);
     feed.loadMore = loadMore;
+
+    // Search: filters by the Liquid-built data-search attributes
+    var setSearch = function (open) {
+      panel.hidden = !open;
+      searchBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        input.focus();
+      } else {
+        input.value = "";
+        query = "";
+        render();
+        searchBtn.focus();
+      }
+    };
+    if (searchBtn && panel && input && empty) {
+      searchBtn.hidden = false;
+      searchBtn.addEventListener("click", function () {
+        if (panel.hidden) setSearch(true); else setSearch(false);
+      });
+      input.addEventListener("input", function () {
+        query = input.value.trim().toLowerCase();
+        render();
+      });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { e.preventDefault(); setSearch(false); }
+      });
+      feed.openSearch = function () { setSearch(true); };
+      if (location.hash === "#search") setSearch(true);
+    }
     render();
   }
 
@@ -168,6 +221,9 @@
     if (key === "r" && feed && feed.loadMore && !moreRow_hidden()) {
       e.preventDefault();
       feed.loadMore();
+    } else if (key === "s" && feed && feed.openSearch) {
+      e.preventDefault();
+      feed.openSearch();
     } else if (link) {
       e.preventDefault();
       link.click();

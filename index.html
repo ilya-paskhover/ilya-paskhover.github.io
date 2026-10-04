@@ -27,10 +27,17 @@ layout: default
         <button type="button" class="topic-tab label" data-topic="{{ t | slugify }}" aria-pressed="false">{{ t }}</button>
         {%- endfor %}
       </div>
+      <button type="button" class="search-toggle label" aria-controls="post-search-panel" aria-expanded="false" aria-keyshortcuts="s" hidden><span class="kbd-hint" aria-hidden="true">[S]</span> Search</button>
     </div>
 
+    <div id="post-search-panel" class="search-panel" hidden>
+      <label class="visually-hidden" for="post-search">Search posts</label>
+      <input id="post-search" class="search-input" type="search" placeholder="Search posts" autocomplete="off">
+    </div>
+    <p class="search-empty label" role="status" hidden>No posts match.</p>
+
     {%- if featured %}
-    <article class="post-featured" data-topic="{{ featured.topic | slugify }}">
+    <article class="post-featured" data-topic="{{ featured.topic | slugify }}" data-search="{{ featured.title | append: ' ' | append: featured.topic | append: ' ' | append: featured.description | downcase | escape }}">
       <div class="post-featured-main">
         <span class="chip">Featured</span>
         <h3 class="post-row-title"><a href="{{ featured.url | relative_url }}">{{ featured.title | escape }}</a></h3>

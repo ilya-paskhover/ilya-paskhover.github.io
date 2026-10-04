@@ -38,7 +38,7 @@ Single-key shortcuts work when no modifier key (Ctrl, Meta, Alt) is held and the
 | `P` | Projects |
 | `A` | About |
 | `G` | GitHub profile |
-| `S` | Go to the search on the home page (from other pages) |
+| `S` | Open the search on the home page (from other pages, go to it) |
 | `R` | Load more posts in the home feed |
 
 Shortcuts can be turned off by setting `localStorage.shortcuts` to `off`.

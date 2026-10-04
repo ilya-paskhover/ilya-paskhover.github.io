@@ -234,7 +234,7 @@
       "Open http://localhost:14000/about/ and press 's': the home page loads with the search field open and focused."
     ],
     "manual_check": false,
-    "status": "failing",
+    "status": "passing",
     "attempts": 0
   }
 ]
