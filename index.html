@@ -21,7 +21,7 @@ layout: default
     <h2 class="visually-hidden">Writing</h2>
 
     <div class="feed-toolbar">
-      <div class="topic-tabs" aria-label="Filter by topic">
+      <div class="topic-tabs" role="group" aria-label="Filter by topic">
         <button type="button" class="topic-tab label" data-topic="all" aria-pressed="true">All</button>
         {%- for t in topics %}
         <button type="button" class="topic-tab label" data-topic="{{ t | slugify }}" aria-pressed="false">{{ t }}</button>
