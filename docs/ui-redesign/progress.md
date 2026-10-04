@@ -9,7 +9,7 @@ Plan written in adopt mode and revised twice:
   - No invented artwork. The wordmark is plain text and the favicon is an "IP" text monogram.
   - Everything that can be is done with Jekyll itself: site.data, front matter defaults, Liquid filters, kramdown {:toc}, jekyll-seo-tag, jekyll-feed and jekyll-sitemap.
 
-The plan has 15 tasks, T00 to T14, all `failing`. See `docs/poc-spec.md` (section 13 lists the Jekyll-native choices) and `docs/tasks.json`.
+The plan has 15 tasks, T00 to T14, all `failing`. See `docs/ui-redesign/poc-spec.md` (section 13 lists the Jekyll-native choices) and `docs/ui-redesign/tasks.json`.
 
 - Start: `docker compose up -d --build --force-recreate --wait` (site at http://localhost:14000/)
 - Stop: `docker compose down`

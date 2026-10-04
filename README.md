@@ -104,7 +104,7 @@ _data/         Site data (navigation.yml, profile.yml, projects.yml)
 _sass/         SCSS stylesheets
 assets/        Static files (JS, HTML apps, images)
 test/          Minitest tests, run in the Docker container
-docs/          Project spec, task list and progress log
+docs/          Project documentation (docs/ui-redesign/: spec, task list, progress log)
 about.md       About page
 projects.md    Projects page
 index.html     Homepage
