@@ -39,4 +39,4 @@ A `CNAME` file is only needed for a custom domain you own, and it holds that dom
 
 ## A leftover gh-pages branch
 
-An old `gh-pages` branch left over from the early days of a blog is a good example. If the publishing source points at another branch, nothing uses it, and it can be deleted safely.
+An old `gh-pages` branch left over from the early days of a blog is a good example. [An early note about publishing this blog]({% post_url 2016-03-17-public_the_blog_on_ushastikin_githun_io %}) describes moving it to a user site published from `master` instead of a `gh-pages` branch. Since then the `gh-pages` branch has only held an old copy of the site. Nothing publishes it, because the publishing source points at `master`. That makes now a good time to delete the branch.
