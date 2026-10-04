@@ -59,9 +59,7 @@ class MotionTest < Minitest::Test
   EXPECTED = [0, 25, 50, 100, 100, 100].freeze
 
   def test_progress_formula_values
-    src = js[/function readingProgress\(.*?
-  \}
-/m]
+    src = js[/function readingProgress\(.*?\r?\n  \}\r?\n/m]
     refute_nil src
     # doc 2000, viewport 800: span 1200. Last case: document does not scroll.
     if system("node --version > /dev/null 2>&1")

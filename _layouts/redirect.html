@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redirecting | {{ site.title }}</title>
+  <meta property="og:title" content="Redirecting | {{ site.title }}">
+  {%- assign redirect_path = page.redirect.to | remove: site.url | relative_url -%}
+  <link rel="canonical" href="{{ page.redirect.to }}">
+  <link rel="alternate" type="application/atom+xml" title="{{ site.title | escape }}" href="{{ '/feed.xml' | absolute_url }}">
+  <meta http-equiv="refresh" content="0; url={{ redirect_path }}">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ '/css/main.css' | relative_url }}">
+  <script src="/assets/js/site.js" defer></script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  {% include header.html %}
+
+  <main id="main" class="page-content">
+    <div class="wrapper">
+      <h1 class="post-title">Redirecting</h1>
+      <p>This page has moved. <a href="{{ redirect_path }}">Continue to the new address</a> if you are not redirected.</p>
+    </div>
+  </main>
+
+  {% include footer.html %}
+
+</body>
+</html>

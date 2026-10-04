@@ -1,4 +1,13 @@
 {%- comment -%} Outputs nothing when the estimate is at most one minute. {%- endcomment -%}
-{%- assign rt_words = include.content | number_of_words -%}
+{%- comment -%} The kramdown table of contents is not text the reader reads, so it is left out of the count. {%- endcomment -%}
+{%- assign rt_parts = include.content | split: '<ul id="markdown-toc">' -%}
+{%- if rt_parts.size == 2 -%}
+  {%- assign rt_inner = rt_parts[1] | split: '</ul>' | first -%}
+  {%- assign rt_after = rt_parts[1] | remove_first: rt_inner | remove_first: '</ul>' -%}
+  {%- assign rt_text = rt_parts[0] | append: rt_after -%}
+{%- else -%}
+  {%- assign rt_text = include.content -%}
+{%- endif -%}
+{%- assign rt_words = rt_text | number_of_words -%}
 {%- assign rt_min = rt_words | plus: 199 | divided_by: 200 -%}
 {%- if rt_min > 1 -%}{%- if include.format == "short" -%}{{ rt_min }} min{%- else -%}{{ rt_min }} minutes{%- endif -%}{%- endif -%}
