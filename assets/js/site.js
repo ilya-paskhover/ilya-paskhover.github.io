@@ -83,6 +83,16 @@
     render();
   }
 
+  // Reading progress from the document scroll position: 0 at the top of the page, 100 at the
+  // bottom. A page that does not scroll at all (document no taller than the viewport) shows 100.
+  function readingProgress(scrollY, docHeight, viewportHeight) {
+    var span = docHeight - viewportHeight;
+    if (span <= 0) return 100;
+    var pct = Math.round((scrollY / span) * 100);
+    return Math.max(0, Math.min(100, pct));
+  }
+  window.readingProgress = readingProgress;
+
   // Post page: reading progress and active TREE entry
   var progress = document.querySelector(".read-progress");
   var postBody = document.getElementById("post-body");
@@ -102,12 +112,8 @@
       });
     };
     var update = function () {
-      var rect = postBody.getBoundingClientRect();
       var vh = window.innerHeight || doc.clientHeight;
-      var top = rect.top + window.pageYOffset;
-      var span = rect.height - vh;
-      var pct = span <= 0 ? 100 : Math.round(((window.pageYOffset - top) / span) * 100);
-      pct = Math.max(0, Math.min(100, pct));
+      var pct = readingProgress(window.pageYOffset, doc.scrollHeight, vh);
       var filled = Math.floor(pct / 5);
       glyphs.textContent = new Array(filled + 1).join("█") + new Array(21 - filled).join("░");
       valueEl.textContent = (pct < 10 ? "0" : "") + pct + "%";

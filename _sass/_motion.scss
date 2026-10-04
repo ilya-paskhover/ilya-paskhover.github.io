@@ -1,0 +1,96 @@
+/**
+ * Motion and interaction polish. No looping animation: everything runs once or on hover/focus.
+ */
+
+@keyframes feed-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes tab-underline-in {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+/* Feed rows: tint and accent title on hover or focus. */
+.post-row, .post-featured {
+    transition: background-color 150ms;
+
+    &:hover, &:focus-within {
+        background-color: var(--color-surface);
+        box-shadow: -12px 0 0 var(--color-surface), 12px 0 0 var(--color-surface);
+    }
+
+    &:hover .post-row-title a,
+    &:focus-within .post-row-title a {
+        color: var(--color-accent);
+    }
+}
+
+/* Project cards and rows: accent border, arrow nudge. */
+.project-card:hover, .project-card:focus-within {
+    border-color: var(--color-accent);
+}
+
+.project-row:hover, .project-row:focus-within {
+    border-bottom-color: var(--color-accent);
+}
+
+.project-title a:focus-visible [aria-hidden="true"] {
+    transform: translate(2px, -2px);
+}
+
+/* CTA: brightness shift. */
+.cta-link, .nav-cta {
+    transition: filter 150ms;
+
+    &:hover, &:focus-visible {
+        filter: brightness(0.9);
+    }
+}
+
+/* Active tab: the underline slides in once when a tab becomes active. */
+.topic-tab {
+    position: relative;
+    border-bottom-color: transparent;
+
+    &[aria-pressed="true"] {
+        border-bottom-color: transparent;
+    }
+
+    &[aria-pressed="true"]::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 1px;
+        background: var(--color-accent);
+        transform-origin: left center;
+        animation: tab-underline-in 200ms ease-out both;
+    }
+}
+
+/* TREE: the active weight change is animated. */
+.post-tree a {
+    transition: color 150ms, font-weight 150ms;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* The feed fades in once on load. */
+    .js .post-list {
+        animation: feed-fade-in 400ms ease-out both;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}

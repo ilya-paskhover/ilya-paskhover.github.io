@@ -218,8 +218,8 @@
       "Reload http://localhost:14000/, wait 2 seconds, take a screenshot, wait 2 more seconds, and take another: the two screenshots are identical (nothing keeps animating)."
     ],
     "manual_check": false,
-    "status": "failing",
-    "attempts": 0
+    "status": "passing",
+    "attempts": 1
   },
   {
     "id": "T14",

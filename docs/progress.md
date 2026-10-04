@@ -1,4 +1,4 @@
-Next task: T13
+Next task: T14
 
 # Progress: jekyll-ui-redesign
 
@@ -384,3 +384,61 @@ CHANGES:
  docs/tasks.json         |   4 +-
  test/responsive_test.rb |  40 ++++++++++++++
  5 files changed, 207 insertions(+), 2 deletions(-)
+
+## QA report T13 (attempt 1)
+
+TASK: T13
+VERDICT: FAIL
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T13) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/motion_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none (both verify commands exited 0: smoke 5 runs, 146 assertions, 0 failures; motion 7 runs, 29 assertions, 0 failures)
+BROWSER:
+- Step 1 (1280x800, hover 'AI agents' row): PASS. The row background is slightly lighter and the title turns the accent (orange) colour.
+- Step 2 (hover 'Shallow Whale' card): PASS. The card border turns the accent colour and the title also turns accent.
+- Step 3 (click 'Epoch converter' in the TREE on base44-projects): PASS. The page scrolls to the section, the URL becomes #epoch-converter, and the heading sits about 50px from the top of the viewport. The page is near its end, so the scroll position may be limited by page length. Smooth scrolling itself was not observable in a static screenshot.
+- Step 4 (reload home, wait 2s, screenshot, wait 2s, screenshot): PASS. The two screenshots are visually identical, with no ongoing animation. (An earlier attempt captured a mid-fade-in frame because the screenshots ran in parallel with the waits. I discarded it and redid the steps sequentially.)
+- Reduced motion (emulated 'reduce'): clicking the 'Apps' tab filters the list correctly and moves the tab underline to Apps. I saw no breakage. Whether the underline transition was actually disabled can't be seen in a static screenshot.
+- Reading progress, the failing item. On /2025/05/23/base44-projects.html at 1280x800, at the top of the page (fresh load, scroll 0) the bar reads 100% with all blocks filled. At 1024x768 it also reads 100% at the top. The brief says it should read 00% at the top and rise to 100% when the end of the text reaches the bottom of the viewport. It does not read 00% at the top at either size.
+  - At both sizes the last line of text ("Open the Epoch converter", at y ~746-760) is already inside the viewport at the top. That is arguably consistent with the "end of text reaches the bottom" rule, but it contradicts "00% at the top".
+  - The article has a large empty area below the text (roughly 400px of blank space, with the page 2113px tall at 1280 wide). The bar does not account for it, so the bar and the "end of text" rule are ambiguous here.
+  - I did not scroll this post to watch the bar rise, because it is already at 100% at the top. I did not check the short 2016 posts, where 100% is acceptable.
+- Hover/tab/anchor/reduced-motion checks otherwise showed no defects.
+CONSOLE: 0 errors, 0 warnings across the session (browser_console_messages, all=true).
+CHANGES:
+ _sass/_motion.scss  | 96 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ assets/js/site.js   | 15 +++++++--
+ css/main.scss       |  1 +
+ docs/tasks.json     |  2 +-
+ test/motion_test.rb | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 181 insertions(+), 4 deletions(-)
+
+## QA report T13
+
+TASK: T13
+VERDICT: PASS
+COMMANDS:
+- ( test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb ) -> exit 0
+- ( docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/motion_test.rb ) -> exit 0
+- ( docker compose down ) -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (1280x800, hover 'AI agents' row): the row background is slightly lighter and the title turns the accent orange. Matches.
+- Step 2 (hover 'Shallow Whale' card): the card border turns the accent orange, and the title is orange too. Matches.
+- Step 3 (/2025/05/23/base44-projects.html, click 'Epoch converter' in TREE): the page scrolled and the "Epoch converter" heading sits about 40px below the top edge, fully visible. Matches.
+- Step 4 (reload /, screenshots 2s apart): the two screenshots are identical (viewed at 1024x768, since the viewport had been resized earlier). Nothing keeps animating. Matches.
+- Progress bar at 1280x800: fresh load reads 00% with an empty bar. After the Epoch converter jump it reads 47%. After End it reads 100% with a full bar.
+- Progress bar at 1024x768: fresh load reads 00%. After the Epoch converter jump it reads 46%. After End it reads 100%.
+- I did not open the short 2016 posts, since the brief said they "may" read 100%.
+- Sticky TREE at 1024x768 after clicking 'Epoch converter': the TREE stays visible at the top-left with 'Epoch converter' highlighted, and the progress bar and hint are still shown.
+- Console errors: 0 (errors-only query, all messages since session start).
+- Note: the browser screenshot tool saved s1.png and s2.png in the repo root, C:\dev\poc-03\.claude\worktrees\jekyll-ui-redesign-ba5d72. They are untracked and are a side effect of the screenshot filenames. I did not delete them because I may not modify files. (Deleted by the main thread with the user's approval; recorded in docs/blockers-*.md.)
+CHANGES:
+ _sass/_motion.scss  | 96 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ assets/js/site.js   | 16 ++++++---
+ css/main.scss       |  1 +
+ docs/progress.md    | 29 ++++++++++++++++
+ docs/tasks.json     |  4 +--
+ test/motion_test.rb | 76 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 215 insertions(+), 7 deletions(-)
