@@ -108,7 +108,7 @@ h1, h2, h3, h4, .post-title, .post-row-title, .page-title, .post-content, .post-
     .post-featured {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-areas: "date time" "title title" "meta meta";
+        grid-template-areas: "date time" "title title";
         align-items: baseline;
         column-gap: var(--space-3);
         row-gap: 0;
@@ -129,10 +129,6 @@ h1, h2, h3, h4, .post-title, .post-row-title, .page-title, .post-content, .post-
 
     .post-featured .post-row-title {
         grid-area: title;
-    }
-
-    .post-featured .post-featured-meta {
-        grid-area: meta;
     }
 
     /* Tap targets of at least 44px. */

@@ -27,12 +27,10 @@ class WritingTest < Minitest::Test
     fs.each do |f|
       assert_equal "Featured", f.at_css(".chip").text.strip
       refute_empty f["data-search"].to_s
-      meta = f.at_css(".post-featured-meta").text
-      assert_includes meta, "Ilya Paskhover"
+      assert_nil f.at_css(".post-featured-meta"), "no author/topic line on featured rows"
+      refute_includes f.text, "Ilya Paskhover"
       assert_nil f.at_css(".reading-time"), "1 minute or less: no reading time element"
     end
-    assert_equal "Ilya Paskhover · Apps", fs[0].at_css(".post-featured-meta").text.strip
-    fs.each { |f| refute_match(/\d{4}/, f.at_css(".post-featured-meta").text, "meta line has no date") }
     assert_equal ["Nov 22, 2025", "Jun 24, 2025", "May 23, 2025"], fs.map { |f| f.at_css("time.post-date[datetime]").text.strip }
   end
 
