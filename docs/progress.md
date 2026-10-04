@@ -1,4 +1,4 @@
-Next task: T12
+Next task: T13
 
 # Progress: jekyll-ui-redesign
 
@@ -330,3 +330,57 @@ CHANGES:
  docs/tasks.json       |  2 +-
  test/a11y_test.rb     | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++
  7 files changed, 151 insertions(+), 3 deletions(-)
+
+## QA report T12 (attempt 1)
+
+TASK: T12
+VERDICT: FAIL
+COMMANDS:
+- (T00 smoke) test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- (T12) docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/responsive_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none (both verify commands exited 0; smoke 5 runs 0 failures; responsive 4 runs, 30 assertions, 0 failures)
+BROWSER: (evaluate was not available, so overflow was judged from full-page screenshots, whose width equals the viewport width, and from snapshot bounding boxes)
+Step 1 (375x800; /, /projects/, /about/, the 2016 post): PASS. All four full-page screenshots are exactly 375 px wide, so there is no horizontal scroll. No text is cut off at the right edge.
+Step 2 (375x800 on /): PASS. Each dated feed row shows the date line with the reading time above the title. The "Menu" button is 59x44 and the theme toggle is 44x44 by bounding box. Filter tabs and Load more are also 44 px tall. Minor note: the featured row "Vibe coding apps" shows only "1 minute" above its title, with no date. The "Featured" tag sits on its own line in between.
+Step 3 (768x1024 on /): PASS. The header shows Home, Projects, About, GitHub and "Get in touch", with no Menu button. The intro column (h1 and bullets) sits above the feed.
+Step 4: FAIL (partial).
+- 768x1024 on /2025/05/23/base44-projects.html: PASS. The TREE (TOC, progress bar) is above the body text, full width.
+- 1024x768: the TREE is a left column beside the body, as expected. I clicked "Epoch converter" in the TREE. The page scrolled to the end of the page. The TREE block was then only partly visible at the left: its "TREE" label was cut off above the top of the viewport, and the first item "Interactive AI CV" sat at y=23 with its top edge close to clipped. The block was not fully visible.
+- Clicking "Interactive AI CV" instead scrolled less, and the whole TREE (label, both items, progress bar) stayed visible at the top left. So the sticky TREE gets pushed up and clipped when the scroll reaches the bottom of its container. This differs from the acceptance wording "TREE block is still visible at the left of the viewport" for the Epoch converter click.
+1280 check on /: two-column layout (intro left, feed right), all four nav items and "Get in touch" in the header, and no overflow.
+Console errors: none (0 errors, 0 warnings).
+CHANGES:
+ _sass/_responsive.scss  | 130 ++++++++++++++++++++++++++++++++++++++++++++++++
+ css/main.scss           |   1 +
+ docs/tasks.json         |   2 +-
+ test/responsive_test.rb |  34 +++++++++++++
+ 4 files changed, 166 insertions(+), 1 deletion(-)
+
+## QA report T12
+
+TASK: T12
+VERDICT: PASS
+COMMANDS:
+- test -z "$(git status --porcelain -- shallow-whale/)" && docker compose up -d --build --force-recreate --wait && curl -sf -o /dev/null http://localhost:14000/ && docker compose exec -T site bundle exec ruby -Itest test/smoke_test.rb -> exit 0
+- docker compose up -d --build --force-recreate --wait && docker compose exec -T site bundle exec ruby -Itest test/responsive_test.rb -> exit 0
+- docker compose down -> exit 0
+FAILURE OUTPUT: none
+BROWSER:
+- Step 1 (375x800): /, /projects/, /about/ and the Linux kernel post all rendered at a full-page width of 375 px. None had a horizontal scrollbar and no text was cut off at the right edge.
+- Step 2 (375x800, /): each feed row has the date line (for example "MAY 23, 2025" with "1 MINUTE" beside it) above the title. The Featured row has no date, only a Featured badge and the reading time. The snapshot box heights are Menu 44 px and theme toggle 44 px.
+- Step 3 (768x1024, /): the header shows HOME, PROJECTS, ABOUT and GITHUB plus "Get in touch", with no Menu button. The intro column sits above the feed.
+- Step 4 (1024x768, /2025/05/23/base44-projects.html):
+  - Clicking "Epoch converter" in the TREE moved the URL to #epoch-converter. After the scroll the TREE block was still visible at the top left (TREE, both entries, the progress bar at 100%). This fixes the attempt 1 failure.
+  - Clicking "Interactive AI CV" moved the URL to #interactive-ai-cv. The TREE stayed visible at the left with the progress bar at 66%.
+  - The longer post /2025/11/22/vibe-coding-apps.html has one TREE entry, "Math Bubbles". Clicking it kept the TREE visible at the left.
+  - No post has more than two TREE entries, so I could not test a longer TREE.
+  - At 768x1024 on the base44 post, the TREE appears above the body text, not beside it.
+- Console: 0 errors and 0 warnings across the whole session.
+CHANGES:
+ _sass/_responsive.scss  | 138 ++++++++++++++++++++++++++++++++++++++++++++++++
+ css/main.scss           |   1 +
+ docs/progress.md        |  26 +++++++++
+ docs/tasks.json         |   4 +-
+ test/responsive_test.rb |  40 ++++++++++++++
+ 5 files changed, 207 insertions(+), 2 deletions(-)

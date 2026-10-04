@@ -202,8 +202,8 @@
       "At 1024x768 on http://localhost:14000/2025/05/23/base44-projects.html, click 'Epoch converter' in the TREE: after the page scrolls, the TREE block is still visible at the left of the viewport. At 768x1024 on the same post, the TREE appears above the body text rather than beside it."
     ],
     "manual_check": false,
-    "status": "failing",
-    "attempts": 0
+    "status": "passing",
+    "attempts": 1
   },
   {
     "id": "T13",
