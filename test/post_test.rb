@@ -93,23 +93,22 @@ class PostTest < Minitest::Test
     assert_equal "Notes", d.at_css(".post-topic").text.strip
     assert_equal 6, d.css("nav.post-tree ul#markdown-toc a").size
     assert_equal 1, d.css("#markdown-toc").size
-    # Scoped to the post body: the Older link in the post nav shows the restored 2016 post's title.
-    refute_includes d.at_css(".post-content").text, "ushastikin"
-    link = d.at_css(".post-content a[href$='public_the_blog_on_ushastikin_githun_io.html']")
+    refute_includes d.text, "ushastikin"
+    link = d.at_css(".post-content a[href$='public-the-blog-on-github-io.html']")
     refute_nil link
     assert_equal "An early note about publishing this blog", link.text.strip
-    assert_equal "/jekyll/update/2016/03/17/public_the_blog_on_ushastikin_githun_io.html", link["href"]
+    assert_equal "/jekyll/update/2016/03/17/public-the-blog-on-github-io.html", link["href"]
     assert File.file?(site_file(link["href"]))
-    assert_equal "Public the blog on ushastikin.github.io!", page(link["href"]).at_css("h1.post-title").text.strip
+    assert_equal "Public the blog on github.io!", page(link["href"]).at_css("h1.post-title").text.strip
   end
 
   def test_restored_2016_post
-    url = "/jekyll/update/2016/03/17/public_the_blog_on_ushastikin_githun_io.html"
+    url = "/jekyll/update/2016/03/17/public-the-blog-on-github-io.html"
     d = page(url)
-    assert_equal "Public the blog on ushastikin.github.io!", d.at_css("h1.post-title").text.strip
+    assert_equal "Public the blog on github.io!", d.at_css("h1.post-title").text.strip
     assert_equal "Notes", d.at_css(".post-topic").text.strip
     assert_equal "This is an archived note from 2016.", d.at_css(".post-archived-note").text.strip
-    assert_includes d.at_css(".post-content").text, "To make this blog always accessible, I have pushed it to the GitHub"
+    assert_includes d.at_css(".post-content").text, "To make this blog always accessible, I have pushed it to GitHub as a user site on github.io"
     back = d.at_css(".post-content em a")
     refute_nil back
     assert_equal "/2026/10/04/how-github-pages-publishes-a-site.html", back["href"]

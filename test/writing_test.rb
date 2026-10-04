@@ -2,7 +2,7 @@ require_relative "test_helper"
 
 class WritingTest < Minitest::Test
   FEATURED = [["Vibe coding apps", "apps"], ["AI agents", "ai-agents"], ["Base44 projects", "apps"]].freeze
-  TITLES = ["How GitHub Pages publishes a site", "Public the blog on ushastikin.github.io!", "A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
+  TITLES = ["How GitHub Pages publishes a site", "Public the blog on github.io!", "A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
   SLUGS = %w[notes].freeze
 
   def doc

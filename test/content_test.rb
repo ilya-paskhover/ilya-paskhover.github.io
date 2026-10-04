@@ -24,6 +24,14 @@ class ContentTest < Minitest::Test
     assert_includes doc.text, "directory"
   end
 
+  def test_no_old_account_name_anywhere_in_the_site
+    files = Dir.glob(File.join(SITE, "**", "*.{html,xml,txt,json}")).reject { |f| f.include?("/shallow-whale/") }
+    refute_empty files
+    files.each do |f|
+      refute_match(/ushastikin/i, File.read(f, encoding: "UTF-8"), f.sub("#{SITE}/", ""))
+    end
+  end
+
   def test_readme
     readme = File.read(File.join(SRC, "README.md"), encoding: "UTF-8")
     ["docker compose up -d --build --force-recreate --wait", "http://localhost:14000", "topic:", "{:toc}", "* TOC", "featured", "description"].each do |s|
