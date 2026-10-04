@@ -1,0 +1,6 @@
+{%- comment -%}Param: project. Renders the title link; external links open in a new tab.{%- endcomment -%}
+{%- if include.project.external -%}
+<a href="{{ include.project.url }}" target="_blank" rel="noopener noreferrer">{{ include.project.title }}<span class="visually-hidden"> (opens in a new tab)</span> <span aria-hidden="true">↗</span></a>
+{%- else -%}
+<a href="{{ include.project.url | relative_url }}">{{ include.project.title }}</a>
+{%- endif -%}

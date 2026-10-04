@@ -1,20 +1,76 @@
 ---
 layout: default
 ---
+{%- assign topics = site.posts | map: "topic" | compact | uniq | sort -%}
+{%- assign featured_posts = site.posts | where: "featured", true -%}
+{%- assign rows = site.posts | where_exp: "p", "p.featured != true" -%}
 
-<div class="home">
+<div class="home-grid">
 
-  <h1 class="page-heading">Posts</h1>
+  <aside class="home-intro">
+    <h1 class="home-title">{{ site.data.profile.name }}</h1>
+    <p class="home-tagline">{{ site.data.profile.tagline }}</p>
+    <ul class="home-facts">
+      {%- for fact in site.data.profile.facts %}
+      <li><span class="tree-glyph" aria-hidden="true">└</span> {{ fact }}</li>
+      {%- endfor %}
+    </ul>
+  </aside>
 
-  <ul class="post-list">
-    {% for post in site.posts %}
-      <li>
-        <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+  <section id="writing" class="home-feed">
+    <h2 class="visually-hidden">Writing</h2>
 
-        <h2>
-          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
-        </h2>
-      </li>
-    {% endfor %}
-  </ul>
+    <div class="feed-toolbar">
+      <div class="topic-tabs" role="group" aria-label="Filter by topic">
+        <button type="button" class="topic-tab label" data-topic="all" aria-pressed="true">All</button>
+        {%- for t in topics %}
+        <button type="button" class="topic-tab label" data-topic="{{ t | slugify }}" aria-pressed="false">{{ t }}</button>
+        {%- endfor %}
+      </div>
+      <button type="button" class="search-toggle label" aria-controls="post-search-panel" aria-expanded="false" aria-keyshortcuts="s" hidden><span class="kbd-hint" aria-hidden="true">[S]</span> Search</button>
+    </div>
+
+    <div id="post-search-panel" class="search-panel" hidden>
+      <label class="visually-hidden" for="post-search">Search posts</label>
+      <input id="post-search" class="search-input" type="search" placeholder="Search posts" autocomplete="off">
+    </div>
+    <p class="search-empty label" role="status" hidden>No posts match.</p>
+
+    {%- for featured in featured_posts %}
+    {%- capture rt_label -%}{%- include reading-time.html content=featured.content format="long" -%}{%- endcapture %}
+    <article class="post-featured" data-topic="{{ featured.topic | slugify }}" data-search="{{ featured.title | append: ' ' | append: featured.topic | append: ' ' | append: featured.description | downcase | escape }}">
+      <div class="post-featured-main">
+        <span class="chip">Featured</span>
+        <h3 class="post-row-title"><a href="{{ featured.url | relative_url }}">{{ featured.title | escape }}</a></h3>
+        <p class="post-featured-meta label">{{ featured.author }} · {{ featured.topic }}</p>
+      </div>
+      {%- if rt_label != "" %}
+      <span class="reading-time label">{{ rt_label }}</span>
+      {%- endif %}
+    </article>
+    {%- endfor %}
+
+    <ol class="post-list">
+      {%- for p in rows %}
+      {% include post-row.html post=p index=forloop.index0 %}
+      {%- endfor %}
+    </ol>
+
+    <div class="load-more-row"{% if rows.size <= 3 %} hidden{% endif %}>
+      <button type="button" class="load-more label" data-page-size="3">Load more</button>
+      <span class="load-more-hint label">Press <kbd>R</kbd> to load more</span>
+    </div>
+  </section>
+
 </div>
+
+{%- assign featured_projects = site.data.projects | where: "featured", true %}
+<section id="featured-projects" class="featured-projects">
+  <h2 class="section-title">Featured projects</h2>
+  <div class="project-cards">
+    {%- for p in featured_projects limit: 3 %}
+    {% include project-card.html project=p %}
+    {%- endfor %}
+  </div>
+  <a class="view-all label" href="{{ '/projects/' | relative_url }}">View all projects</a>
+</section>

@@ -1,3 +1,14 @@
 _site
 .sass-cache
 Gemfile.lock
+.env*
+!.env.example
+*.pem
+*.key
+.poc-artifacts/
+vendor/
+.bundle/
+node_modules/
+.jekyll-cache/
+.jekyll-metadata
+coverage/
