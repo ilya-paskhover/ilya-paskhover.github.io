@@ -1,0 +1,15 @@
+{%- comment -%}
+  Moves kramdown's generated TOC (ul#markdown-toc) out of the body.
+  Sets post_tree_html (list markup) and post_body_html (body without the TOC).
+  Posts without the `* TOC` / `{:toc}` marker get the "Overview" fallback.
+{%- endcomment -%}
+{%- assign tree_parts = include.content | split: '<ul id="markdown-toc">' -%}
+{%- if tree_parts.size == 2 -%}
+  {%- assign tree_inner = tree_parts[1] | split: '</ul>' | first -%}
+  {%- assign tree_after = tree_parts[1] | remove_first: tree_inner | remove_first: '</ul>' -%}
+  {%- capture post_tree_html -%}<ul id="markdown-toc">{{ tree_inner }}</ul>{%- endcapture -%}
+  {%- capture post_body_html -%}{{ tree_parts[0] }}{{ tree_after }}{%- endcapture -%}
+{%- else -%}
+  {%- capture post_tree_html -%}<ul class="post-tree-fallback"><li><a href="#post-body">Overview</a></li></ul>{%- endcapture -%}
+  {%- assign post_body_html = include.content -%}
+{%- endif -%}

@@ -1,0 +1,12 @@
+<li class="project-row">
+  <div class="project-main">
+    <h2 class="project-title">{% include project-link.html project=include.project %}</h2>
+    <p class="project-description">{{ include.project.description }}</p>
+    <ul class="project-tags">
+      {%- for tag in include.project.tags %}
+      <li class="chip">{{ tag }}</li>
+      {%- endfor %}
+    </ul>
+  </div>
+  <span class="project-kind label">{{ include.project.kind }}</span>
+</li>

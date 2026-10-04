@@ -1,0 +1,44 @@
+/**
+ * Design tokens. Dark is the default; [data-theme="light"] overrides it.
+ */
+:root {
+    --color-bg: #141414;
+    --color-surface: #1C1C1B;
+    --color-text: #EDEDEA;
+    --color-text-muted: #8F8F8A;
+    --color-text-dim: #5F5F5A;
+    --color-border: #2A2A28;
+    --color-accent: #D9825B;
+    --color-cta-bg: #F2F2EE;
+    --color-cta-text: #141414;
+
+    --font-mono: "JetBrains Mono", "IBM Plex Mono", "Cascadia Mono", "Cascadia Code", "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --font-sans: "Inter", "Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+    --space-9: 96px;
+
+    --radius: 4px;
+    --width-page: 1600px;
+    --width-prose: 66ch;
+    --gutter: clamp(16px, 3vw, 32px);
+}
+
+[data-theme="light"] {
+    --color-bg: #FAFAF7;
+    --color-surface: #FFFFFF;
+    --color-text: #141414;
+    --color-text-muted: #5C5C57;
+    --color-text-dim: #A3A39E;
+    --color-border: #E3E3DE;
+    --color-accent: #B4532F;
+    --color-cta-bg: #141414;
+    --color-cta-text: #FAFAF7;
+}

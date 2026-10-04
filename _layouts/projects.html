@@ -1,0 +1,14 @@
+---
+layout: default
+---
+<div class="projects-page">
+  <header class="projects-intro">
+    <h1 class="page-title">{{ page.title }}</h1>
+    <p class="page-tagline">{{ page.description }}</p>
+  </header>
+  <ol class="project-list">
+    {%- for p in site.data.projects %}
+    {% include project-row.html project=p %}
+    {%- endfor %}
+  </ol>
+</div>

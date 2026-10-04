@@ -1,0 +1,143 @@
+/**
+ * Responsive layer: loaded last so it can refine earlier partials.
+ * Breakpoints: 768px (nav expands) and 1024px (two columns, sticky TREE).
+ */
+html {
+    overflow-x: hidden;
+}
+
+body {
+    max-width: 100%;
+}
+
+h1, h2, h3, h4, .post-title, .post-row-title, .page-title, .post-content, .post-content p, .post-content li {
+    overflow-wrap: anywhere;
+}
+
+.post-layout > *, .home-grid > *, .projects-page > * {
+    min-width: 0;
+}
+
+.post-content img, .post-content table, .post-content iframe, .post-content video {
+    max-width: 100%;
+}
+
+.post-content table {
+    display: block;
+    overflow-x: auto;
+}
+
+/* Tabs scroll inside their own row at every width. */
+.topic-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.topic-tab {
+    flex: none;
+    white-space: nowrap;
+}
+
+/* Below 1024px the TREE sits above the body and is not sticky. */
+@media screen and (max-width: 1023px) {
+    .post-aside {
+        position: static;
+    }
+}
+
+@media screen and (min-width: 1024px) {
+    .post-aside {
+        position: sticky;
+        top: var(--space-6);
+        align-self: start;
+    }
+
+    /* Room after the last heading so the sticky TREE never reaches the end of its
+       grid area (and scrolls away) when a TREE link jumps to the final section. */
+    .post-layout > .post-content {
+        padding-bottom: 60vh;
+    }
+}
+
+@media screen and (min-width: 768px) {
+    .post-meta-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    /* No reading-time column for 1-minute posts: two columns, no gap. */
+    .post-meta-grid.post-meta-grid--pair {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .post-meta-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Feed rows: date line (with reading time) above the title. */
+    .post-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "date time" "title title";
+        align-items: baseline;
+        column-gap: var(--space-3);
+        row-gap: 0;
+    }
+
+    .post-row-main {
+        display: contents;
+    }
+
+    .post-row .post-date {
+        grid-area: date;
+    }
+
+    .post-row .reading-time {
+        grid-area: time;
+        margin-bottom: var(--space-1);
+    }
+
+    .post-row .post-row-title {
+        grid-area: title;
+    }
+
+    .post-featured {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .post-featured .reading-time {
+        text-align: left;
+    }
+
+    /* Tap targets of at least 44px. */
+    .nav-toggle,
+    .theme-toggle,
+    .nav-cta,
+    .topic-tab,
+    .load-more,
+    .search-toggle,
+    .cta-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .js .nav-toggle {
+        display: inline-flex;
+    }
+
+    .nav-link,
+    .post-tree a,
+    .footer-grid a {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+    }
+}

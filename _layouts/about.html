@@ -1,0 +1,60 @@
+---
+layout: default
+---
+{%- assign profile = site.data.profile -%}
+{%- assign selected = site.data.projects | where: "featured", true -%}
+<div class="about-page">
+
+  <header class="post-hero">
+    <span class="chip post-topic">{{ page.title }}</span>
+    <h1 class="post-title">{{ page.title }}</h1>
+    <p class="post-lead">{{ page.description }}</p>
+    <dl class="post-meta-grid">
+      <div>
+        <dt class="label">Role</dt>
+        <dd><span class="tree-glyph" aria-hidden="true">└</span> {{ profile.role }}</dd>
+      </div>
+      <div>
+        <dt class="label">Experience</dt>
+        <dd><span class="tree-glyph" aria-hidden="true">└</span> 15+ years</dd>
+      </div>
+      <div>
+        <dt class="label">Elsewhere</dt>
+        <dd><span class="tree-glyph" aria-hidden="true">└</span> <a href="{{ profile.linkedin }}" target="_blank" rel="noopener noreferrer">LinkedIn<span class="visually-hidden"> (opens in a new tab)</span></a> <a href="{{ profile.github }}" target="_blank" rel="noopener noreferrer">GitHub<span class="visually-hidden"> (opens in a new tab)</span></a></dd>
+      </div>
+    </dl>
+  </header>
+
+  <hr class="post-rule">
+
+  <div class="about-intro">
+    {{ content }}
+  </div>
+
+  <section class="focus-areas">
+    <h2 class="section-title">What I work on</h2>
+    {%- for area in page.focus_areas %}
+    <div class="focus-row">
+      <h3>{{ area.title }}</h3>
+      <div class="focus-text">{{ area.text | markdownify }}</div>
+    </div>
+    {%- endfor %}
+  </section>
+
+  <section class="about-projects">
+    <h2 class="section-title">Selected projects</h2>
+    <div class="project-cards">
+      {%- for p in selected limit: 3 %}
+      {% include project-card.html project=p %}
+      {%- endfor %}
+    </div>
+  </section>
+
+  <aside class="cta">
+    <h2 class="cta-title">{{ profile.cta_label }}</h2>
+    <p>Have a project or a role in mind? I'm happy to talk.</p>
+    <a class="cta-link" href="{{ profile.linkedin }}" target="_blank" rel="noopener noreferrer">{{ profile.cta_label }} <span class="chevron" aria-hidden="true">›</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+    <a class="cta-link cta-link-secondary" href="{{ profile.github }}" target="_blank" rel="noopener noreferrer">GitHub <span class="chevron" aria-hidden="true">›</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+  </aside>
+
+</div>

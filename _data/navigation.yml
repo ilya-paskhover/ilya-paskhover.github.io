@@ -1,0 +1,13 @@
+- title: Home
+  url: /
+  key: h
+- title: Projects
+  url: /projects/
+  key: p
+- title: About
+  url: /about/
+  key: a
+- title: GitHub
+  url: https://github.com/ilya-paskhover
+  key: g
+  external: true

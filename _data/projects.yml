@@ -1,0 +1,35 @@
+- title: Shallow Whale
+  kind: Web game
+  description: "A simulated crypto trading game. No ads, no purchases, no real money."
+  url: /shallow-whale/
+  external: false
+  tags: [Game, PWA]
+  featured: true
+- title: Interactive AI CV
+  kind: Web app
+  description: "My CV as an interactive, AI-assisted app, built with Base44."
+  url: https://ilyas-ai-cv.base44.app
+  external: true
+  tags: [Base44, AI]
+  featured: true
+- title: YouTube Videos Summarizer
+  kind: AI agent
+  description: "A Gemini gem that summarizes YouTube videos."
+  url: "https://gemini.google.com/gem/1TxqGF2P6zAIuV9c5rC9PMW7NFHq7XqG7?usp=sharing"
+  external: true
+  tags: [Gemini, AI agent]
+  featured: true
+- title: Epoch Converter
+  kind: Web app
+  description: "Convert between Unix timestamps and readable dates. Built with Base44."
+  url: "https://epochconverter.base44.app/"
+  external: true
+  tags: [Base44, Utility]
+  featured: false
+- title: Math Bubbles
+  kind: Browser game
+  description: "A 30-second arithmetic game: pick ×2, ×3, +N or −N each round to push your number as high as you can."
+  url: /assets/html_apps/math_bubbles.html
+  external: false
+  tags: [Game, Vibe coding]
+  featured: false

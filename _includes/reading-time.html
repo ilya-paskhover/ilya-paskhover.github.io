@@ -1,0 +1,4 @@
+{%- comment -%} Outputs nothing when the estimate is at most one minute. {%- endcomment -%}
+{%- assign rt_words = include.content | number_of_words -%}
+{%- assign rt_min = rt_words | plus: 199 | divided_by: 200 -%}
+{%- if rt_min > 1 -%}{%- if include.format == "short" -%}{{ rt_min }} min{%- else -%}{{ rt_min }} minutes{%- endif -%}{%- endif -%}
