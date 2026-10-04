@@ -53,10 +53,46 @@ class PostTest < Minitest::Test
   end
 
   def test_archived_fallback
-    d = page("/jekyll/update/2016/03/17/welcome-to-jekyll.html")
-    refute_nil d.at_css(".post-archived-note")
+    d = page("/jekyll/update/2015/12/29/welcome-to-jekyll.html")
+    note = d.at_css(".post-archived-note")
+    refute_nil note
+    assert_equal "This is an archived note from 2015.", note.text.strip
+    refute_includes note.text, "2016"
     links = d.css("nav.post-tree ul.post-tree-fallback a")
     assert_equal ["Overview"], links.map { |a| a.text.strip }
     assert_equal "#post-body", links.first["href"]
+  end
+
+  def test_welcome_old_url_redirects
+    old = page("/jekyll/update/2016/03/17/welcome-to-jekyll.html")
+    target = "/jekyll/update/2015/12/29/welcome-to-jekyll.html"
+    assert_includes old.at_css("link[rel=canonical]")["href"], target
+    assert_includes old.at_css("meta[http-equiv=refresh]")["content"], target
+    # relative, so the redirect also works on localhost and previews
+    assert_equal "0; url=#{target}", old.at_css("meta[http-equiv=refresh]")["content"]
+    assert_equal target, old.at_css("main a")["href"]
+    assert_equal "Welcome to Jekyll!", page(target).at_css("h1.post-title").text.strip
+    assert_equal "Dec 29, 2015", page(target).at_css("dl.post-meta-grid time").text.strip
+    sitemap = File.read(site_file("/sitemap.xml"), encoding: "UTF-8")
+    assert_includes sitemap, target
+    refute_includes sitemap, "2016/03/17/welcome-to-jekyll"
+  end
+
+  def test_reading_time_matches_between_list_and_post
+    post = page("/2026/10/04/how-github-pages-publishes-a-site.html")
+    meta = post.css("dl.post-meta-grid dd").last.text.strip
+    row = page("/").css("ol.post-list > li").find { |r| r.text.include?("How GitHub Pages publishes a site") }
+    list = row.at_css(".reading-time").text.strip
+    assert_equal meta[/\d+/], list[/\d+/], "list and post page must agree"
+    refute_nil list[/\d+/]
+  end
+
+  def test_github_pages_post
+    d = page("/2026/10/04/how-github-pages-publishes-a-site.html")
+    assert_equal "How GitHub Pages publishes a site", d.at_css("h1.post-title").text.strip
+    assert_equal "Notes", d.at_css(".post-topic").text.strip
+    assert_equal 6, d.css("nav.post-tree ul#markdown-toc a").size
+    assert_equal 1, d.css("#markdown-toc").size
+    refute_includes d.text, "ushastikin"
   end
 end

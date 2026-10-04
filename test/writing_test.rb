@@ -2,7 +2,7 @@ require_relative "test_helper"
 
 class WritingTest < Minitest::Test
   FEATURED = [["Vibe coding apps", "apps"], ["AI agents", "ai-agents"], ["Base44 projects", "apps"]].freeze
-  TITLES = ["A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
+  TITLES = ["How GitHub Pages publishes a site", "A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
   SLUGS = %w[notes].freeze
 
   def doc
@@ -32,6 +32,8 @@ class WritingTest < Minitest::Test
       assert_nil f.at_css(".reading-time"), "1 minute or less: no reading time element"
     end
     assert_includes fs[0].at_css(".post-featured-meta").text, "Apps"
+    assert_equal ["Nov 22, 2025", "Jun 24, 2025", "May 23, 2025"], fs.map { |f| f.at_css(".post-featured-meta").text.split(" · ").last.strip }
+    assert_equal "Ilya Paskhover · Apps · Nov 22, 2025", fs[0].at_css(".post-featured-meta").text.strip
   end
 
   def test_featured_not_in_list
@@ -39,9 +41,10 @@ class WritingTest < Minitest::Test
     FEATURED.each { |t, _| refute_includes list, t }
   end
 
-  def test_load_more_hidden_when_three_or_fewer_rows
-    assert_equal 3, doc.css("ol.post-list > li.post-row").size
-    refute_nil doc.at_css(".load-more-row[hidden]")
+  def test_load_more_shown_when_more_than_three_rows
+    assert_equal 4, doc.css("ol.post-list > li.post-row").size
+    assert_nil doc.at_css(".load-more-row[hidden]")
+    assert_equal 1, doc.css("ol.post-list > li.post-row.is-extra").size
   end
 
   def test_reading_time_include_rule
@@ -63,7 +66,7 @@ class WritingTest < Minitest::Test
 
   def test_rows
     rows = doc.css("ol.post-list > li.post-row")
-    assert_equal 3, rows.size
+    assert_equal 4, rows.size
     assert_equal TITLES, rows.map { |r| r.at_css("a").text.strip }
     rows.each do |r|
       assert_includes SLUGS, r["data-topic"]
@@ -72,9 +75,14 @@ class WritingTest < Minitest::Test
       assert_equal s.downcase, s
       assert_includes s, r.at_css("a").text.strip.downcase
       assert_match(/\A[A-Z][a-z]{2} \d{2}, \d{4}\z/, r.at_css("time.post-date[datetime]").text.strip)
-      assert_nil r.at_css(".reading-time"), "1 minute or less: no reading time element"
+      if r.at_css("a").text.strip == "How GitHub Pages publishes a site"
+        assert_equal "2 minutes", r.at_css(".reading-time").text.strip
+      else
+        assert_nil r.at_css(".reading-time"), "1 minute or less: no reading time element"
+      end
     end
-    assert_equal "Mar 17, 2016", rows.first.at_css("time").text.strip
+    assert_equal "Oct 04, 2026", rows.first.at_css("time").text.strip
+    assert_equal "Dec 29, 2015", rows.last.at_css("time").text.strip
   end
 
   def test_load_more_and_js

@@ -42,7 +42,7 @@ layout: default
       <div class="post-featured-main">
         <span class="chip">Featured</span>
         <h3 class="post-row-title"><a href="{{ featured.url | relative_url }}">{{ featured.title | escape }}</a></h3>
-        <p class="post-featured-meta label">{{ featured.author }} · {{ featured.topic }}</p>
+        <p class="post-featured-meta label">{{ featured.author }} · {{ featured.topic }} · {{ featured.date | date: "%b %d, %Y" }}</p>
       </div>
       {%- if rt_label != "" %}
       <span class="reading-time label">{{ rt_label }}</span>

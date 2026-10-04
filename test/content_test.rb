@@ -4,7 +4,7 @@ class ContentTest < Minitest::Test
   POSTS = %w[
     /jekyll/update/2016/03/17/about-this-blog.html
     /jekyll/update/2016/03/17/small-summary-for-linux-kernel-course.html
-    /jekyll/update/2016/03/17/welcome-to-jekyll.html
+    /jekyll/update/2015/12/29/welcome-to-jekyll.html
   ].freeze
 
   def test_no_typos_in_2016_posts

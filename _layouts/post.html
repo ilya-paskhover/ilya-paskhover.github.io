@@ -14,7 +14,7 @@ layout: default
     <h1 class="post-title">{{ page.title }}</h1>
     <p class="post-lead">{{ post_lead | strip }}</p>
     {%- if page.archived %}
-    <p class="post-archived-note">This is an archived note from 2016.</p>
+    <p class="post-archived-note">This is an archived note from {{ page.date | date: "%Y" }}.</p>
     {%- endif %}
     <dl class="post-meta-grid{% if rt_label == "" %} post-meta-grid--pair{% endif %}">
       <div>
