@@ -81,7 +81,8 @@ categories: category1 category2  # note: categories become part of the post URL
 - `layout: post` and `author: Ilya Paskhover` are set for every post by `defaults` in `_config.yml`, so they are not needed per post.
 - `topic` groups the post under a topic tab on the home page.
 - `description` is the summary text for the post.
-- `featured: true` marks a post as featured.
+- `featured: true` marks a post as featured. Several posts may be featured: each shows as a featured row above the list, newest first, and is not repeated in the list. When featured rows are present the list only holds the other posts.
+- Reading time is hidden for posts of 1 minute or less (feed rows and the post header); longer posts show it.
 - `archived: true` (used by the 2016 notes) shows an "archived note" line on the post.
 
 ### Table of contents

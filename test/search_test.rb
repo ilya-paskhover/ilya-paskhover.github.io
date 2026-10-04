@@ -29,7 +29,7 @@ class SearchTest < Minitest::Test
     row = doc.css("li.post-row").find { |r| r.at_css("a").text.include?("Linux Kernel") }
     refute_nil row
     assert_includes row["data-search"], "kernel"
-    refute_empty doc.at_css("article.post-featured")["data-search"]
+    doc.css("article.post-featured").each { |f| refute_empty f["data-search"] }
   end
 
   def test_js

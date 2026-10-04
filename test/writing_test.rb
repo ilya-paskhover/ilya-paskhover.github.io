@@ -1,9 +1,9 @@
 require_relative "test_helper"
 
 class WritingTest < Minitest::Test
-  TITLES = ["AI agents", "Base44 projects", "A small summary of 'Linux Kernel' course - day 2!",
-            "About this blog!", "Welcome to Jekyll!"].freeze
-  SLUGS = %w[ai-agents apps notes].freeze
+  FEATURED = [["Vibe coding apps", "apps"], ["AI agents", "ai-agents"], ["Base44 projects", "apps"]].freeze
+  TITLES = ["A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
+  SLUGS = %w[notes].freeze
 
   def doc
     @doc ||= page("/")
@@ -21,19 +21,49 @@ class WritingTest < Minitest::Test
   end
 
   def test_featured
-    f = doc.at_css('article.post-featured[data-topic="apps"]')
-    refute_nil f
-    assert_equal "Featured", f.at_css(".chip").text.strip
-    assert_equal "Vibe coding apps", f.at_css("a").text.strip
-    meta = f.at_css(".post-featured-meta").text
-    assert_includes meta, "Ilya Paskhover"
-    assert_includes meta, "Apps"
-    assert_equal "1 minute", f.at_css(".reading-time").text.strip
+    fs = doc.css("article.post-featured")
+    assert_equal FEATURED.map(&:first), fs.map { |f| f.at_css("a").text.strip }
+    assert_equal FEATURED.map(&:last), fs.map { |f| f["data-topic"] }
+    fs.each do |f|
+      assert_equal "Featured", f.at_css(".chip").text.strip
+      refute_empty f["data-search"].to_s
+      meta = f.at_css(".post-featured-meta").text
+      assert_includes meta, "Ilya Paskhover"
+      assert_nil f.at_css(".reading-time"), "1 minute or less: no reading time element"
+    end
+    assert_includes fs[0].at_css(".post-featured-meta").text, "Apps"
+  end
+
+  def test_featured_not_in_list
+    list = doc.css("ol.post-list a").map { |a| a.text.strip }
+    FEATURED.each { |t, _| refute_includes list, t }
+  end
+
+  def test_load_more_hidden_when_three_or_fewer_rows
+    assert_equal 3, doc.css("ol.post-list > li.post-row").size
+    refute_nil doc.at_css(".load-more-row[hidden]")
+  end
+
+  def test_reading_time_include_rule
+    src = File.read(File.expand_path("../_includes/reading-time.html", __dir__))
+    assert_includes src, "rt_min > 1"
+    refute_includes src, "1 minute"
+    require "jekyll"
+    tpl = Liquid::Template.parse(src)
+    render = lambda do |words, fmt|
+      tpl.render({ "include" => { "content" => (["w"] * words).join(" "), "format" => fmt } },
+                 filters: [Jekyll::Filters]).strip
+    end
+    assert_equal "", render.call(200, "long")
+    assert_equal "", render.call(200, "short")
+    assert_equal "2 minutes", render.call(201, "long")
+    assert_equal "2 min", render.call(201, "short")
+    assert_equal "5 minutes", render.call(1000, "long")
   end
 
   def test_rows
     rows = doc.css("ol.post-list > li.post-row")
-    assert_equal 5, rows.size
+    assert_equal 3, rows.size
     assert_equal TITLES, rows.map { |r| r.at_css("a").text.strip }
     rows.each do |r|
       assert_includes SLUGS, r["data-topic"]
@@ -42,9 +72,9 @@ class WritingTest < Minitest::Test
       assert_equal s.downcase, s
       assert_includes s, r.at_css("a").text.strip.downcase
       assert_match(/\A[A-Z][a-z]{2} \d{2}, \d{4}\z/, r.at_css("time.post-date[datetime]").text.strip)
-      assert_match(/\A\d+ minutes?\z/, r.at_css(".reading-time").text.strip)
+      assert_nil r.at_css(".reading-time"), "1 minute or less: no reading time element"
     end
-    assert_equal "Jun 24, 2025", rows.first.at_css("time").text.strip
+    assert_equal "Mar 17, 2016", rows.first.at_css("time").text.strip
   end
 
   def test_load_more_and_js

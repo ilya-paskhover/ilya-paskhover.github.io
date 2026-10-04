@@ -4,6 +4,7 @@ title:  "Base44 projects"
 date:   2025-05-23 10:54:57
 topic: Apps
 description: "Apps I built on Base44: an interactive AI CV and an epoch time converter."
+featured: true
 ---
 * TOC
 {:toc}

@@ -48,7 +48,7 @@
   if (feed && moreBtn) {
     var tabs = feed.querySelectorAll(".topic-tab");
     var rows = feed.querySelectorAll(".post-row");
-    var featured = feed.querySelector(".post-featured");
+    var featured = feed.querySelectorAll(".post-featured");
     var moreRow = moreBtn.closest(".load-more-row");
     var size = parseInt(moreBtn.getAttribute("data-page-size"), 10) || 3;
     var topic = "all";
@@ -71,7 +71,7 @@
           if (hit) found++;
           return hit;
         };
-        if (featured) test(featured);
+        featured.forEach(test);
         rows.forEach(function (row) {
           row.classList.toggle("is-shown", test(row));
         });
@@ -80,7 +80,9 @@
         return;
       }
       empty.hidden = true;
-      if (featured) featured.hidden = !(all || featured.getAttribute("data-topic") === topic);
+      featured.forEach(function (f) {
+        f.hidden = !(all || f.getAttribute("data-topic") === topic);
+      });
       var count = 0, hiddenLeft = 0;
       rows.forEach(function (row) {
         var match = all || row.getAttribute("data-topic") === topic;

@@ -2,7 +2,7 @@
 layout: default
 ---
 {%- assign topics = site.posts | map: "topic" | compact | uniq | sort -%}
-{%- assign featured = site.posts | where: "featured", true | first -%}
+{%- assign featured_posts = site.posts | where: "featured", true -%}
 {%- assign rows = site.posts | where_exp: "p", "p.featured != true" -%}
 
 <div class="home-grid">
@@ -36,16 +36,19 @@ layout: default
     </div>
     <p class="search-empty label" role="status" hidden>No posts match.</p>
 
-    {%- if featured %}
+    {%- for featured in featured_posts %}
+    {%- capture rt_label -%}{%- include reading-time.html content=featured.content format="long" -%}{%- endcapture %}
     <article class="post-featured" data-topic="{{ featured.topic | slugify }}" data-search="{{ featured.title | append: ' ' | append: featured.topic | append: ' ' | append: featured.description | downcase | escape }}">
       <div class="post-featured-main">
         <span class="chip">Featured</span>
         <h3 class="post-row-title"><a href="{{ featured.url | relative_url }}">{{ featured.title | escape }}</a></h3>
         <p class="post-featured-meta label">{{ featured.author }} · {{ featured.topic }}</p>
       </div>
-      <span class="reading-time label">{% include reading-time.html content=featured.content format="long" %}</span>
+      {%- if rt_label != "" %}
+      <span class="reading-time label">{{ rt_label }}</span>
+      {%- endif %}
     </article>
-    {%- endif %}
+    {%- endfor %}
 
     <ol class="post-list">
       {%- for p in rows %}
@@ -53,7 +56,7 @@ layout: default
       {%- endfor %}
     </ol>
 
-    <div class="load-more-row">
+    <div class="load-more-row"{% if rows.size <= 3 %} hidden{% endif %}>
       <button type="button" class="load-more label" data-page-size="3">Load more</button>
       <span class="load-more-hint label">Press <kbd>R</kbd> to load more</span>
     </div>

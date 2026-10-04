@@ -16,13 +16,13 @@ class PostTest < Minitest::Test
 
   def test_meta_grid
     grid = doc.at_css("dl.post-meta-grid")
-    assert_equal ["Author", "Published", "Reading time"], grid.css("dt").map { |d| d.text.strip }
+    assert_equal ["Author", "Published"], grid.css("dt").map { |d| d.text.strip }
+    assert_includes grid["class"], "post-meta-grid--pair"
     dds = grid.css("dd")
-    assert_equal 3, dds.size
+    assert_equal 2, dds.size
     dds.each { |dd| refute_nil dd.at_css(".tree-glyph"), "dd needs .tree-glyph" }
     assert_includes dds[0].text, "Ilya Paskhover"
     refute_nil dds[1].at_css("time[datetime]")
-    assert_match(/\d+ min/, dds[2].text)
   end
 
   def test_tree_and_body

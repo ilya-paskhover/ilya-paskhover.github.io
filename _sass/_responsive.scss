@@ -65,6 +65,11 @@ h1, h2, h3, h4, .post-title, .post-row-title, .page-title, .post-content, .post-
     .post-meta-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    /* No reading-time column for 1-minute posts: two columns, no gap. */
+    .post-meta-grid.post-meta-grid--pair {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media screen and (max-width: 767px) {
