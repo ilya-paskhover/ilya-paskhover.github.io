@@ -169,16 +169,17 @@ nav#tabs .badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;he
   font-size:11px;font-weight:750;line-height:15px;font-variant-numeric:tabular-nums;text-align:center}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) nav#tabs .badge{color:#8FB8E6} }
 :root[data-theme="dark"] nav#tabs .badge{color:#8FB8E6}
-/* action pill docked above the bar: shows only when there is something to do */
-#action{position:fixed;left:50%;bottom:calc(var(--tab-h) + 12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:29;
+/* action pill: floats just under the header, and over the scrim above an open
+   sheet, so a finished quest is never hidden. Above the sheet (50), under the
+   toast (60). No padding is added for it: content would jump under a finger */
+#action{position:fixed;left:50%;top:calc(var(--hdr-b,calc(env(safe-area-inset-top,0px) + 88px)) + 10px);transform:translateX(-50%);z-index:55;
   background:var(--navy);color:var(--on-navy);border:2px solid var(--edge);box-shadow:0 3px 0 var(--hard);
   padding:10px 20px;border-radius:9px;font-size:14px;font-weight:700;font-stretch:92%;white-space:nowrap;transition:transform .06s,box-shadow .06s;
   animation:pill-in .2s cubic-bezier(.2,.8,.2,1)}
+body.sheet-open #action{top:calc(env(safe-area-inset-top,0px) + 8px)}
 #action:active{transform:translate(-50%,3px);box-shadow:0 0 0 var(--hard)}
-@keyframes pill-in{from{opacity:0;transform:translate(-50%,10px)}}
+@keyframes pill-in{from{opacity:0;transform:translate(-50%,-10px)}}
 @media (prefers-reduced-motion:reduce){ #action{animation:none} }
-body.has-action main{padding-bottom:calc(var(--tab-h) + 76px)}
-body.has-action #toast{bottom:calc(var(--tab-h) + 70px + env(safe-area-inset-bottom,0px))}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) nav#tabs button[aria-current="page"]{color:#8FB8E6} :root:not([data-theme="light"]) nav#tabs button[aria-current="page"]::before{background:#8FB8E6} }
 :root[data-theme="dark"] nav#tabs button[aria-current="page"]{color:#8FB8E6}
 :root[data-theme="dark"] nav#tabs button[aria-current="page"]::before{background:#8FB8E6}
@@ -257,6 +258,11 @@ button.row:active{background:var(--recess)}
   background:var(--recess);border:1.5px solid var(--edge);box-shadow:0 2px 0 var(--hard);transition:transform .06s,box-shadow .06s}
 .swap:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
 .swap.armed{background:var(--navy);color:var(--on-navy)}
+/* a dip quest with several coins down enough: one chip per coin */
+.coinchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.coinchip{padding:5px 10px;border-radius:8px;font-size:12.5px;font-weight:700;font-stretch:92%;color:var(--text);font-variant-numeric:tabular-nums;
+  background:var(--plate);border:1.5px solid var(--edge);box-shadow:0 2px 0 var(--hard);transition:transform .06s,box-shadow .06s}
+.coinchip:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .quest .rw{color:#8FB8E6} }
 :root[data-theme="dark"] .quest .rw{color:#8FB8E6}
 
@@ -282,6 +288,8 @@ button.row:active{background:var(--recess)}
 /* ---------- news ---------- */
 .news{padding:11px 12px;border-bottom:1.5px solid var(--seam);font-size:13.5px}
 .news:last-child{border-bottom:0}
+button.news{display:block;width:100%;text-align:left}
+button.news:active{background:var(--recess)}
 .news em{font-style:normal;font-weight:700;font-size:11.5px;font-stretch:88%;color:var(--faint);display:block;margin-bottom:2px}
 
 /* price source line */
@@ -387,7 +395,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }, { v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }, { v: "1.11.2", items: ["After an update, a short What's new lists what changed since your last visit, one line per change.", "The intro no longer comes back on every visit after you closed it by tapping outside it."] }, { v: "1.11.1", items: ["Fix: in live mode, prices no longer jump right after the game opens or reloads."] }, { v: "1.11.0", items: ["Quests no longer get harder as you level up.", "A Trade button on every unfinished quest takes you to the move it needs.", "On the Quests tab your claimed quests now sit right under Completed, and the per-kind totals moved to their own section, By kind, at the bottom."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }, { v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }, { v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }, { v: "1.11.2", items: ["After an update, a short What's new lists what changed since your last visit, one line per change.", "The intro no longer comes back on every visit after you closed it by tapping outside it."] }, { v: "1.11.1", items: ["Fix: in live mode, prices no longer jump right after the game opens or reloads."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -935,9 +943,61 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     for (var j = 0; j < h.length; j++) h[j] = h[j] * k;
     return h;
   }
-  function pushNews(st, text, sym) {
-    st.news.unshift({ t: st.tick, x: text, s: sym || null });
+  function pushNews(st, text, sym, at) {
+    var n = { t: st.tick, x: text, s: sym || null };
+    if (at) {
+      n.at = at;
+      n.live = true;
+    }
+    st.news.unshift(n);
     if (st.news.length > 25) st.news.pop();
+  }
+  function liveHeadlines(st, chg, at) {
+    var marks = st.newsMarks || (st.newsMarks = {}), seeded = Object.keys(marks).length > 0;
+    var out = [], biggest = null, low = null, high = null;
+    COINS.forEach(function(c) {
+      var x = chg[c.s];
+      if (typeof x !== "number" || !isFinite(x)) return;
+      if (low === null || x < chg[low]) low = c.s;
+      if (high === null || x > chg[high]) high = c.s;
+      if (biggest === null || Math.abs(x) > Math.abs(chg[biggest])) biggest = c.s;
+    });
+    COINS.forEach(function(c) {
+      var x = chg[c.s];
+      if (typeof x !== "number" || !isFinite(x)) return;
+      var lv = x >= 0 ? Math.floor(x) : Math.ceil(x);
+      var m = marks[c.s];
+      if (typeof m !== "number") {
+        marks[c.s] = lv;
+        return;
+      }
+      while (m !== 0 && (m > 0 ? x < m - 0.5 : x > m + 0.5)) m += m > 0 ? -1 : 1;
+      if (lv !== 0 && (lv * m < 0 || Math.abs(lv) > Math.abs(m))) {
+        m = lv;
+        out.push({ s: c.s, x: headline(c, x, low, high, st) });
+      }
+      marks[c.s] = m;
+    });
+    if (!seeded && biggest !== null) {
+      var b = chg[biggest];
+      pushNews(st, "Live prices are in. The biggest move today is " + biggest + ", " + (b >= 0 ? "up " : "down ") + Math.abs(b).toFixed(1) + "%.", biggest, at);
+      return 1;
+    }
+    out.forEach(function(h) {
+      pushNews(st, h.x, h.s, at);
+    });
+    return out.length;
+  }
+  function headline(c, x, low, high, st) {
+    var a = Math.abs(x).toFixed(1) + "%", up = x > 0;
+    var verb = Math.abs(x) >= 4 ? up ? "jumps " : "drops " : Math.abs(x) >= 2 ? up ? "rises " : "falls " : up ? "edges up " : "slips ";
+    var t = c.n + " " + verb + a + " today";
+    if (c.s === low && !up) t += ", the biggest drop on the board";
+    else if (c.s === high && up) t += ", the biggest gain on the board";
+    var dip = (st.quests || []).filter(function(q) {
+      return q.t === "dip" && q.own && !q.claimed && q.n < q.target && x <= -q.pct;
+    })[0];
+    return t + (dip ? ". A buy counts for your dip quest." : ".");
   }
   function marketTick(st, anchors) {
     st.tick++;
@@ -1042,7 +1102,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   var QUEST_LOG_MAX = 20;
   var LIVE_MARKET_CAP = 2;
   var LIVE_DAY_CAP = 1;
-  var LIVE_TUNE = { quickReward: 5e-3, marketReward: 0.01, rewardFloor: 10, profitScale: 1, winnerPct: 2 };
+  var LIVE_TUNE = { quickReward: 5e-3, marketReward: 0.01, rewardFloor: 10, profitScale: 0.5, winnerPct: 1 };
   var QUEST_TIER = 0;
   var QUEST_POOL = [
     {
@@ -1131,19 +1191,20 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   function isDayQuest(q) {
     return !!(QUEST_DEF[q.t] && QUEST_DEF[q.t].day);
   }
-  function makeQuest(st, slot, live) {
+  function makeQuest(st, slot, live, swapped) {
     var board = st.quests || [];
     var taken = board.map(function(q2) {
       return q2.t;
     });
+    var held = heldSyms(st).length;
     var pool = QUEST_POOL.filter(function(d) {
-      return taken.indexOf(d.t) < 0;
+      return taken.indexOf(d.t) < 0 && !(d.t === "spread" && held >= COINS.length);
     });
     var market = board.filter(function(q2, i) {
       return i !== slot && isMarketQuest(q2);
     }).length;
     var day = board.filter(function(q2, i) {
-      return i !== slot && isDayQuest(q2);
+      return (i !== slot || swapped) && isDayQuest(q2);
     }).length;
     if (live && market >= LIVE_MARKET_CAP) {
       var quick = pool.filter(function(d) {
@@ -1161,6 +1222,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     var lv = QUEST_TIER;
     var nw = netWorthOf(st);
     var target = def.vals[lv];
+    if (def.t === "spread") target = Math.min(COINS.length, Math.max(target, held + 1));
     if (live && def.t === "profit") target = Math.max(10, Math.round(nw * def.live[lv] * LIVE_TUNE.profitScale / 10) * 10);
     else if (live && def.t === "nw") target = Math.round(nw * (1 + def.live[lv] + Math.random() * 0.01) / 10) * 10;
     else if (def.t === "nw") target = Math.max(target, Math.round(nw * (1.25 + Math.random() * 0.35) / 100) * 100);
@@ -1352,6 +1414,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     o.news = o.news.filter(function(n) {
       return n && typeof n.x === "string";
     }).slice(0, 25);
+    if (!o.newsMarks || typeof o.newsMarks !== "object" || Array.isArray(o.newsMarks)) o.newsMarks = {};
+    Object.keys(o.newsMarks).forEach(function(s) {
+      var m = o.newsMarks[s];
+      if (!BYSYM[s] || !Number.isInteger(m)) delete o.newsMarks[s];
+    });
     o.pending = o.pending.filter(function(r) {
       return r && BYSYM[r.s] && typeof r.p === "number";
     }).slice(0, 12);
@@ -1544,7 +1611,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   }
   function step() {
     var r = marketTick(S, tickAnchors());
-    if (r.fired) ui.news();
+    if (r.fired || liveNews()) ui.news();
     S.bots.forEach(function(b) {
       stepBot(b, S);
     });
@@ -1554,6 +1621,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (nw > S.peak) S.peak = nw;
     ui.ticked(r.changed);
     if (S.tick % 6 === 0) save();
+  }
+  function liveNews() {
+    if (Feed.mode !== "live" || !Feed.snapped) return 0;
+    var chg = {};
+    COINS.forEach(function(c) {
+      if (!noLive(c.s)) chg[c.s] = dayChange(c.s);
+    });
+    return liveHeadlines(S, chg, Date.now());
   }
   var REVIEW_LAG = REVIEW_LAG_DEFAULT;
   function reviewRipe(r) {
@@ -1716,7 +1791,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.questSwaps++;
     S.swapSpent += fee;
     questStat(q).swap++;
-    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live");
+    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", true);
     return fee;
   }
   function claimQuest(idx) {
@@ -1789,6 +1864,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       reviewLag: REVIEW_LAG_DEFAULT,
       trades: [],
       news: [],
+      newsMarks: {},
       pending: [],
       reviews: [],
       realised: 0,
@@ -1817,7 +1893,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     });
     st.bots = defaultBots(st.prices);
     for (var q = 0; q < 3; q++) st.quests.push(makeQuest(st, void 0, live));
-    pushNews(st, "Markets open. You start with " + money(st.cash) + " of play money.");
+    pushNews(st, "Markets open. You start with " + money(st.cash) + " of play money.", null, live ? Date.now() : 0);
     return st;
   }
 
@@ -2002,7 +2078,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       total += claimQuest(i);
     });
     save();
-    go("quests");
+    if (view.sheetCtx) render();
+    else go("quests");
     toast("Claimed " + money(total) + (idx.length > 1 ? " from " + idx.length + " quests" : ""));
   }
   var TABS = [
@@ -2094,13 +2171,19 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       lastReady = n;
       buildTabs();
     }
-    var a = $("#action"), show = n > 0 && view.tab !== "quests" && !view.sheetCtx;
+    var a = $("#action"), show = n > 0 && (view.tab !== "quests" || !!view.sheetCtx);
     if (show) {
       var txt = "Claim " + n + " reward" + (n > 1 ? "s" : "");
       if (a.textContent !== txt) a.textContent = txt;
+      var hb = Math.round($("#top").getBoundingClientRect().bottom) + "px";
+      if (hb !== "0px" && a._hb !== hb) {
+        a._hb = hb;
+        document.documentElement.style.setProperty("--hdr-b", hb);
+      }
     }
     if (a.hidden === show) a.hidden = !show;
     document.body.classList.toggle("has-action", show);
+    document.body.classList.toggle("sheet-open", !!view.sheetCtx);
   }
   $("#action").addEventListener("click", claimAll);
 
@@ -2649,7 +2732,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.11.4");
+    var ver = el("p", "note", "Shallow Whale 1.12.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -2735,6 +2818,10 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     view.refs._attr = attr;
     m.appendChild(attr);
     m.appendChild(el("h2", "sec", "Headlines"));
+    if (Feed.mode === "live") {
+      var hn = el("p", "listnote", "With live prices, a headline marks each coin that moves another 1% today. Tap one to trade it.");
+      m.appendChild(hn);
+    }
     var nl = el("div", "list");
     view.refs._news = nl;
     m.appendChild(nl);
@@ -2743,7 +2830,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   function paintNews() {
     var nl = view.refs._news;
     if (!nl) return;
-    var sig = S.news.length ? S.news.length + ":" + S.news[0].t : "0";
+    var sig = S.news.length ? S.news.length + ":" + S.news[0].t + ":" + S.news[0].x : "0";
     if (nl._sig === sig) return;
     nl._sig = sig;
     nl.textContent = "";
@@ -2752,10 +2839,16 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       return;
     }
     S.news.slice(0, 8).forEach(function(n) {
-      var d = el("div", "news");
-      var day = Math.floor(n.t / TICKS_PER_DAY) + 1;
-      d.appendChild(el("em", null, "Day " + day + (n.s ? ", " + n.s : "")));
-      d.appendChild(document.createTextNode(n.x));
+      var coin = n.s && BYSYM[n.s];
+      var d = el(coin ? "button" : "div", "news");
+      if (coin) {
+        d.type = "button";
+        d.addEventListener("click", function() {
+          renderCoinSheet(n.s, "buy");
+        });
+      }
+      d.appendChild(el("em", null, whenStr(n) + (n.s ? ", " + n.s : "")));
+      d.appendChild(el("span", null, n.x));
       nl.appendChild(d);
     });
   }
@@ -2807,11 +2900,12 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       bar2.appendChild(f2);
       d.appendChild(bar2);
       var hint = null;
-      if (q.t === "dip") {
-        hint = el("p", "note");
+      if (q.t === "dip" || q.t === "winner" || q.t === "profit") {
+        hint = el("p", "note qhint");
         hint.style.margin = "7px 0 0";
         d.appendChild(hint);
-      } else if (q.live && isDayQuest(q)) {
+      }
+      if (q.live && isDayQuest(q)) {
         var slow = el("p", "note", "With live prices this usually takes a day or more. Keep it for a later visit, or swap it.");
         slow.className = "note dayhint";
         slow.style.margin = "7px 0 0";
@@ -2908,10 +3002,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var frac = q.t === "nw" && q.base < q.target ? clamp((prog - q.base) / (q.target - q.base), 0, 1) : prog / q.target;
       r.pc.textContent = Math.round(100 * frac) + "%";
       r.fill.style.width = 100 * frac + "%";
-      if (r.hint) {
-        var bd = biggestDrop(), pct = q.own ? q.pct : 4;
-        r.hint.textContent = bd && bd.ch <= -pct ? bd.s + " is down " + Math.abs(bd.ch).toFixed(1) + "% today, so a buy counts now." : "Nothing is down " + pct + "% yet. The market list shows each coin's change today, or swap this quest below.";
-      }
+      if (r.hint && prog < q.target) {
+        if (q.t === "dip") paintDipHint(r);
+        else if (q.t === "winner") r.hint.textContent = winnerHint(q);
+        else r.hint.textContent = profitHint(q, q.target - prog);
+      } else if (r.hint && r.hint.textContent) r.hint.textContent = "";
       var mode = prog >= q.target ? "claim" : "swap";
       if (r.mode !== mode) {
         r.mode = mode;
@@ -2933,18 +3028,85 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
     });
   }
+  function dipCoins(pct) {
+    return COINS.filter(function(c) {
+      return !noLive(c.s) && dayChange(c.s) <= -pct;
+    }).map(function(c) {
+      return { s: c.s, ch: dayChange(c.s) };
+    }).sort(function(a, b) {
+      return a.ch - b.ch;
+    });
+  }
+  function paintDipHint(r) {
+    var pct = r.q.own ? r.q.pct : 4, a = dipCoins(pct), h = r.hint, sig = a.map(function(x) {
+      return x.s;
+    }).join();
+    if (h._sig !== sig) {
+      h._sig = sig;
+      h.textContent = "";
+      h._chips = {};
+      if (!a.length) h.appendChild(document.createTextNode("Nothing is down " + pct + "% yet. The market list shows each coin's change today, or swap this quest below."));
+      else if (a.length === 1) h.appendChild(document.createTextNode(""));
+      else {
+        h.appendChild(document.createTextNode(andList(a.map(function(x) {
+          return x.s;
+        })) + " are down " + pct + "% or more today, so a buy of any of them counts. Pick one:"));
+        var row = el("span", "coinchips");
+        a.forEach(function(x) {
+          var b = el("button", "coinchip");
+          b.type = "button";
+          b.dataset.sym = x.s;
+          b.addEventListener("click", function() {
+            renderCoinSheet(x.s, "buy");
+          });
+          row.appendChild(b);
+          h._chips[x.s] = b;
+        });
+        h.appendChild(row);
+      }
+    }
+    if (a.length === 1) h.firstChild.textContent = a[0].s + " is down " + Math.abs(a[0].ch).toFixed(1) + "% today, so a buy counts now.";
+    a.forEach(function(x) {
+      var b = h._chips[x.s];
+      if (b) {
+        var t = x.s + " " + x.ch.toFixed(1) + "%";
+        if (b.textContent !== t) b.textContent = t;
+      }
+    });
+  }
+  function netGain(l) {
+    return S.prices[l.s] * (1 - S.fee) / (l.b || l.p) - 1;
+  }
+  function bestTrade() {
+    var best = null;
+    S.lots.forEach(function(l) {
+      if (noLive(l.s)) return;
+      var g = netGain(l);
+      if (!best || g > best.g) best = { l, g };
+    });
+    return best;
+  }
+  function winnerHint(q) {
+    var b = bestTrade(), pct = q.pct;
+    if (!b) return "Buy a coin first. Selling it counts once it is up " + pct + "% after fees.";
+    var g = (b.g * 100).toFixed(1) + "%", what = b.l.s + " from " + whenStr(b.l);
+    return b.g * 100 >= pct ? what + " is up " + g + " after fees. Sell it now and it counts." : "Your best trade, " + what + ", is " + (b.g >= 0 ? "up " : "down ") + g.replace("-", "") + " after fees. It needs " + pct + "%.";
+  }
+  function profitHint(q, left) {
+    var open = 0;
+    S.lots.forEach(function(l) {
+      if (!noLive(l.s)) open += Math.max(0, l.q * (l.b || l.p) * netGain(l));
+    });
+    if (!S.lots.length) return "Profit counts when you sell a trade for more than it cost, fees included.";
+    return open >= left ? "Your trades in profit would bank " + money(open) + " if sold now, enough for the " + money(left) + " still needed." : "Your trades in profit would bank " + money(open) + " if sold now, of the " + money(left) + " still needed.";
+  }
   function tradeTarget(q) {
     if (q.t === "dip") {
       var bd = biggestDrop();
       if (bd) return { sym: bd.s, side: "buy" };
     }
     if (q.t === "winner" || q.t === "profit") {
-      var best = null;
-      S.lots.forEach(function(l) {
-        if (noLive(l.s)) return;
-        var g = S.prices[l.s] / l.p;
-        if (!best || g > best.g) best = { l, g };
-      });
+      var best = bestTrade();
       if (best) return { sym: best.l.s, side: "sell", lot: best.l.id };
     }
     if (q.t === "spread") {
@@ -3378,8 +3540,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.11.4");
-    setItem(SEEN_KEY, "1.11.4");
+    var seen = getItem(SEEN_KEY, "1.12.0");
+    setItem(SEEN_KEY, "1.12.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3387,7 +3549,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.11.4");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.12.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3396,7 +3558,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.11.4"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.12.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
