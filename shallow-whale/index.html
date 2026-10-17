@@ -413,7 +413,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }, { v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -2969,7 +2969,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.18.2");
+    var ver = el("p", "note", "Shallow Whale 1.18.3");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3867,8 +3867,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.18.2");
-    setItem(SEEN_KEY, "1.18.2");
+    var seen = getItem(SEEN_KEY, "1.18.3");
+    setItem(SEEN_KEY, "1.18.3");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3876,7 +3876,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.2");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.3");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3885,7 +3885,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.18.2"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.18.3"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
