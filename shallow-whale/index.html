@@ -322,12 +322,18 @@ button.news:active{background:var(--recess)}
 .chips button{flex:1;padding:7px 0;border-radius:8px;background:var(--plate);border:2px solid var(--edge);box-shadow:0 2px 0 var(--hard);
   font-size:13px;font-weight:700;font-stretch:90%;transition:transform .06s,box-shadow .06s}
 .chips button:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
+/* the last amount bought: wider, it holds a dollar figure */
+.chips button.lastbuy{flex:1.4}
+/* one-tap percents under the stop loss and take profit fields */
+.protect > div{flex:1;min-width:0}
+.chips.exitchips{margin:6px 0 0;gap:6px}
+.chips.exitchips button{padding:4px 0;font-size:12.5px}
 
 /* the chart is a CRT, bezel and all */
 .crt{position:relative;overflow:hidden;background:var(--crt);border:2px solid var(--edge);border-radius:7px}
 canvas#chart{width:100%;height:172px;display:block}
 .protect{display:flex;gap:9px;margin-top:8px}
-.protect label{flex:1;font-size:12px;color:var(--muted);font-weight:650}
+.protect label{display:block;flex:1;font-size:12px;color:var(--muted);font-weight:650}
 .protect input{width:100%;margin-top:4px;border:2px solid var(--edge);border-radius:9px;padding:8px 10px;background:var(--recess);font-size:15px;font-weight:650;outline:none}
 select.sel{width:100%;border:2px solid var(--edge);border-radius:9px;padding:9px 10px;background:var(--recess);font-size:14.5px;font-weight:650}
 .note{font-size:13px;color:var(--muted);line-height:1.5}
@@ -395,7 +401,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1154,13 +1160,16 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         return "Grow net worth to " + money(x);
       }
     },
+    /* a coin counts once held SPREAD_HOLD (heldLong): before 1.16 selling a
+       coin and buying it back finished this and a trades quest together, and
+       a claimed slot refills at once (owner rule), so it looped */
     {
       t: "spread",
       n: "Coins held",
       vals: [2, 3, 4, 5],
       abs: true,
       txt: function(x) {
-        return "Hold " + x + " different coins at once";
+        return "Hold " + x + " different coins, each for 10 minutes";
       }
     },
     {
@@ -1218,6 +1227,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
   ];
   var GUARD_GAP = 24 * 3600 * 1e3;
+  var SPREAD_HOLD = 10 * 60 * 1e3;
+  var RECENT_KINDS = 2;
   var QUEST_DEF = {};
   QUEST_POOL.forEach(function(d) {
     QUEST_DEF[d.t] = d;
@@ -1268,6 +1279,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       });
       if (short.length) pool = short;
     }
+    var recent = st.recentKinds || [];
+    var fresh = pool.filter(function(d) {
+      return recent.indexOf(d.t) < 0;
+    });
+    if (fresh.length) pool = fresh;
     var def = pick(pool.length ? pool : QUEST_POOL.filter(fits));
     var lv = QUEST_TIER;
     var nw = netWorthOf(st);
@@ -1344,11 +1360,18 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       case "nw":
         return netWorthOf(st);
       case "spread":
-        return heldSyms(st).length;
+        return heldLong(st);
       case "cut":
         return st.losersCut || 0;
     }
     return 0;
+  }
+  function heldLong(st) {
+    var now = Date.now(), out = [];
+    st.lots.forEach(function(l) {
+      if (out.indexOf(l.s) < 0 && !(l.at > 0 && now - l.at < SPREAD_HOLD)) out.push(l.s);
+    });
+    return out.length;
   }
   function questProgressOf(st, q) {
     if (q.own) return q.n || 0;
@@ -1382,7 +1405,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     swapSpent: 0,
     realisedGain: 0,
     losersCut: 0,
-    guardAt: 0
+    guardAt: 0,
+    lastBuy: 0
   };
   var ARR_FIELDS = { trades: 1, news: 1, owned: 1, quests: 1, questLog: 1, bots: 1, pending: 1, reviews: 1, lots: 1 };
   var RENAMED = { TON: "GRAM" };
@@ -1516,6 +1540,10 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       if (!(typeof q.drawnAt === "number" && isFinite(q.drawnAt) && q.drawnAt > 0)) q.drawnAt = Date.now();
       if (!(typeof q.act === "number" && isFinite(q.act) && q.act >= 0)) q.act = 0;
     });
+    if (!Array.isArray(o.recentKinds)) o.recentKinds = [];
+    o.recentKinds = o.recentKinds.filter(function(k2) {
+      return typeof k2 === "string" && QUEST_DEF[k2];
+    }).slice(0, 2);
     if (!o.questStats || typeof o.questStats !== "object" || Array.isArray(o.questStats)) o.questStats = {};
     Object.keys(o.questStats).forEach(function(k2) {
       var e = o.questStats[k2], m = /^(live|sim):(\w+)$/.exec(k2);
@@ -1778,6 +1806,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
     S.lots.push(lot);
     S.cash -= usd;
+    S.lastBuy = Math.round(usd * 100) / 100;
     S.tradeCount++;
     S.volume += usd;
     var dc = dayChange(sym);
@@ -1899,6 +1928,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.questEarned = (S.questEarned || 0) + q.reward;
     st.done++;
     st.ms += ms;
+    S.recentKinds = [q.t].concat((S.recentKinds || []).filter(function(k) {
+      return k !== q.t;
+    })).slice(0, RECENT_KINDS);
     S.quests[idx] = makeQuest(S, idx, Feed.mode === "live");
     return q.reward;
   }
@@ -1970,6 +2002,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       realisedGain: 0,
       losersCut: 0,
       guardAt: 0,
+      recentKinds: [],
+      lastBuy: 0,
       level: 1,
       xp: 0,
       owned: [],
@@ -2330,32 +2364,50 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     r.addEventListener("click", onClick);
     return r;
   }
-  function exitInputs(entry, sl, tp) {
+  var EXIT_CHIPS = [0.2, 0.7];
+  function exitInputs(entry, sl, tp, amount) {
     var pr = el("div", "protect");
-    var l1 = el("label");
-    l1.appendChild(document.createTextNode("Stop loss, % below entry"));
-    var i1 = el("input");
-    i1.type = "text";
-    i1.inputMode = "decimal";
-    i1.placeholder = "off";
-    if (sl && entry) i1.value = ((1 - sl / entry) * 100).toFixed(1);
-    l1.appendChild(i1);
-    var l2 = el("label");
-    l2.appendChild(document.createTextNode("Take profit, % above entry"));
-    var i2 = el("input");
-    i2.type = "text";
-    i2.inputMode = "decimal";
-    i2.placeholder = "off";
-    if (tp && entry) i2.value = ((tp / entry - 1) * 100).toFixed(1);
-    l2.appendChild(i2);
-    pr.appendChild(l1);
-    pr.appendChild(l2);
-    var fn = el("p", "note", "Triggered by the price. The buy and sell fees come off the result, so a 2% target nets about " + (2 - 2 * S.fee * 100).toFixed(1) + "%.");
+    var field = function(name, val) {
+      var col = el("div");
+      var l = el("label");
+      l.appendChild(document.createTextNode(name));
+      var i = el("input");
+      i.type = "text";
+      i.inputMode = "decimal";
+      i.placeholder = "off";
+      if (val) i.value = val;
+      l.appendChild(i);
+      col.appendChild(l);
+      var row = el("div", "chips exitchips");
+      EXIT_CHIPS.forEach(function(v) {
+        var cb = el("button", null, v + "%");
+        cb.type = "button";
+        cb.addEventListener("click", function() {
+          i.value = String(v);
+          i.dispatchEvent(new Event("input"));
+        });
+        row.appendChild(cb);
+      });
+      col.appendChild(row);
+      pr.appendChild(col);
+      return i;
+    };
+    var i1 = field("Stop loss, % below entry", sl && entry ? ((1 - sl / entry) * 100).toFixed(1) : "");
+    var i2 = field("Take profit, % above entry", tp && entry ? ((tp / entry - 1) * 100).toFixed(1) : "");
+    var fn = el("p", "note");
     fn.style.margin = "6px 0 0";
+    var note = function() {
+      var t = parseFloat(i2.value);
+      if (!(t > 0)) t = 2;
+      var fees = 2 * S.fee * 100, net = t - fees, usd = amount ? amount() : 0;
+      fn.textContent = "Both fees cost " + fees.toFixed(2) + "%, so a " + t + "% target " + (net <= 0.05 ? "nets nothing." : "nets about " + net.toFixed(1) + "%" + (usd > 0 ? " (" + moneyFull(usd * net / 100) + " on " + money(usd) + ")." : "."));
+    };
+    i2.addEventListener("input", note);
+    note();
     var box = el("div");
     box.appendChild(pr);
     box.appendChild(fn);
-    return { box, sl: i1, tp: i2 };
+    return { box, sl: i1, tp: i2, note };
   }
   function renderCoinSheet(sym, side, keepAmount, lotId) {
     var lot = lotId ? lotById(lotId) : null;
@@ -2414,6 +2466,15 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     amt.appendChild(inp);
     b.appendChild(amt);
     var chips = el("div", "chips");
+    if (view.sheetCtx.side === "buy" && S.lastBuy > 0) {
+      var lb = el("button", "lastbuy", money(S.lastBuy));
+      lb.type = "button";
+      lb.addEventListener("click", function() {
+        inp.value = (Math.floor(Math.min(S.lastBuy, S.cash) * 100) / 100).toFixed(2);
+        updateSummary();
+      });
+      chips.appendChild(lb);
+    }
     [[0.25, "25%"], [0.5, "50%"], [0.75, "75%"], [1, "Max"]].forEach(function(p) {
       var cb = el("button", null, p[1]);
       cb.addEventListener("click", function() {
@@ -2428,7 +2489,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var rh = el("h2", "sec", "Automatic exit, optional");
       rh.style.marginTop = "14px";
       b.appendChild(rh);
-      rules = exitInputs(0, 0, 0);
+      rules = exitInputs(0, 0, 0, function() {
+        return parseFloat(inp.value) || 0;
+      });
       b.appendChild(rules.box);
     }
     var sumWrap = el("div");
@@ -2457,7 +2520,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var hd = el("h2", "sec", "Automatic exit");
       hd.style.marginTop = "18px";
       b.appendChild(hd);
-      var ex = exitInputs(lot.p, lot.sl, lot.tp);
+      var ex = exitInputs(lot.p, lot.sl, lot.tp, function() {
+        return lot.q * (lot.b || lot.p);
+      });
       b.appendChild(ex.box);
       var sv = el("button", "btn ghost", "Save exit rules");
       sv.style.marginTop = "9px";
@@ -2504,6 +2569,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     paintCoinSheet();
     openSheet();
     function updateSummary() {
+      if (rules) rules.note();
       var val = parseFloat(inp.value) || 0;
       var p = S.prices[sym];
       sumWrap.textContent = "";
@@ -2826,7 +2892,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.15.0");
+    var ver = el("p", "note", "Shallow Whale 1.16.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -2994,7 +3060,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       bar2.appendChild(f2);
       d.appendChild(bar2);
       var hint = null;
-      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard") {
+      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard" || q.t === "spread") {
         hint = el("p", "note qhint");
         hint.style.margin = "7px 0 0";
         d.appendChild(hint);
@@ -3101,6 +3167,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         else if (q.t === "winner") r.hint.textContent = winnerHint(q);
         else if (q.t === "cut") r.hint.textContent = cutHint(q);
         else if (q.t === "guard") r.hint.textContent = guardHint(q);
+        else if (q.t === "spread") r.hint.textContent = spreadHint();
         else r.hint.textContent = profitHint(q, q.target - prog);
       } else if (r.hint && r.hint.textContent) r.hint.textContent = "";
       var mode = prog >= q.target ? "claim" : "swap";
@@ -3213,6 +3280,21 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       return !l.sl && (q.of || []).indexOf(l.id) >= 0;
     }).length;
     return n ? n + (n === 1 ? " of your trades has" : " of your trades have") + " no stop loss yet. Trade opens one; set it under Automatic exit. New buys do not count." : "The trades this quest was drawn for are sold or protected. Swap it for another.";
+  }
+  function spreadHint() {
+    var now = Date.now(), wait = {};
+    S.lots.forEach(function(l) {
+      if (l.at > 0 && now - l.at < SPREAD_HOLD) wait[l.s] = Math.min(wait[l.s] || Infinity, l.at);
+    });
+    S.lots.forEach(function(l) {
+      if (!(l.at > 0 && now - l.at < SPREAD_HOLD)) delete wait[l.s];
+    });
+    var syms = Object.keys(wait);
+    if (!syms.length) return "A coin counts once you have held it for 10 minutes. Selling it and buying it back starts the clock again.";
+    var first = Math.min.apply(null, syms.map(function(s) {
+      return wait[s];
+    })), mins = Math.max(1, Math.ceil((first + SPREAD_HOLD - now) / 6e4));
+    return andList(syms) + (syms.length === 1 ? " counts" : " count") + " once held 10 minutes; the next in about " + mins + " min.";
   }
   function profitHint(q, left) {
     var open = 0;
@@ -3670,8 +3752,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.15.0");
-    setItem(SEEN_KEY, "1.15.0");
+    var seen = getItem(SEEN_KEY, "1.16.0");
+    setItem(SEEN_KEY, "1.16.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3679,7 +3761,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.15.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.16.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3688,7 +3770,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.15.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.16.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
