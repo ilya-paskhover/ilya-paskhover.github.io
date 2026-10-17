@@ -395,7 +395,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1105,7 +1105,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   var QUEST_LOG_MAX = 20;
   var LIVE_MARKET_CAP = 2;
   var LIVE_DAY_CAP = 1;
-  var LIVE_TUNE = { quickReward: 5e-3, marketReward: 0.01, rewardFloor: 10, profitScale: 0.5, winnerPct: 1 };
+  var LIVE_TUNE = { quickReward: 5e-3, marketReward: 0.01, rewardFloor: 10, profitScale: 0.5, winnerPct: 0.5 };
   var QUEST_TIER = 0;
   var QUEST_POOL = [
     {
@@ -1125,11 +1125,15 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         return "Trade " + money(x) + " in total volume";
       }
     },
+    /* liveOff: real prices do not bank dollars of profit within a session at
+       any target tried (1.9.0 sweep, 1.15 measure), and sell a winner teaches
+       the same thing; simulator only */
     {
       t: "profit",
       n: "Profit from winning sales",
       market: true,
       day: true,
+      liveOff: true,
       vals: [150, 500, 1500, 5e3],
       money: true,
       live: [0.01, 0.02, 0.03, 0.05],
@@ -1241,7 +1245,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     });
     var guardOk = bare.length && !(st.guardAt > 0 && Date.now() - st.guardAt < GUARD_GAP);
     var fits = function(d) {
-      return !d.retired && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk);
+      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk);
     };
     var pool = QUEST_POOL.filter(function(d) {
       return taken.indexOf(d.t) < 0 && fits(d);
@@ -1313,8 +1317,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var dup = keep.some(function(k) {
         return k.t === q.t;
       });
+      var off = live && !done && QUEST_DEF[q.t] && QUEST_DEF[q.t].liveOff;
       var over = live && !done && (isMarketQuest(q) && market >= LIVE_MARKET_CAP || isDayQuest(q) && day >= LIVE_DAY_CAP);
-      if (!dup && !over && (done || !all)) {
+      if (!dup && !over && !off && (done || !all)) {
         keep.push(q);
         if (isMarketQuest(q)) market++;
         if (isDayQuest(q)) day++;
@@ -2821,7 +2826,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.14.1");
+    var ver = el("p", "note", "Shallow Whale 1.15.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3665,8 +3670,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.14.1");
-    setItem(SEEN_KEY, "1.14.1");
+    var seen = getItem(SEEN_KEY, "1.15.0");
+    setItem(SEEN_KEY, "1.15.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3674,7 +3679,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.14.1");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.15.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3683,7 +3688,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.14.1"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.15.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
