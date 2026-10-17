@@ -395,7 +395,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }, { v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }, { v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }, { v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1275,7 +1275,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     else if (def.t === "nw") target = Math.max(target, Math.round(nw * (1.25 + Math.random() * 0.35) / 100) * 100);
     var pct = def.pct ? def.pct[live ? "live" : "sim"] : 0;
     if (live && def.t === "winner") pct = LIVE_TUNE.winnerPct;
-    var reward = live ? Math.max(LIVE_TUNE.rewardFloor, Math.round(nw * (def.market ? LIVE_TUNE.marketReward : LIVE_TUNE.quickReward) * (1 + Math.random()) / 10) * 10) : Math.max(150, Math.round(nw * (0.03 + Math.random() * 0.04) / 10) * 10);
+    var stake = st.seedCash || 3e3;
+    var reward = live ? Math.max(LIVE_TUNE.rewardFloor, Math.round(stake * (def.market ? LIVE_TUNE.marketReward : LIVE_TUNE.quickReward) * (1 + Math.random()) / 10) * 10) : Math.max(150, Math.round(stake * (0.03 + Math.random() * 0.04) / 10) * 10);
     var q = {
       id: st.seenQuests = (st.seenQuests || 0) + 1,
       t: def.t,
@@ -1288,7 +1289,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       reward,
       xp: Math.round(xpNeeded(st.level) * 0.35),
       claimed: false,
-      drawnAt: Date.now()
+      drawnAt: Date.now(),
+      act: 0
+      /* act: ms the game was open since the draw */
     };
     if (def.t === "profit") q.gain = true;
     if (def.own) {
@@ -1506,6 +1509,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         q.base = o.realisedGain;
       }
       if (!(typeof q.drawnAt === "number" && isFinite(q.drawnAt) && q.drawnAt > 0)) q.drawnAt = Date.now();
+      if (!(typeof q.act === "number" && isFinite(q.act) && q.act >= 0)) q.act = 0;
     });
     if (!o.questStats || typeof o.questStats !== "object" || Array.isArray(o.questStats)) o.questStats = {};
     Object.keys(o.questStats).forEach(function(k2) {
@@ -1671,7 +1675,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (Feed.snapped) return Feed.anchors;
     return Feed.status === "error" ? null : {};
   }
+  var ACTIVE_STEP_MAX = 2e3;
+  var lastStep = 0;
   function step() {
+    var now = Date.now(), dt = lastStep ? Math.min(Math.max(0, now - lastStep), ACTIVE_STEP_MAX) : 0;
+    lastStep = now;
+    if (dt) S.quests.forEach(function(q) {
+      q.act = (q.act || 0) + dt;
+    });
     var r = marketTick(S, tickAnchors());
     if (r.fired || liveNews()) ui.news();
     S.bots.forEach(function(b) {
@@ -1861,7 +1872,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return S.questStats[k] || (S.questStats[k] = { done: 0, swap: 0, ms: 0 });
   }
   function questAge(q) {
-    return q.drawnAt > 0 ? Math.max(0, Date.now() - q.drawnAt) : 0;
+    return q.act > 0 ? q.act : 0;
   }
   function swapQuest(idx) {
     var q = S.quests[idx], fee = swapFee(q);
@@ -2810,7 +2821,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.13.1");
+    var ver = el("p", "note", "Shallow Whale 1.14.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3065,7 +3076,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var qm = el("div", "qm");
       qm.style.marginBottom = "0";
       qm.appendChild(el("span", null, mode === "live" ? "Live prices" : "Simulator"));
-      qm.appendChild(el("span", null, e.done ? durStr(e.ms / e.done) + " on average to finish" : "None finished yet"));
+      qm.appendChild(el("span", null, e.done ? durStr(e.ms / e.done) + " of play on average to finish" : "None finished yet"));
       d.appendChild(qm);
       L.appendChild(d);
     });
@@ -3654,8 +3665,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.13.1");
-    setItem(SEEN_KEY, "1.13.1");
+    var seen = getItem(SEEN_KEY, "1.14.0");
+    setItem(SEEN_KEY, "1.14.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3663,7 +3674,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.13.1");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.14.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3672,7 +3683,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.13.1"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.14.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
