@@ -38,6 +38,14 @@
   tags: [Game, Vibe coding]
   featured: false
   post: 2025-11-22-vibe-coding-apps
+- title: Claude Code mods
+  kind: Plugins
+  description: "Three small Claude Code mods: a last-turn summary band, a notes pane shared across projects, and a pane of running sessions."
+  url: https://github.com/ilya-paskhover/claude-code-mods
+  external: true
+  tags: [Claude Code, TypeScript]
+  featured: false
+  post: 2026-10-17-claude-code-mods
 - title: Invoice Reminders
   kind: Web app
   description: "Chases late invoices with escalating reminder emails and a pay link. A proof of concept with a live demo."
