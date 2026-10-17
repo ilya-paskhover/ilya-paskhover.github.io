@@ -8,7 +8,10 @@ description: "A crypto trading game played with play money: no ads, no purchases
 {:toc}
 
 Shallow Whale is a crypto trading game played with play money. You start with cash, buy and sell coins, and try to end up ahead.
-{% comment %}TODO confirm: how prices work (simulated or a live price source), quests, and anything else you want to say about the game.{% endcomment %}
+
+## Prices and quests
+
+Prices come from a simulated market, or live from Binance or CoinGecko, your choice. Quests give you small goals along the way, like buying a coin that is down. Your trades never touch an exchange.
 
 ## No ads, no purchases, no real money
 
