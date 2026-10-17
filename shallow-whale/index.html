@@ -395,7 +395,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }, { v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }, { v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }, { v: "1.11.2", items: ["After an update, a short What's new lists what changed since your last visit, one line per change.", "The intro no longer comes back on every visit after you closed it by tapping outside it."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }, { v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }, { v: "1.11.3", items: ['A sale made by an exit rule now says which rule it was, in Recent trades ("take profit" or "stop loss") and in What happened next ("Closed by your take profit (set at 1.497)"), so you can check it against what you set.', "What happened next shows when the sale happened and when it was checked, to the second, so you can see the check come about 80 seconds after the sale while the app is open."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1183,20 +1183,37 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         return x === 1 ? "Sell a position at a " + p + "% gain or better" : "Sell " + x + " positions at a " + p + "% gain or better";
       }
     },
-    /* finishes whatever the market does: closing a loser is the habit a flat or
-       falling market tests, and before it such a day left nothing on the board
-       to do (owner, 17 Oct 2026). Drawn only while a trade is down that far */
+    /* retired in 1.13.1, never drawn: pointing at the trade down most and paying
+       to sell it rewards taking a loss for its own sake, often right before a
+       bounce (owner, 17 Oct 2026). Kept so quests already on a board still count
+       and finish */
     {
       t: "cut",
       n: "Cut a loser",
       vals: [1, 2, 3, 4],
       own: true,
       pct: { sim: 5, live: 1 },
+      retired: true,
       txt: function(x, p) {
         return x === 1 ? "Sell a trade that is down " + p + "% or more after fees" : "Sell " + x + " trades that are down " + p + "% or more after fees";
       }
+    },
+    /* 1.13.1, instead of cut: decide the exit before you need it. Only trades
+       open without a stop when it is drawn count (q.of), each once (q.ids), and
+       it is drawn at most once in GUARD_GAP. Setting a stop is free and one tap:
+       on the board with no such limits the scripted player finished it 583 times
+       in 12 one-hour sessions, and net went 137% -> 720%/h */
+    {
+      t: "guard",
+      n: "Set a stop loss",
+      vals: [2, 2, 2, 2],
+      own: true,
+      txt: function(x) {
+        return x === 1 ? "Set a stop loss on your open trade that has none" : "Set a stop loss on " + x + " of your open trades";
+      }
     }
   ];
+  var GUARD_GAP = 24 * 3600 * 1e3;
   var QUEST_DEF = {};
   QUEST_POOL.forEach(function(d) {
     QUEST_DEF[d.t] = d;
@@ -1217,8 +1234,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     var loser = st.lots.some(function(l) {
       return lotGain(st, l) <= -cutPct / 100;
     });
+    var bare = st.lots.filter(function(l) {
+      return !l.sl;
+    }).map(function(l) {
+      return l.id;
+    });
+    var guardOk = bare.length && !(st.guardAt > 0 && Date.now() - st.guardAt < GUARD_GAP);
     var fits = function(d) {
-      return !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser);
+      return !d.retired && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk);
     };
     var pool = QUEST_POOL.filter(function(d) {
       return taken.indexOf(d.t) < 0 && fits(d);
@@ -1246,6 +1269,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     var nw = netWorthOf(st);
     var target = def.vals[lv];
     if (def.t === "spread") target = Math.min(COINS.length, Math.max(target, held + 1));
+    if (def.t === "guard") target = Math.min(target, bare.length);
     if (live && def.t === "profit") target = Math.max(10, Math.round(nw * def.live[lv] * LIVE_TUNE.profitScale / 10) * 10);
     else if (live && def.t === "nw") target = Math.round(nw * (1 + def.live[lv] + Math.random() * 0.01) / 10) * 10;
     else if (def.t === "nw") target = Math.max(target, Math.round(nw * (1.25 + Math.random() * 0.35) / 100) * 100);
@@ -1271,6 +1295,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       q.own = true;
       q.pct = pct;
       q.n = 0;
+    }
+    if (def.t === "guard") {
+      q.of = bare;
+      q.ids = [];
+      st.guardAt = Date.now();
     }
     return q;
   }
@@ -1344,7 +1373,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     questSwaps: 0,
     swapSpent: 0,
     realisedGain: 0,
-    losersCut: 0
+    losersCut: 0,
+    guardAt: 0
   };
   var ARR_FIELDS = { trades: 1, news: 1, owned: 1, quests: 1, questLog: 1, bots: 1, pending: 1, reviews: 1, lots: 1 };
   var RENAMED = { TON: "GRAM" };
@@ -1464,7 +1494,13 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }).slice(0, QUEST_LOG_MAX);
     o.quests.forEach(function(q) {
       if (q.own && !(typeof q.n === "number" && isFinite(q.n))) q.n = 0;
-      if (q.own && !(q.pct > 0)) q.pct = 3;
+      if (q.own && QUEST_DEF[q.t] && QUEST_DEF[q.t].pct && !(q.pct > 0)) q.pct = 3;
+      if (q.t === "guard" && !Array.isArray(q.ids)) q.ids = [];
+      if (q.t === "guard" && !Array.isArray(q.of)) q.of = o.lots.filter(function(l) {
+        return !l.sl;
+      }).map(function(l) {
+        return l.id;
+      });
       if (q.t === "profit" && !q.gain) {
         q.gain = true;
         q.base = o.realisedGain;
@@ -1795,6 +1831,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   function setExitRules(lot, slPct, tpPct) {
     lot.sl = slPct > 0 && slPct < 100 ? lot.p * (1 - slPct / 100) : 0;
     lot.tp = tpPct > 0 ? lot.p * (1 + tpPct / 100) : 0;
+    if (lot.sl) S.quests.forEach(function(q) {
+      if (q.t !== "guard" || !Array.isArray(q.of) || q.of.indexOf(lot.id) < 0) return;
+      if (!Array.isArray(q.ids)) q.ids = [];
+      if (q.ids.indexOf(lot.id) < 0) {
+        q.ids.push(lot.id);
+        q.n = (q.n || 0) + 1;
+      }
+    });
     save();
   }
   function addXP(n) {
@@ -1909,6 +1953,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       winners: 0,
       realisedGain: 0,
       losersCut: 0,
+      guardAt: 0,
       level: 1,
       xp: 0,
       owned: [],
@@ -2765,7 +2810,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.13.0");
+    var ver = el("p", "note", "Shallow Whale 1.13.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -2933,7 +2978,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       bar2.appendChild(f2);
       d.appendChild(bar2);
       var hint = null;
-      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut") {
+      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard") {
         hint = el("p", "note qhint");
         hint.style.margin = "7px 0 0";
         d.appendChild(hint);
@@ -3039,6 +3084,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         if (q.t === "dip") paintDipHint(r);
         else if (q.t === "winner") r.hint.textContent = winnerHint(q);
         else if (q.t === "cut") r.hint.textContent = cutHint(q);
+        else if (q.t === "guard") r.hint.textContent = guardHint(q);
         else r.hint.textContent = profitHint(q, q.target - prog);
       } else if (r.hint && r.hint.textContent) r.hint.textContent = "";
       var mode = prog >= q.target ? "claim" : "swap";
@@ -3140,6 +3186,18 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (!w || w.g * 100 > -pct) return "None of your trades is down " + pct + "% after fees right now. If one gets there, selling it counts, and so does a stop loss that fires.";
     return w.l.s + " from " + whenStr(w.l) + " is down " + Math.abs(w.g * 100).toFixed(1) + "% after fees. Selling a loser early is a skill too, and a stop loss that fires counts.";
   }
+  function unguarded(q) {
+    var a = S.lots.filter(function(l) {
+      return !l.sl && (q.of || []).indexOf(l.id) >= 0;
+    });
+    return a.length ? a[a.length - 1] : null;
+  }
+  function guardHint(q) {
+    var n = S.lots.filter(function(l) {
+      return !l.sl && (q.of || []).indexOf(l.id) >= 0;
+    }).length;
+    return n ? n + (n === 1 ? " of your trades has" : " of your trades have") + " no stop loss yet. Trade opens one; set it under Automatic exit. New buys do not count." : "The trades this quest was drawn for are sold or protected. Swap it for another.";
+  }
   function profitHint(q, left) {
     var open = 0;
     S.lots.forEach(function(l) {
@@ -3160,6 +3218,10 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (q.t === "cut") {
       var w = worstTrade();
       if (w) return { sym: w.l.s, side: "sell", lot: w.l.id };
+    }
+    if (q.t === "guard") {
+      var u = unguarded(q);
+      if (u) return { sym: u.s, side: "sell", lot: u.id };
     }
     if (q.t === "spread") {
       var held = heldSyms(S);
@@ -3592,8 +3654,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.13.0");
-    setItem(SEEN_KEY, "1.13.0");
+    var seen = getItem(SEEN_KEY, "1.13.1");
+    setItem(SEEN_KEY, "1.13.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3601,7 +3663,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.13.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.13.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3610,7 +3672,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.13.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.13.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
