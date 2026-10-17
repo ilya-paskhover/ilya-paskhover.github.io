@@ -413,7 +413,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }, { v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }, { v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }, { v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }, { v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }, { v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1205,10 +1205,13 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         return "Hold " + x + " different coins, each for " + SPREAD_HOLD / 6e4 + " minutes";
       }
     },
+    /* quickPay (1.18.1): a market quest for the cap, but paid like a quick one,
+       since live it is only dealt when it can be done at once */
     {
       t: "dip",
       n: "Buy the dip",
       market: true,
+      quickPay: true,
       vals: [1, 2, 3, 4],
       own: true,
       pct: { sim: 3, live: 1 },
@@ -1260,6 +1263,16 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     }
   ];
   var GUARD_GAP = 24 * 3600 * 1e3;
+  var DIP_SOFT = 0.5;
+  function dipLow(live, moves) {
+    if (!live || !moves) return null;
+    var low = null;
+    Object.keys(moves).forEach(function(s) {
+      var x = moves[s];
+      if (typeof x === "number" && isFinite(x) && (low === null || x < low)) low = x;
+    });
+    return low;
+  }
   var SPREAD_HOLD = 5 * 60 * 1e3;
   var RECENT_KINDS = 2;
   var QUEST_DEF = {};
@@ -1272,7 +1285,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   function isDayQuest(q) {
     return !!(QUEST_DEF[q.t] && QUEST_DEF[q.t].day);
   }
-  function makeQuest(st, slot, live, swapped) {
+  function makeQuest(st, slot, live, swapped, moves) {
     var board = st.quests || [];
     var taken = board.map(function(q2) {
       return q2.t;
@@ -1288,8 +1301,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       return l.id;
     });
     var guardOk = bare.length && !(st.guardAt > 0 && Date.now() - st.guardAt < GUARD_GAP);
+    var low = dipLow(live, moves);
     var fits = function(d) {
-      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk);
+      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk) && !(d.t === "dip" && low !== null && low > -DIP_SOFT);
     };
     var pool = QUEST_POOL.filter(function(d) {
       return taken.indexOf(d.t) < 0 && fits(d);
@@ -1328,8 +1342,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     else if (def.t === "nw") target = Math.max(target, Math.round(nw * (1.25 + Math.random() * 0.35) / 100) * 100);
     var pct = def.pct ? def.pct[live ? "live" : "sim"] : 0;
     if (live && def.t === "winner") pct = LIVE_TUNE.winnerPct;
+    if (def.t === "dip" && low !== null && low > -pct) pct = DIP_SOFT;
     var stake = st.seedCash || 3e3;
-    var reward = live ? Math.max(LIVE_TUNE.rewardFloor, Math.round(stake * (def.market ? LIVE_TUNE.marketReward : LIVE_TUNE.quickReward) * (1 + Math.random()) / 10) * 10) : Math.max(150, Math.round(stake * (0.03 + Math.random() * 0.04) / 10) * 10);
+    var reward = live ? Math.max(LIVE_TUNE.rewardFloor, Math.round(stake * (def.market && !def.quickPay ? LIVE_TUNE.marketReward : LIVE_TUNE.quickReward) * (1 + Math.random()) / 10) * 10) : Math.max(150, Math.round(stake * (0.03 + Math.random() * 0.04) / 10) * 10);
     var q = {
       id: st.seenQuests = (st.seenQuests || 0) + 1,
       t: def.t,
@@ -1359,7 +1374,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     }
     return q;
   }
-  function refreshQuests(st, all, live) {
+  function refreshQuests(st, all, live, moves) {
     var keep = [], market = 0, day = 0;
     (st.quests || []).forEach(function(q) {
       var done = questProgressOf(st, q) >= q.target;
@@ -1375,7 +1390,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
     });
     st.quests = keep;
-    while (st.quests.length < 3) st.quests.push(makeQuest(st, void 0, live));
+    while (st.quests.length < 3) st.quests.push(makeQuest(st, void 0, live, false, moves));
   }
   function questCounter(st, t) {
     switch (t) {
@@ -1713,6 +1728,14 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     var ref = S.dayRef[sym] || S.prices[sym];
     return (S.prices[sym] / ref - 1) * 100;
   }
+  function todayMoves() {
+    if (Feed.mode !== "live" || !Feed.snapped) return null;
+    var m = {};
+    COINS.forEach(function(c) {
+      if (!noLive(c.s)) m[c.s] = dayChange(c.s);
+    });
+    return m;
+  }
   function botWorth(b) {
     var v = b.cash;
     for (var s in b.h) {
@@ -1954,7 +1977,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     S.questSwaps++;
     S.swapSpent += fee;
     questStat(q).swap++;
-    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", true);
+    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", true, todayMoves());
     return fee;
   }
   function claimQuest(idx) {
@@ -1970,7 +1993,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     S.recentKinds = [q.t].concat((S.recentKinds || []).filter(function(k) {
       return k !== q.t;
     })).slice(0, RECENT_KINDS);
-    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live");
+    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", false, todayMoves());
     return q.reward;
   }
   function save() {
@@ -2927,7 +2950,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.18.0");
+    var ver = el("p", "note", "Shallow Whale 1.18.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3825,8 +3848,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.18.0");
-    setItem(SEEN_KEY, "1.18.0");
+    var seen = getItem(SEEN_KEY, "1.18.1");
+    setItem(SEEN_KEY, "1.18.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3834,7 +3857,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3843,7 +3866,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.18.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.18.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
@@ -3884,7 +3907,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   ui.reviewed = flagWallet;
   Feed.onModeChange = function() {
     if (S) {
-      refreshQuests(S, true, Feed.mode === "live");
+      refreshQuests(S, true, Feed.mode === "live", todayMoves());
       save();
       render();
     }
