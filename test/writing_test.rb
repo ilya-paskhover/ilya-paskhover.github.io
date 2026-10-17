@@ -1,9 +1,9 @@
 require_relative "test_helper"
 
 class WritingTest < Minitest::Test
-  FEATURED = [["Vibe coding apps", "apps"], ["AI agents", "ai-agents"], ["Base44 projects", "apps"]].freeze
-  TITLES = ["How GitHub Pages publishes a site", "Public the blog on github.io!", "A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
-  SLUGS = %w[notes].freeze
+  FEATURED = [["Fresh design and content with AI agents", "ai-agents"]].freeze
+  TITLES = ["How GitHub Pages publishes a site", "Shallow Whale", "Evaluating AI agents before you trust them", "From managing people to managing agents", "Vibe coding apps", "AI agents", "Base44 projects", "A proof of concept should answer one question", "Phone apps that talk to hardware", "Public the blog on github.io!", "A small summary of 'Linux Kernel' course - day 2!", "About this blog!", "Welcome to Jekyll!"].freeze
+  SLUGS = %w[notes ai-agents apps].freeze
 
   def doc
     @doc ||= page("/")
@@ -31,7 +31,7 @@ class WritingTest < Minitest::Test
       refute_includes f.text, "Ilya Paskhover"
       assert_nil f.at_css(".reading-time"), "1 minute or less: no reading time element"
     end
-    assert_equal ["Nov 22, 2025", "Jun 24, 2025", "May 23, 2025"], fs.map { |f| f.at_css("time.post-date[datetime]").text.strip }
+    assert_equal ["Oct 17, 2026"], fs.map { |f| f.at_css("time.post-date[datetime]").text.strip }
   end
 
   def test_featured_date_cell_like_list_rows
@@ -57,9 +57,9 @@ class WritingTest < Minitest::Test
   end
 
   def test_load_more_shown_when_more_than_three_rows
-    assert_equal 5, doc.css("ol.post-list > li.post-row").size
+    assert_equal 13, doc.css("ol.post-list > li.post-row").size
     assert_nil doc.at_css(".load-more-row[hidden]")
-    assert_equal 2, doc.css("ol.post-list > li.post-row.is-extra").size
+    assert_equal 10, doc.css("ol.post-list > li.post-row.is-extra").size
   end
 
   def test_reading_time_include_rule
@@ -81,7 +81,7 @@ class WritingTest < Minitest::Test
 
   def test_rows
     rows = doc.css("ol.post-list > li.post-row")
-    assert_equal 5, rows.size
+    assert_equal 13, rows.size
     assert_equal TITLES, rows.map { |r| r.at_css("a").text.strip }
     rows.each do |r|
       assert_includes SLUGS, r["data-topic"]

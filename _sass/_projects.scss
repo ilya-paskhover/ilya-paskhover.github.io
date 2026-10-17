@@ -103,6 +103,26 @@
     line-height: 1.6;
 }
 
+.project-post {
+    margin: 0 0 var(--space-3);
+
+    // Above the title link's ::after overlay, so it stays clickable.
+    a {
+        position: relative;
+        z-index: 1;
+        color: var(--color-text-muted);
+        text-decoration: none;
+
+        &:hover, &:focus-visible {
+            color: var(--color-accent);
+        }
+    }
+}
+
+.project-card .project-post {
+    margin: var(--space-3) 0 0;
+}
+
 .project-tags {
     display: flex;
     flex-wrap: wrap;

@@ -1,0 +1,8 @@
+{%- comment -%}Param: project. Links to the post named by project.post (a _posts file name without extension); renders nothing without one.{%- endcomment -%}
+{%- if include.project.post -%}
+{%- assign post_file = include.project.post | append: "." -%}
+{%- assign post = site.posts | where_exp: "p", "p.path contains post_file" | first -%}
+{%- if post -%}
+<p class="project-post"><a class="label" href="{{ post.url | relative_url }}">Read the post<span class="visually-hidden">: {{ post.title }}</span> <span class="chevron" aria-hidden="true">›</span></a></p>
+{%- endif -%}
+{%- endif -%}
