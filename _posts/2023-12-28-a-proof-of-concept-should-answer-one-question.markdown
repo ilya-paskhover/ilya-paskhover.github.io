@@ -11,8 +11,7 @@ Looking back at the proofs of concept I have built and reviewed, the useful ones
 
 ## The one question
 
-Write it down before writing code. "Can this gateway do what the datasheet says, with our kind of data?" is a good one. "Let's see what the new sensor can do" is not, because it never ends.
-{% comment %}TODO confirm: a generic example from your own work, if you want one.{% endcomment %}
+Write it down before writing code, and make it specific. "Can this gateway connect to X sensors of type Y in parallel, within a range of Z meters?" is a good one: it has numbers, and the answer is yes or no. "Let's see what the new sensor can do" is not, because it never ends.
 
 ## Build only what answers it
 
