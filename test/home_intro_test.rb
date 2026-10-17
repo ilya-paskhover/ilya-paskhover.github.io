@@ -39,6 +39,9 @@ class HomeIntroTest < Minitest::Test
     assert_equal ["Featured projects"], sec.css("h2").map { |h| h.text.strip }
     titles = sec.css("article.project-card h3.project-title a").map { |a| a.text.sub("(opens in a new tab)", "").sub("↗", "").strip }
     assert_equal ["Shallow Whale", "Interactive AI CV", "YouTube Videos Summarizer"], titles
+    posts = sec.css("article.project-card .project-post a")
+    assert_equal ["/2026/10/02/shallow-whale.html", "/2025/05/23/base44-projects.html", "/2025/06/24/ai-agents.html"], posts.map { |a| a["href"] }
+    posts.each { |a| assert File.file?(site_file(a["href"])), a["href"] }
     assert_equal 1, sec.css('a.view-all[href="/projects/"]').size
     assert_equal "View all projects", sec.at_css("a.view-all").text.strip
   end

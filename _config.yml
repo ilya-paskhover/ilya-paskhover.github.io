@@ -1,9 +1,9 @@
 # Site settings
 title: Ilya Paskhover
-tagline: Senior software developer
+tagline: Principal software architect
 description: > # this means to ignore newlines until "baseurl:"
-  Blog and projects by Ilya Paskhover — senior software developer with 15+ years
-  of experience. Posts about AI, software engineering, and side projects.
+  Blog and projects by Ilya Paskhover, principal software architect with 16+ years
+  of experience. Posts about AI agents, industrial IoT and side projects.
 baseurl: "" # the subpath of your site, e.g. /blog/
 url: "https://ilya-paskhover.github.io" # the base hostname & protocol for your site
 github_username: ilya-paskhover
