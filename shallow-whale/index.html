@@ -169,16 +169,19 @@ nav#tabs .badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;he
   font-size:11px;font-weight:750;line-height:15px;font-variant-numeric:tabular-nums;text-align:center}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) nav#tabs .badge{color:#8FB8E6} }
 :root[data-theme="dark"] nav#tabs .badge{color:#8FB8E6}
-/* action pill: floats just under the header, and over the scrim above an open
+/* action pill: floats just above the tab bar, and over the scrim above an open
    sheet, so a finished quest is never hidden. Above the sheet (50), under the
-   toast (60). No padding is added for it: content would jump under a finger */
-#action{position:fixed;left:50%;top:calc(var(--hdr-b,calc(env(safe-area-inset-top,0px) + 88px)) + 10px);transform:translateX(-50%);z-index:55;
+   toast (60). Under the header (1.12 to 1.17.0) it covered the first market row
+   at 360px, and a tap meant for that coin claimed instead. The page gets room
+   at its end for it; nothing above moves */
+#action{position:fixed;left:50%;bottom:calc(var(--tab-h) + 14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:55;
   background:var(--navy);color:var(--on-navy);border:2px solid var(--edge);box-shadow:0 3px 0 var(--hard);
   padding:10px 20px;border-radius:9px;font-size:14px;font-weight:700;font-stretch:92%;white-space:nowrap;transition:transform .06s,box-shadow .06s;
   animation:pill-in .2s cubic-bezier(.2,.8,.2,1)}
-body.sheet-open #action{top:calc(env(safe-area-inset-top,0px) + 8px)}
+body.sheet-open #action{top:calc(env(safe-area-inset-top,0px) + 8px);bottom:auto}
+body.has-action main{padding-bottom:calc(var(--tab-h) + 84px)}
 #action:active{transform:translate(-50%,3px);box-shadow:0 0 0 var(--hard)}
-@keyframes pill-in{from{opacity:0;transform:translate(-50%,-10px)}}
+@keyframes pill-in{from{opacity:0;transform:translate(-50%,10px)}}
 @media (prefers-reduced-motion:reduce){ #action{animation:none} }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) nav#tabs button[aria-current="page"]{color:#8FB8E6} :root:not([data-theme="light"]) nav#tabs button[aria-current="page"]::before{background:#8FB8E6} }
 :root[data-theme="dark"] nav#tabs button[aria-current="page"]{color:#8FB8E6}
@@ -315,19 +318,32 @@ button.news:active{background:var(--recess)}
 .seg{display:flex;background:var(--recess);border:2px solid var(--edge);border-radius:11px;padding:3px;margin:12px 0}
 .seg button{flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:14.5px;font-stretch:92%;color:var(--muted);border:2px solid transparent}
 .seg button[aria-pressed="true"]{background:var(--plate);color:var(--text);border-color:var(--edge);box-shadow:0 2px 0 var(--hard)}
-.amt{display:flex;align-items:center;gap:8px;border:2px solid var(--edge);border-radius:10px;padding:10px 13px;background:var(--recess)}
+/* the Wallet's sort chips for open positions: the same control, smaller */
+.seg.possort{margin:0 0 8px;background:var(--plate)}
+.seg.possort button{padding:5px 2px;font-size:13px}
+.seg.possort button[aria-pressed="true"]{background:var(--recess)}
+.amt{display:flex;align-items:center;gap:8px;border:2px solid var(--edge);border-radius:10px;padding:7px 13px;background:var(--recess)}
 .amt span{color:var(--faint);font-size:20px;font-weight:650}
-.amt input{flex:1;min-width:0;border:0;background:none;font-size:25px;font-weight:700;outline:none}
-.chips{display:flex;gap:7px;margin:10px 0 12px}
+.amt input{flex:1;min-width:0;border:0;background:none;font-size:23px;font-weight:700;outline:none}
+.chips{display:flex;gap:7px;margin:8px 0 10px}
 .chips button{flex:1;padding:7px 0;border-radius:8px;background:var(--plate);border:2px solid var(--edge);box-shadow:0 2px 0 var(--hard);
   font-size:13px;font-weight:700;font-stretch:90%;transition:transform .06s,box-shadow .06s}
 .chips button:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
+/* the last amount bought: wider, it holds a dollar figure */
+.chips button.lastbuy{flex:1.4}
+/* one-tap percents under the stop loss and take profit fields */
+.protect > div{flex:1;min-width:0}
+.chips.exitchips{margin:6px 0 0;gap:6px}
+.chips.exitchips button{padding:4px 0;font-size:12.5px}
 
 /* the chart is a CRT, bezel and all */
 .crt{position:relative;overflow:hidden;background:var(--crt);border:2px solid var(--edge);border-radius:7px}
-canvas#chart{width:100%;height:172px;display:block}
-.protect{display:flex;gap:9px;margin-top:8px}
-.protect label{flex:1;font-size:12px;color:var(--muted);font-weight:650}
+/* 144, not 172 (1.16.1): on a phone the trade sheet's Save exit rules sat
+   below the fold */
+canvas#chart{width:100%;height:144px;display:block}
+#sheet .kv{padding:5px 0}
+.protect{display:flex;gap:9px;margin-top:6px}
+.protect label{display:block;flex:1;font-size:12px;color:var(--muted);font-weight:650}
 .protect input{width:100%;margin-top:4px;border:2px solid var(--edge);border-radius:9px;padding:8px 10px;background:var(--recess);font-size:15px;font-weight:650;outline:none}
 select.sel{width:100%;border:2px solid var(--edge);border-radius:9px;padding:9px 10px;background:var(--recess);font-size:14.5px;font-weight:650}
 .note{font-size:13px;color:var(--muted);line-height:1.5}
@@ -341,6 +357,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   padding:9px 16px;border-radius:999px;font-size:14px;font-weight:650;
   opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;width:max-content;max-width:88%;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+/* above the claim pill while it shows */
+body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(safe-area-inset-bottom,0px))}
 </style>
 </head>
 <body>
@@ -395,7 +413,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -873,10 +891,12 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       return o;
     });
   }
-  function stepBot(b, st) {
+  var LIVE_SKILL_MS = 4 * 864e5 / 240;
+  function stepBot(b, st, ticks) {
     if (b.skill) {
-      b.cash *= 1 + b.skill;
-      for (var s0 in b.h) b.h[s0] *= 1 + b.skill;
+      var f = Math.pow(1 + b.skill, ticks === void 0 ? 1 : ticks);
+      b.cash *= f;
+      for (var s0 in b.h) b.h[s0] *= f;
     }
     if (Math.random() > 1 / 110) return;
     var syms = Object.keys(b.h).filter(function(s) {
@@ -1072,6 +1092,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   function xpNeeded(lv) {
     return 120 + (lv - 1) * 95;
   }
+  var QUEST_XP = { quick: 40, market: 60 };
+  var TRADE_XP = 5;
 
   // src/core/trading.js
   function netWorthOf(st) {
@@ -1099,6 +1121,25 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   }
   function lotGain(st, l) {
     return st.prices[l.s] * (1 - st.fee) / (l.b || l.p) - 1;
+  }
+  var POS_SORTS = ["coin", "gain", "value", "new"];
+  function sortLots(st, lots, by, rank) {
+    var key = {
+      gain: function(a, b) {
+        return lotGain(st, b) - lotGain(st, a);
+      },
+      value: function(a, b) {
+        return b.q * st.prices[b.s] - a.q * st.prices[a.s];
+      },
+      "new": function(a, b) {
+        return b.id - a.id;
+      }
+    }[by] || function(a, b) {
+      return ((rank || {})[a.s] || 0) - ((rank || {})[b.s] || 0);
+    };
+    return lots.slice().sort(function(a, b) {
+      return key(a, b) || a.id - b.id;
+    });
   }
 
   // src/core/quests.js
@@ -1154,19 +1195,25 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         return "Grow net worth to " + money(x);
       }
     },
+    /* a coin counts once held SPREAD_HOLD (heldLong): before 1.16 selling a
+       coin and buying it back finished this and a trades quest together, and
+       a claimed slot refills at once (owner rule), so it looped */
     {
       t: "spread",
       n: "Coins held",
       vals: [2, 3, 4, 5],
       abs: true,
       txt: function(x) {
-        return "Hold " + x + " different coins at once";
+        return "Hold " + x + " different coins, each for " + SPREAD_HOLD / 6e4 + " minutes";
       }
     },
+    /* quickPay (1.18.1): a market quest for the cap, but paid like a quick one,
+       since live it is only dealt when it can be done at once */
     {
       t: "dip",
       n: "Buy the dip",
       market: true,
+      quickPay: true,
       vals: [1, 2, 3, 4],
       own: true,
       pct: { sim: 3, live: 1 },
@@ -1218,6 +1265,18 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
   ];
   var GUARD_GAP = 24 * 3600 * 1e3;
+  var DIP_SOFT = 0.5;
+  function dipLow(live, moves) {
+    if (!live || !moves) return null;
+    var low = null;
+    Object.keys(moves).forEach(function(s) {
+      var x = moves[s];
+      if (typeof x === "number" && isFinite(x) && (low === null || x < low)) low = x;
+    });
+    return low;
+  }
+  var SPREAD_HOLD = 5 * 60 * 1e3;
+  var RECENT_KINDS = 2;
   var QUEST_DEF = {};
   QUEST_POOL.forEach(function(d) {
     QUEST_DEF[d.t] = d;
@@ -1228,7 +1287,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   function isDayQuest(q) {
     return !!(QUEST_DEF[q.t] && QUEST_DEF[q.t].day);
   }
-  function makeQuest(st, slot, live, swapped) {
+  function makeQuest(st, slot, live, swapped, moves) {
     var board = st.quests || [];
     var taken = board.map(function(q2) {
       return q2.t;
@@ -1244,8 +1303,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       return l.id;
     });
     var guardOk = bare.length && !(st.guardAt > 0 && Date.now() - st.guardAt < GUARD_GAP);
+    var low = dipLow(live, moves);
     var fits = function(d) {
-      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk);
+      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk) && !(d.t === "dip" && low !== null && low > -DIP_SOFT);
     };
     var pool = QUEST_POOL.filter(function(d) {
       return taken.indexOf(d.t) < 0 && fits(d);
@@ -1268,6 +1328,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       });
       if (short.length) pool = short;
     }
+    var recent = st.recentKinds || [];
+    var fresh = pool.filter(function(d) {
+      return recent.indexOf(d.t) < 0;
+    });
+    if (fresh.length) pool = fresh;
     var def = pick(pool.length ? pool : QUEST_POOL.filter(fits));
     var lv = QUEST_TIER;
     var nw = netWorthOf(st);
@@ -1279,8 +1344,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     else if (def.t === "nw") target = Math.max(target, Math.round(nw * (1.25 + Math.random() * 0.35) / 100) * 100);
     var pct = def.pct ? def.pct[live ? "live" : "sim"] : 0;
     if (live && def.t === "winner") pct = LIVE_TUNE.winnerPct;
+    if (def.t === "dip" && low !== null && low > -pct) pct = DIP_SOFT;
     var stake = st.seedCash || 3e3;
-    var reward = live ? Math.max(LIVE_TUNE.rewardFloor, Math.round(stake * (def.market ? LIVE_TUNE.marketReward : LIVE_TUNE.quickReward) * (1 + Math.random()) / 10) * 10) : Math.max(150, Math.round(stake * (0.03 + Math.random() * 0.04) / 10) * 10);
+    var reward = live ? Math.max(LIVE_TUNE.rewardFloor, Math.round(stake * (def.market && !def.quickPay ? LIVE_TUNE.marketReward : LIVE_TUNE.quickReward) * (1 + Math.random()) / 10) * 10) : Math.max(150, Math.round(stake * (0.03 + Math.random() * 0.04) / 10) * 10);
     var q = {
       id: st.seenQuests = (st.seenQuests || 0) + 1,
       t: def.t,
@@ -1291,7 +1357,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       txt: def.txt(target, pct),
       base: questCounter(st, def.t),
       reward,
-      xp: Math.round(xpNeeded(st.level) * 0.35),
+      xp: questXP(def.t),
       claimed: false,
       drawnAt: Date.now(),
       act: 0
@@ -1310,7 +1376,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
     return q;
   }
-  function refreshQuests(st, all, live) {
+  function refreshQuests(st, all, live, moves) {
     var keep = [], market = 0, day = 0;
     (st.quests || []).forEach(function(q) {
       var done = questProgressOf(st, q) >= q.target;
@@ -1326,7 +1392,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
     });
     st.quests = keep;
-    while (st.quests.length < 3) st.quests.push(makeQuest(st, void 0, live));
+    while (st.quests.length < 3) st.quests.push(makeQuest(st, void 0, live, false, moves));
   }
   function questCounter(st, t) {
     switch (t) {
@@ -1344,16 +1410,26 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       case "nw":
         return netWorthOf(st);
       case "spread":
-        return heldSyms(st).length;
+        return heldLong(st);
       case "cut":
         return st.losersCut || 0;
     }
     return 0;
   }
+  function heldLong(st) {
+    var now = Date.now(), out = [];
+    st.lots.forEach(function(l) {
+      if (out.indexOf(l.s) < 0 && !(l.at > 0 && now - l.at < SPREAD_HOLD)) out.push(l.s);
+    });
+    return out.length;
+  }
   function questProgressOf(st, q) {
     if (q.own) return q.n || 0;
     var cur = questCounter(st, q.t);
     return q.abs ? cur : cur - q.base;
+  }
+  function questXP(t) {
+    return QUEST_DEF[t] && QUEST_DEF[t].market ? QUEST_XP.market : QUEST_XP.quick;
   }
   function swapFee(q) {
     return Math.max(10, Math.round(q.reward / 20) * 10);
@@ -1382,7 +1458,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     swapSpent: 0,
     realisedGain: 0,
     losersCut: 0,
-    guardAt: 0
+    guardAt: 0,
+    lastBuy: 0,
+    botsAt: 0
   };
   var ARR_FIELDS = { trades: 1, news: 1, owned: 1, quests: 1, questLog: 1, bots: 1, pending: 1, reviews: 1, lots: 1 };
   var RENAMED = { TON: "GRAM" };
@@ -1513,9 +1591,16 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         q.gain = true;
         q.base = o.realisedGain;
       }
+      if (q.t === "spread") q.txt = QUEST_DEF.spread.txt(q.target);
+      q.xp = questXP(q.t);
       if (!(typeof q.drawnAt === "number" && isFinite(q.drawnAt) && q.drawnAt > 0)) q.drawnAt = Date.now();
       if (!(typeof q.act === "number" && isFinite(q.act) && q.act >= 0)) q.act = 0;
     });
+    if (POS_SORTS.indexOf(o.posSort) < 0) o.posSort = "coin";
+    if (!Array.isArray(o.recentKinds)) o.recentKinds = [];
+    o.recentKinds = o.recentKinds.filter(function(k2) {
+      return typeof k2 === "string" && QUEST_DEF[k2];
+    }).slice(0, 2);
     if (!o.questStats || typeof o.questStats !== "object" || Array.isArray(o.questStats)) o.questStats = {};
     Object.keys(o.questStats).forEach(function(k2) {
       var e = o.questStats[k2], m = /^(live|sim):(\w+)$/.exec(k2);
@@ -1528,6 +1613,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       });
     });
     if (!o.bots.length) o.bots = defaultBots(o.prices);
+    if (o.rivalsV !== 1) {
+      o.bots = defaultBots(o.prices);
+      o.rivalsV = 1;
+      o.botsAt = 0;
+    }
     o.bots = o.bots.filter(function(b) {
       return b && typeof b.cash === "number" && isFinite(b.cash) && b.h;
     });
@@ -1646,6 +1736,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     var ref = S.dayRef[sym] || S.prices[sym];
     return (S.prices[sym] / ref - 1) * 100;
   }
+  function todayMoves() {
+    if (Feed.mode !== "live" || !Feed.snapped) return null;
+    var m = {};
+    COINS.forEach(function(c) {
+      if (!noLive(c.s)) m[c.s] = dayChange(c.s);
+    });
+    return m;
+  }
   function botWorth(b) {
     var v = b.cash;
     for (var s in b.h) {
@@ -1664,7 +1762,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return f;
   }
   function tradeXP() {
-    return Math.max(4, Math.round(xpNeeded(S.level) * 0.02));
+    return TRADE_XP;
   }
   function title() {
     var lv = S.level;
@@ -1681,6 +1779,14 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return Feed.status === "error" ? null : {};
   }
   var ACTIVE_STEP_MAX = 2e3;
+  var RIVAL_GAP_MAX = 60 * 864e5;
+  function rivalSteps(now) {
+    var last = S.botsAt;
+    S.botsAt = now;
+    if (Feed.mode !== "live") return 1;
+    if (!(last > 0) || now <= last) return 0;
+    return Math.min(now - last, RIVAL_GAP_MAX) / LIVE_SKILL_MS;
+  }
   var lastStep = 0;
   function step() {
     var now = Date.now(), dt = lastStep ? Math.min(Math.max(0, now - lastStep), ACTIVE_STEP_MAX) : 0;
@@ -1690,8 +1796,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     });
     var r = marketTick(S, tickAnchors());
     if (r.fired || liveNews()) ui.news();
+    var rivalTicks = rivalSteps(now);
     S.bots.forEach(function(b) {
-      stepBot(b, S);
+      stepBot(b, S, rivalTicks);
     });
     checkOrders();
     checkReviews();
@@ -1778,6 +1885,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
     S.lots.push(lot);
     S.cash -= usd;
+    S.lastBuy = Math.round(usd * 100) / 100;
     S.tradeCount++;
     S.volume += usd;
     var dc = dayChange(sym);
@@ -1886,7 +1994,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.questSwaps++;
     S.swapSpent += fee;
     questStat(q).swap++;
-    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", true);
+    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", true, todayMoves());
     return fee;
   }
   function claimQuest(idx) {
@@ -1899,7 +2007,10 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     S.questEarned = (S.questEarned || 0) + q.reward;
     st.done++;
     st.ms += ms;
-    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live");
+    S.recentKinds = [q.t].concat((S.recentKinds || []).filter(function(k) {
+      return k !== q.t;
+    })).slice(0, RECENT_KINDS);
+    S.quests[idx] = makeQuest(S, idx, Feed.mode === "live", false, todayMoves());
     return q.reward;
   }
   function save() {
@@ -1970,6 +2081,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       realisedGain: 0,
       losersCut: 0,
       guardAt: 0,
+      recentKinds: [],
+      lastBuy: 0,
+      posSort: "coin",
+      rivalsV: 1,
+      botsAt: 0,
       level: 1,
       xp: 0,
       owned: [],
@@ -2272,11 +2388,6 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (show) {
       var txt = "Claim " + n + " reward" + (n > 1 ? "s" : "");
       if (a.textContent !== txt) a.textContent = txt;
-      var hb = Math.round($("#top").getBoundingClientRect().bottom) + "px";
-      if (hb !== "0px" && a._hb !== hb) {
-        a._hb = hb;
-        document.documentElement.style.setProperty("--hdr-b", hb);
-      }
     }
     if (a.hidden === show) a.hidden = !show;
     document.body.classList.toggle("has-action", show);
@@ -2330,32 +2441,50 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     r.addEventListener("click", onClick);
     return r;
   }
-  function exitInputs(entry, sl, tp) {
+  var EXIT_CHIPS = [0.2, 0.7];
+  function exitInputs(entry, sl, tp, amount) {
     var pr = el("div", "protect");
-    var l1 = el("label");
-    l1.appendChild(document.createTextNode("Stop loss, % below entry"));
-    var i1 = el("input");
-    i1.type = "text";
-    i1.inputMode = "decimal";
-    i1.placeholder = "off";
-    if (sl && entry) i1.value = ((1 - sl / entry) * 100).toFixed(1);
-    l1.appendChild(i1);
-    var l2 = el("label");
-    l2.appendChild(document.createTextNode("Take profit, % above entry"));
-    var i2 = el("input");
-    i2.type = "text";
-    i2.inputMode = "decimal";
-    i2.placeholder = "off";
-    if (tp && entry) i2.value = ((tp / entry - 1) * 100).toFixed(1);
-    l2.appendChild(i2);
-    pr.appendChild(l1);
-    pr.appendChild(l2);
-    var fn = el("p", "note", "Triggered by the price. The buy and sell fees come off the result, so a 2% target nets about " + (2 - 2 * S.fee * 100).toFixed(1) + "%.");
+    var field = function(name, val) {
+      var col = el("div");
+      var l = el("label");
+      l.appendChild(document.createTextNode(name));
+      var i = el("input");
+      i.type = "text";
+      i.inputMode = "decimal";
+      i.placeholder = "off";
+      if (val) i.value = val;
+      l.appendChild(i);
+      col.appendChild(l);
+      var row = el("div", "chips exitchips");
+      EXIT_CHIPS.forEach(function(v) {
+        var cb = el("button", null, v + "%");
+        cb.type = "button";
+        cb.addEventListener("click", function() {
+          i.value = String(v);
+          i.dispatchEvent(new Event("input"));
+        });
+        row.appendChild(cb);
+      });
+      col.appendChild(row);
+      pr.appendChild(col);
+      return i;
+    };
+    var i1 = field("Stop loss, % below entry", sl && entry ? ((1 - sl / entry) * 100).toFixed(1) : "");
+    var i2 = field("Take profit, % above entry", tp && entry ? ((tp / entry - 1) * 100).toFixed(1) : "");
+    var fn = el("p", "note");
     fn.style.margin = "6px 0 0";
+    var note = function() {
+      var t = parseFloat(i2.value);
+      if (!(t > 0)) t = 2;
+      var fees = 2 * S.fee * 100, net = t - fees, usd = amount ? amount() : 0;
+      fn.textContent = "Both fees cost " + fees.toFixed(2) + "%, so a " + t + "% target " + (net <= 0.05 ? "nets nothing." : "nets about " + net.toFixed(1) + "%" + (usd > 0 ? " (" + moneyFull(usd * net / 100) + " on " + money(usd) + ")." : "."));
+    };
+    i2.addEventListener("input", note);
+    note();
     var box = el("div");
     box.appendChild(pr);
     box.appendChild(fn);
-    return { box, sl: i1, tp: i2 };
+    return { box, sl: i1, tp: i2, note };
   }
   function renderCoinSheet(sym, side, keepAmount, lotId) {
     var lot = lotId ? lotById(lotId) : null;
@@ -2414,6 +2543,15 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     amt.appendChild(inp);
     b.appendChild(amt);
     var chips = el("div", "chips");
+    if (view.sheetCtx.side === "buy" && S.lastBuy > 0) {
+      var lb = el("button", "lastbuy", money(S.lastBuy));
+      lb.type = "button";
+      lb.addEventListener("click", function() {
+        inp.value = (Math.floor(Math.min(S.lastBuy, S.cash) * 100) / 100).toFixed(2);
+        updateSummary();
+      });
+      chips.appendChild(lb);
+    }
     [[0.25, "25%"], [0.5, "50%"], [0.75, "75%"], [1, "Max"]].forEach(function(p) {
       var cb = el("button", null, p[1]);
       cb.addEventListener("click", function() {
@@ -2428,7 +2566,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       var rh = el("h2", "sec", "Automatic exit, optional");
       rh.style.marginTop = "14px";
       b.appendChild(rh);
-      rules = exitInputs(0, 0, 0);
+      rules = exitInputs(0, 0, 0, function() {
+        return parseFloat(inp.value) || 0;
+      });
       b.appendChild(rules.box);
     }
     var sumWrap = el("div");
@@ -2455,9 +2595,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.appendChild(go2);
     if (lot) {
       var hd = el("h2", "sec", "Automatic exit");
-      hd.style.marginTop = "18px";
+      hd.style.marginTop = "14px";
       b.appendChild(hd);
-      var ex = exitInputs(lot.p, lot.sl, lot.tp);
+      var ex = exitInputs(lot.p, lot.sl, lot.tp, function() {
+        return lot.q * (lot.b || lot.p);
+      });
       b.appendChild(ex.box);
       var sv = el("button", "btn ghost", "Save exit rules");
       sv.style.marginTop = "9px";
@@ -2504,6 +2646,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     paintCoinSheet();
     openSheet();
     function updateSummary() {
+      if (rules) rules.note();
       var val = parseFloat(inp.value) || 0;
       var p = S.prices[sym];
       sumWrap.textContent = "";
@@ -2826,7 +2969,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.15.0");
+    var ver = el("p", "note", "Shallow Whale 1.18.3");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -2994,13 +3137,13 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       bar2.appendChild(f2);
       d.appendChild(bar2);
       var hint = null;
-      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard") {
+      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard" || q.t === "spread") {
         hint = el("p", "note qhint");
         hint.style.margin = "7px 0 0";
         d.appendChild(hint);
       }
       if (q.live && isDayQuest(q)) {
-        var slow = el("p", "note", "With live prices this usually takes a day or more. Keep it for a later visit, or swap it.");
+        var slow = el("p", "note", "With live prices this can take an hour or more, less with several trades open. Keep it, or swap it.");
         slow.className = "note dayhint";
         slow.style.margin = "7px 0 0";
         d.appendChild(slow);
@@ -3101,6 +3244,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         else if (q.t === "winner") r.hint.textContent = winnerHint(q);
         else if (q.t === "cut") r.hint.textContent = cutHint(q);
         else if (q.t === "guard") r.hint.textContent = guardHint(q);
+        else if (q.t === "spread") r.hint.textContent = spreadHint();
         else r.hint.textContent = profitHint(q, q.target - prog);
       } else if (r.hint && r.hint.textContent) r.hint.textContent = "";
       var mode = prog >= q.target ? "claim" : "swap";
@@ -3213,6 +3357,21 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       return !l.sl && (q.of || []).indexOf(l.id) >= 0;
     }).length;
     return n ? n + (n === 1 ? " of your trades has" : " of your trades have") + " no stop loss yet. Trade opens one; set it under Automatic exit. New buys do not count." : "The trades this quest was drawn for are sold or protected. Swap it for another.";
+  }
+  function spreadHint() {
+    var now = Date.now(), wait = {};
+    S.lots.forEach(function(l) {
+      if (l.at > 0 && now - l.at < SPREAD_HOLD) wait[l.s] = Math.min(wait[l.s] || Infinity, l.at);
+    });
+    S.lots.forEach(function(l) {
+      if (!(l.at > 0 && now - l.at < SPREAD_HOLD)) delete wait[l.s];
+    });
+    var syms = Object.keys(wait);
+    if (!syms.length) return "A coin counts once you have held it for " + SPREAD_HOLD / 6e4 + " minutes. Selling it and buying it back starts the clock again.";
+    var first = Math.min.apply(null, syms.map(function(s) {
+      return wait[s];
+    })), mins = Math.max(1, Math.ceil((first + SPREAD_HOLD - now) / 6e4));
+    return andList(syms) + (syms.length === 1 ? " counts" : " count") + " once held " + SPREAD_HOLD / 6e4 + " minutes; the next in about " + mins + " min.";
   }
   function profitHint(q, left) {
     var open = 0;
@@ -3404,6 +3563,21 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
 
   // src/ui/screens/wallet.js
   var WHY = { tp: "take profit", sl: "stop loss" };
+  var SORTS = [
+    ["coin", "Coin", "By coin, oldest first, the order selling takes them."],
+    ["gain", "Gain", "Best gain first, after both fees."],
+    ["value", "Value", "Largest first, at the current price."],
+    ["new", "Newest", "Newest trade first."]
+  ];
+  function sortPositions() {
+    var rank = {};
+    marketOrder().forEach(function(s, i) {
+      rank[s] = i;
+    });
+    view.refs._posOrder = sortLots(S, S.lots, S.posSort, rank).map(function(l) {
+      return l.id;
+    });
+  }
   function clockStr(ms) {
     var d = new Date(ms);
     return [d.getHours(), d.getMinutes(), d.getSeconds()].map(function(n) {
@@ -3436,12 +3610,35 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     m.appendChild(c);
     view.refs._w = { cash: cv, hold: hv, real: rv, alloc, leg };
     m.appendChild(el("h2", "sec", "Open positions"));
-    var po = el("p", "note", "By coin, oldest first, the order selling takes them.");
+    var sort = SORTS.filter(function(x) {
+      return x[0] === S.posSort;
+    })[0] || SORTS[0];
+    if (S.lots.length > 1) {
+      var seg = el("div", "seg possort");
+      seg.setAttribute("role", "group");
+      seg.setAttribute("aria-label", "Sort open positions");
+      SORTS.forEach(function(x) {
+        var b = el("button", null, x[1]);
+        b.type = "button";
+        b.dataset.sort = x[0];
+        b.setAttribute("aria-pressed", x[0] === sort[0]);
+        b.addEventListener("click", function() {
+          if (S.posSort === x[0]) return;
+          S.posSort = x[0];
+          save();
+          render();
+        });
+        seg.appendChild(b);
+      });
+      m.appendChild(seg);
+    }
+    var po = el("p", "note", sort[2]);
     po.style.margin = "-2px 0 8px";
     m.appendChild(po);
     var list = el("div", "list");
     view.refs._pos = list;
     m.appendChild(list);
+    sortPositions();
     m.appendChild(el("h2", "sec", "What happened next"));
     var rv = el("div", "list");
     view.refs._rv = rv;
@@ -3484,12 +3681,12 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       e.appendChild(document.createTextNode("Open the Market tab and place your first buy."));
       L.appendChild(e);
     } else {
-      var rank = {};
-      marketOrder().forEach(function(s, i) {
-        rank[s] = i;
-      });
+      var ord = view.refs._posOrder || [], at = function(l) {
+        var i = ord.indexOf(l.id);
+        return i < 0 ? ord.length + l.id : i;
+      };
       S.lots.slice().sort(function(a, b) {
-        return rank[a.s] - rank[b.s] || a.id - b.id;
+        return at(a) - at(b);
       }).forEach(function(l) {
         L.appendChild(lotRow(l, function() {
           renderCoinSheet(l.s, "sell", false, l.id);
@@ -3670,8 +3867,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.15.0");
-    setItem(SEEN_KEY, "1.15.0");
+    var seen = getItem(SEEN_KEY, "1.18.3");
+    setItem(SEEN_KEY, "1.18.3");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3679,7 +3876,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.15.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.3");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3688,7 +3885,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.15.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.18.3"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
@@ -3729,7 +3926,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   ui.reviewed = flagWallet;
   Feed.onModeChange = function() {
     if (S) {
-      refreshQuests(S, true, Feed.mode === "live");
+      refreshQuests(S, true, Feed.mode === "live", todayMoves());
       save();
       render();
     }
