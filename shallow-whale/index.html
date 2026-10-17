@@ -395,7 +395,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }, { v: "1.11.4", items: ['Settings has a new "What happened next" choice for how long after a sale the price is checked.', "With live prices the check goes by the clock."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }, { v: "1.13.0", items: ["New quest, cut a loser: sell a trade that is down 1% or more after fees (5% in the simulator)."] }, { v: "1.12.0", items: ["With live prices, Headlines now report the real market.", "The Claim reward button now sits at the top, just under the header, and stays visible over an open coin sheet or any other panel.", "A dip quest with several coins down enough now shows a button for each of them, so you pick which dip to buy.", "Coins held quests ask for one more coin than you hold now.", 'Swapping away a "sell a winner" or profit quest no longer hands you the other one instead.', 'With live prices, "sell a winner" now needs a 1% gain after fees (was 2%), and profit quests ask for half as much.'] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -2170,8 +2170,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       total += claimQuest(i);
     });
     save();
-    if (view.sheetCtx) render();
-    else go("quests");
+    if (view.sheetCtx) closeSheet();
+    go("quests");
     toast("Claimed " + money(total) + (idx.length > 1 ? " from " + idx.length + " quests" : ""));
   }
   var TABS = [
@@ -2821,7 +2821,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.14.0");
+    var ver = el("p", "note", "Shallow Whale 1.14.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3665,8 +3665,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.14.0");
-    setItem(SEEN_KEY, "1.14.0");
+    var seen = getItem(SEEN_KEY, "1.14.1");
+    setItem(SEEN_KEY, "1.14.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3674,7 +3674,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.14.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.14.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3683,7 +3683,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.14.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.14.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
