@@ -315,10 +315,10 @@ button.news:active{background:var(--recess)}
 .seg{display:flex;background:var(--recess);border:2px solid var(--edge);border-radius:11px;padding:3px;margin:12px 0}
 .seg button{flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:14.5px;font-stretch:92%;color:var(--muted);border:2px solid transparent}
 .seg button[aria-pressed="true"]{background:var(--plate);color:var(--text);border-color:var(--edge);box-shadow:0 2px 0 var(--hard)}
-.amt{display:flex;align-items:center;gap:8px;border:2px solid var(--edge);border-radius:10px;padding:10px 13px;background:var(--recess)}
+.amt{display:flex;align-items:center;gap:8px;border:2px solid var(--edge);border-radius:10px;padding:7px 13px;background:var(--recess)}
 .amt span{color:var(--faint);font-size:20px;font-weight:650}
-.amt input{flex:1;min-width:0;border:0;background:none;font-size:25px;font-weight:700;outline:none}
-.chips{display:flex;gap:7px;margin:10px 0 12px}
+.amt input{flex:1;min-width:0;border:0;background:none;font-size:23px;font-weight:700;outline:none}
+.chips{display:flex;gap:7px;margin:8px 0 10px}
 .chips button{flex:1;padding:7px 0;border-radius:8px;background:var(--plate);border:2px solid var(--edge);box-shadow:0 2px 0 var(--hard);
   font-size:13px;font-weight:700;font-stretch:90%;transition:transform .06s,box-shadow .06s}
 .chips button:active{transform:translateY(2px);box-shadow:0 0 0 var(--hard)}
@@ -331,8 +331,11 @@ button.news:active{background:var(--recess)}
 
 /* the chart is a CRT, bezel and all */
 .crt{position:relative;overflow:hidden;background:var(--crt);border:2px solid var(--edge);border-radius:7px}
-canvas#chart{width:100%;height:172px;display:block}
-.protect{display:flex;gap:9px;margin-top:8px}
+/* 144, not 172 (1.16.1): on a phone the trade sheet's Save exit rules sat
+   below the fold */
+canvas#chart{width:100%;height:144px;display:block}
+#sheet .kv{padding:5px 0}
+.protect{display:flex;gap:9px;margin-top:6px}
 .protect label{display:block;flex:1;font-size:12px;color:var(--muted);font-weight:650}
 .protect input{width:100%;margin-top:4px;border:2px solid var(--edge);border-radius:9px;padding:8px 10px;background:var(--recess);font-size:15px;font-weight:650;outline:none}
 select.sel{width:100%;border:2px solid var(--edge);border-radius:9px;padding:9px 10px;background:var(--recess);font-size:14.5px;font-weight:650}
@@ -401,7 +404,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }, { v: "1.13.1", items: ["New quest, set a stop loss: put a stop loss on trades you already hold that have none.", "Cut a loser no longer appears: it pointed at your biggest loss and paid you to sell it, which is not a good habit to reward."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }, { v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1537,6 +1540,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         q.gain = true;
         q.base = o.realisedGain;
       }
+      if (q.t === "spread") q.txt = QUEST_DEF.spread.txt(q.target);
       if (!(typeof q.drawnAt === "number" && isFinite(q.drawnAt) && q.drawnAt > 0)) q.drawnAt = Date.now();
       if (!(typeof q.act === "number" && isFinite(q.act) && q.act >= 0)) q.act = 0;
     });
@@ -2518,7 +2522,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.appendChild(go2);
     if (lot) {
       var hd = el("h2", "sec", "Automatic exit");
-      hd.style.marginTop = "18px";
+      hd.style.marginTop = "14px";
       b.appendChild(hd);
       var ex = exitInputs(lot.p, lot.sl, lot.tp, function() {
         return lot.q * (lot.b || lot.p);
@@ -2892,7 +2896,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.16.0");
+    var ver = el("p", "note", "Shallow Whale 1.16.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3752,8 +3756,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.16.0");
-    setItem(SEEN_KEY, "1.16.0");
+    var seen = getItem(SEEN_KEY, "1.16.1");
+    setItem(SEEN_KEY, "1.16.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3761,7 +3765,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.16.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.16.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3770,7 +3774,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.16.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.16.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
