@@ -13,6 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Unconfirmed facts are marked "TODO confirm" in Liquid comments, which the
+      # build strips, so check the sources before building.
+      - name: Fail on open TODO confirm markers
+        run: |
+          if grep -rn "TODO confirm" _posts _data _includes _layouts about.md projects.md index.html; then
+            echo "::error::Open TODO confirm markers (listed above) must be resolved before merge."
+            exit 1
+          fi
+
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:

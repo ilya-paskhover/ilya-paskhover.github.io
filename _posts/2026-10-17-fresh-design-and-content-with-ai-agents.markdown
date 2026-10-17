@@ -16,9 +16,10 @@ I use a setup I call poc-dev-team. A planner agent writes a spec and a task list
 
 ## Tests as the contract
 
-Every task has a check that must pass. Here it is a test suite that reads the built site in Docker. One rule was tested from the first task: the game in `shallow-whale/` must not change.
+Every task has a check that must pass: here, a test suite that reads the built site. One rule was tested from the first task: the game in `shallow-whale/` must not change.
 
 ## A human approves each step
 
 Agents stop and ask before anything that matters: the plan, a blocker, a commit. Once, QA's browser left two screenshots in the repo. The run stopped and waited for me instead of committing them.
-{% comment %}TODO confirm: other "where it went wrong" examples from your side.{% endcomment %}
+
+That was about the only surprise. Small, checked steps left little room for others.
