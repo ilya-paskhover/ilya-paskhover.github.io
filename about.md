@@ -2,14 +2,16 @@
 layout: about
 title: About
 permalink: /about/
-description: "Senior software developer. AI agents, apps and engineering notes."
+description: "Principal software architect. AI agent infrastructure, industrial IoT and small apps."
 focus_areas:
-  - title: AI agents and automation
-    text: "Agents and assistants that take repetitive work off people's plates, like a Gemini gem that summarizes YouTube videos."
-  - title: Web apps and prototypes
-    text: "Small, complete apps shipped fast, from a crypto trading game to an epoch converter."
+  - title: AI agent infrastructure
+    text: "Architecture for AI agents that work in production, including how to evaluate them. Plus small agents of my own, like a Gemini gem that summarizes YouTube videos."
+  - title: Industrial IoT and edge Linux
+    text: "Devices, gateways and MQTT, from Linux clients on Buildroot and Debian to integrating new hardware across R&D, product and operations."
+  - title: Proofs of concept and small apps
+    text: "Prototypes that answer one question fast, and complete small apps, from a crypto trading game to an epoch converter."
   - title: Systems and fundamentals
-    text: "A background that goes below the framework, down to Linux kernel modules."
+    text: "A background below the framework: L2 cache features and benchmarks at Intel, a VPN module at Check Point, Linux kernel modules."
 ---
 
-I am a senior software developer with more than 15 years of experience. These days I focus on practical AI: agents that save time, and small apps built quickly to test an idea. You can find more about my professional background on [LinkedIn](https://www.linkedin.com/in/ilyapaskhover/).
+I am a principal software architect with more than 16 years of experience. These days I focus on AI agent infrastructure and industrial IoT, and on small apps built quickly to test an idea. You can find more about my professional background on [LinkedIn](https://www.linkedin.com/in/ilyapaskhover/).

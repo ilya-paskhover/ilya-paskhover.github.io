@@ -2,6 +2,7 @@
   <div class="project-main">
     <h2 class="project-title">{% include project-link.html project=include.project %}</h2>
     <p class="project-description">{{ include.project.description }}</p>
+    {% include project-post-link.html project=include.project %}
     <ul class="project-tags">
       {%- for tag in include.project.tags %}
       <li class="chip">{{ tag }}</li>

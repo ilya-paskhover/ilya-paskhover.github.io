@@ -32,6 +32,16 @@ class ContentTest < Minitest::Test
     end
   end
 
+  # Open facts are marked "TODO confirm" in Liquid comments, which the build strips,
+  # so only the sources can show them. CI runs the same check.
+  def test_no_open_todo_confirm_markers_in_sources
+    files = Dir.glob(File.join(SRC, "{_posts,_data,_includes,_layouts}", "**", "*")).select { |f| File.file?(f) } +
+            %w[about.md projects.md index.html].map { |n| File.join(SRC, n) }
+    files.each do |f|
+      refute_match(/TODO confirm/, File.read(f, encoding: "UTF-8"), f.sub("#{SRC}/", ""))
+    end
+  end
+
   def test_readme
     readme = File.read(File.join(SRC, "README.md"), encoding: "UTF-8")
     ["docker compose up -d --build --force-recreate --wait", "http://localhost:14000", "topic:", "{:toc}", "* TOC", "featured", "description"].each do |s|
