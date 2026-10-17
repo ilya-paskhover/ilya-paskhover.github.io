@@ -206,6 +206,8 @@ button.row:active{background:var(--recess)}
 .val{text-align:right;flex:none;border-radius:6px;padding:2px 5px;margin-right:-5px}
 .val b{display:block;font-size:15px;font-weight:650;line-height:1.25}
 .val b.up,.val b.down,.val b.flat{font-size:11.5px;font-weight:700;font-stretch:88%;max-width:82px;white-space:normal;text-align:right}
+/* a season return on Ranks is the row's main figure, not a small change line */
+.val b.ret{font-size:15px;max-width:none}
 .val small{display:block;font-size:12px;font-weight:650}
 .up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--faint)}
 .spark{flex:none;width:52px;height:22px;overflow:visible}
@@ -413,7 +415,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }, { v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1435,6 +1437,100 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     return Math.max(10, Math.round(q.reward / 20) * 10);
   }
 
+  // src/core/season.js
+  var MONTHS_LONG = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
+  var SEASON_LOG_MAX = 12;
+  function seasonKey(ms) {
+    var d = new Date(ms);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+  function seasonName(key) {
+    var p = String(key).split("-");
+    return MONTHS_LONG[(+p[1] || 1) - 1] + " " + p[0];
+  }
+  function seasonEnd(ms) {
+    var d = new Date(ms);
+    return new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
+  }
+  function botWorthOf(st, b) {
+    var v = b.cash;
+    for (var s in b.h) v += b.h[s] * (st.prices[s] || 0);
+    return v;
+  }
+  function netWorthNow(st) {
+    var v = st.cash;
+    st.lots.forEach(function(l) {
+      v += l.q * st.prices[l.s];
+    });
+    return v;
+  }
+  function startSeason(st, ms) {
+    var bots = {};
+    st.bots.forEach(function(b) {
+      bots[b.n] = botWorthOf(st, b);
+    });
+    st.season = {
+      key: seasonKey(ms),
+      at: ms,
+      me: netWorthNow(st),
+      bots,
+      quest: st.questEarned || 0,
+      swap: st.swapSpent || 0,
+      shop: st.shopSpent || 0
+    };
+    return st.season;
+  }
+  function myReturn(st) {
+    var se = st.season;
+    if (!se || !(se.me > 0)) return 0;
+    var adj = netWorthNow(st) - ((st.questEarned || 0) - se.quest) + ((st.swapSpent || 0) - se.swap) + ((st.shopSpent || 0) - se.shop);
+    return adj / se.me - 1;
+  }
+  function botReturn(st, b) {
+    var se = st.season, w0 = se && se.bots[b.n];
+    return w0 > 0 ? botWorthOf(st, b) / w0 - 1 : 0;
+  }
+  function standings(st) {
+    var rows = st.bots.map(function(b) {
+      return { n: b.n, me: false, ret: botReturn(st, b), b };
+    });
+    rows.push({ n: "You", me: true, ret: myReturn(st) });
+    rows.sort(function(a, b) {
+      return b.ret - a.ret;
+    });
+    return rows;
+  }
+  function rollSeason(st, ms) {
+    if (!st.season) {
+      startSeason(st, ms);
+      return null;
+    }
+    if (st.season.key === seasonKey(ms)) return null;
+    var rows = standings(st), place = 0;
+    rows.forEach(function(r, i) {
+      if (r.me) place = i + 1;
+    });
+    var done = { key: st.season.key, place, of: rows.length, ret: myReturn(st) };
+    if (!Array.isArray(st.seasons)) st.seasons = [];
+    st.seasons.unshift(done);
+    if (st.seasons.length > SEASON_LOG_MAX) st.seasons.length = SEASON_LOG_MAX;
+    startSeason(st, ms);
+    return done;
+  }
+
   // src/core/save.js
   var NUM_FIELDS = {
     tick: 0,
@@ -1460,7 +1556,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     losersCut: 0,
     guardAt: 0,
     lastBuy: 0,
-    botsAt: 0
+    botsAt: 0,
+    shopSpent: 0
   };
   var ARR_FIELDS = { trades: 1, news: 1, owned: 1, quests: 1, questLog: 1, bots: 1, pending: 1, reviews: 1, lots: 1 };
   var RENAMED = { TON: "GRAM" };
@@ -1597,6 +1694,12 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       if (!(typeof q.act === "number" && isFinite(q.act) && q.act >= 0)) q.act = 0;
     });
     if (POS_SORTS.indexOf(o.posSort) < 0) o.posSort = "coin";
+    var se = o.season;
+    if (se && !(typeof se === "object" && typeof se.key === "string" && fin(se.me) && se.bots && typeof se.bots === "object" && fin(se.quest) && fin(se.swap) && fin(se.shop))) delete o.season;
+    if (!Array.isArray(o.seasons)) o.seasons = [];
+    o.seasons = o.seasons.filter(function(e) {
+      return e && typeof e.key === "string" && fin(e.place) && fin(e.of) && fin(e.ret);
+    }).slice(0, SEASON_LOG_MAX);
     if (!Array.isArray(o.recentKinds)) o.recentKinds = [];
     o.recentKinds = o.recentKinds.filter(function(k2) {
       return typeof k2 === "string" && QUEST_DEF[k2];
@@ -1744,13 +1847,6 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     });
     return m;
   }
-  function botWorth(b) {
-    var v = b.cash;
-    for (var s in b.h) {
-      v += b.h[s] * S.prices[s];
-    }
-    return v;
-  }
   function flexPoints() {
     var f = 0;
     S.owned.forEach(function(id) {
@@ -1800,6 +1896,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     S.bots.forEach(function(b) {
       stepBot(b, S, rivalTicks);
     });
+    var closed = rollSeason(S, now);
+    if (closed) ui.toast("The " + seasonName(closed.key) + " season is over: you placed " + closed.place + " of " + closed.of + ". A new one starts now.");
     checkOrders();
     checkReviews();
     var nw = netWorth();
@@ -2086,6 +2184,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       posSort: "coin",
       rivalsV: 1,
       botsAt: 0,
+      shopSpent: 0,
+      seasons: [],
       level: 1,
       xp: 0,
       owned: [],
@@ -2105,6 +2205,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       st.dayRef[c.s] = st.hist[c.s][Math.max(0, HISTORY - TICKS_PER_DAY)];
     });
     st.bots = defaultBots(st.prices);
+    startSeason(st, Date.now());
     for (var q = 0; q < 3; q++) st.quests.push(makeQuest(st, void 0, live));
     pushNews(st, "Markets open. You start with " + money(st.cash) + " of play money.", null, live ? Date.now() : 0);
     return st;
@@ -2969,7 +3070,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.18.3");
+    var ver = el("p", "note", "Shallow Whale 1.19.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3447,43 +3548,78 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   }
 
   // src/ui/screens/ranks.js
+  function endsIn(now) {
+    var left = seasonEnd(now) - now, h = Math.ceil(left / 36e5);
+    if (h <= 24) return "Ends in " + h + (h === 1 ? " hour" : " hours");
+    var d = Math.ceil(left / 864e5);
+    return "Ends in " + d + " days";
+  }
   function renderRanks(m) {
+    var now = Date.now();
+    var c = el("div", "card");
+    c.style.padding = "13px";
+    var top = el("div");
+    top.style.cssText = "display:flex;justify-content:space-between;align-items:baseline;gap:10px";
+    top.appendChild(el("b", null, seasonName(S.season ? S.season.key : seasonKey(now)) + " season"));
+    var ends = el("span");
+    ends.style.cssText = "font-size:12px;color:var(--faint);white-space:nowrap";
+    ends.textContent = endsIn(now);
+    top.appendChild(ends);
+    c.appendChild(top);
+    var p = el("p", "note", "Ranked by trading return since the month began. Quest rewards and shop buys do not count, so a small account can win.");
+    p.style.margin = "6px 0 0";
+    c.appendChild(p);
+    m.appendChild(c);
+    view.refs._rkEnds = ends;
     var L = el("div", "list");
+    L.style.marginTop = "12px";
     view.refs._rk = L;
     m.appendChild(L);
-    var n = el("p", "note", "Rivals trade the same market you do, each with their own habits. Ranking is by net worth.");
+    var n = el("p", "note", "Rivals trade the same market you do, each with their own habits. Nothing resets: a new season starts each month from where everyone stands.");
     n.style.marginTop = "12px";
     m.appendChild(n);
+    if (S.seasons && S.seasons.length) {
+      m.appendChild(el("h2", "sec", "Past seasons"));
+      var H = el("div", "card");
+      H.id = "pastSeasons";
+      H.style.padding = "4px 13px 8px";
+      S.seasons.forEach(function(e) {
+        var k = el("div", "kv");
+        k.appendChild(el("span", null, seasonName(e.key)));
+        k.appendChild(el("b", cls(e.ret), "Place " + e.place + " of " + e.of + ", " + pctStr(e.ret * 100)));
+        H.appendChild(k);
+      });
+      m.appendChild(H);
+    }
     paintRanks();
   }
   function paintRanks() {
     var L = view.refs._rk;
     if (!L) return;
-    var rows = S.bots.map(function(b) {
-      return { n: b.n, g: botGlyph(b.n), w: botWorth(b), me: false, style: b.style };
-    });
-    rows.push({ n: "You", g: "you", w: netWorth(), me: true, flex: flexPoints() });
-    rows.sort(function(a, b) {
-      return b.w - a.w;
-    });
+    if (view.refs._rkEnds) view.refs._rkEnds.textContent = endsIn(Date.now());
     L.textContent = "";
-    rows.forEach(function(r, i) {
+    standings(S).forEach(function(r, i) {
       var row = el("div", "row");
       var rk = el("div", "coin", String(i + 1));
-      rk.style.background = r.me ? "var(--brass-solid)" : "var(--chip)";
-      rk.style.color = r.me ? "var(--on-brass)" : "var(--muted)";
+      rk.style.background = r.me ? "var(--navy)" : "var(--chip)";
+      rk.style.color = r.me ? "var(--on-navy)" : "var(--muted)";
       var nm = el("div", "nm");
+      var g = r.me ? "you" : botGlyph(r.n);
       var who = el("b", "who");
-      who.appendChild(glyph(r.g));
+      who.appendChild(glyph(g));
       who.appendChild(document.createTextNode(r.n));
       nm.appendChild(who);
-      nm.appendChild(el("small", null, r.me ? title() + ", " + flexPoints() + " flex points" : styleLabel(r.style)));
+      nm.appendChild(el("small", null, r.me ? title() + ", " + flexPoints() + " flex points" : styleLabel(r.b.style)));
       var v = el("div", "val");
-      v.appendChild(el("b", null, money(r.w)));
+      v.appendChild(el("b", cls(r.ret) + " ret", pctStr(r.ret * 100)));
+      v.appendChild(el("small", null, money(r.me ? netWorthOf(S) : botWorthOf(S, r.b))));
       row.appendChild(rk);
       row.appendChild(nm);
       row.appendChild(v);
-      if (r.me) row.style.background = "var(--panel2)";
+      if (r.me) {
+        row.classList.add("me");
+        row.style.background = "var(--recess)";
+      }
       L.appendChild(row);
     });
   }
@@ -3541,6 +3677,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
           b.addEventListener("click", function() {
             if (S.cash < i.p) return toast("Not enough cash. You need " + money(i.p - S.cash) + " more.");
             S.cash -= i.p;
+            S.shopSpent = (S.shopSpent || 0) + i.p;
             S.owned.push(i.id);
             addXP(30);
             toast("Bought the " + i.n.toLowerCase());
@@ -3867,8 +4004,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.18.3");
-    setItem(SEEN_KEY, "1.18.3");
+    var seen = getItem(SEEN_KEY, "1.19.0");
+    setItem(SEEN_KEY, "1.19.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3876,7 +4013,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.3");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.19.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3885,7 +4022,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.18.3"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.19.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
