@@ -1,13 +1,14 @@
 require_relative "test_helper"
 
 class ProjectsTest < Minitest::Test
-  TITLES = ["Shallow Whale", "Interactive AI CV", "YouTube Videos Summarizer", "Epoch Converter", "Math Bubbles", "Invoice Reminders", "ETH Monitor"].freeze
+  TITLES = ["Shallow Whale", "Interactive AI CV", "YouTube Videos Summarizer", "Epoch Converter", "Math Bubbles", "Claude Code mods", "Invoice Reminders", "ETH Monitor"].freeze
   POSTS = {
     "Shallow Whale" => ["/2026/10/02/shallow-whale.html", "Shallow Whale"],
     "Interactive AI CV" => ["/2025/05/23/base44-projects.html", "Base44 projects"],
     "YouTube Videos Summarizer" => ["/2025/06/24/ai-agents.html", "AI agents"],
     "Epoch Converter" => ["/2025/05/23/base44-projects.html", "Base44 projects"],
-    "Math Bubbles" => ["/2025/11/22/vibe-coding-apps.html", "Vibe coding apps"]
+    "Math Bubbles" => ["/2025/11/22/vibe-coding-apps.html", "Vibe coding apps"],
+    "Claude Code mods" => ["/2026/10/17/claude-code-mods.html", "Claude Code mods"]
   }.freeze
 
   def doc
@@ -42,7 +43,7 @@ class ProjectsTest < Minitest::Test
     assert_equal "/assets/html_apps/math_bubbles.html", math["href"]
     assert_nil math["target"]
     http = doc.css(".project-list a").select { |a| a["href"].start_with?("http") }
-    assert_equal 5, http.size
+    assert_equal 6, http.size
     http.each do |a|
       assert_equal "_blank", a["target"]
       assert_includes a["rel"].to_s, "noopener"
