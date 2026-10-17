@@ -415,7 +415,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }, { v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }, { v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.20.0", items: ["Trades and volume quests now count round trips.", "Headlines no longer repeat a coin that wobbles around a whole percent.", 'With live prices, changes now say "in 24 hours" instead of "today", since that is what the price providers measure.', "XRP is now called XRP Ledger in the market list and headlines; Ripple is the company behind it, not the coin."] }, { v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }, { v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }, { v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -428,7 +428,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     { s: "BTC", n: "Bitcoin", p0: 78e3, dv: 0.0184, corr: 0.45, dr: 15e-6, c: "#F0B23C" },
     { s: "ETH", n: "Ethereum", p0: 2520, dv: 0.0252, corr: 0.6, dr: 12e-6, c: "#8EA2FF" },
     { s: "SOL", n: "Solana", p0: 102, dv: 0.0367, corr: 0.65, dr: 15e-6, c: "#57D9C7" },
-    { s: "XRP", n: "Ripple", p0: 1.36, dv: 0.0313, corr: 0.55, dr: 5e-6, c: "#A9BCE0" },
+    /* "XRP Ledger" since 1.20: Ripple is the company, not the coin, and plain
+       "XRP" would repeat the ticker in the market row (as "BNB Chain" avoids) */
+    { s: "XRP", n: "XRP Ledger", p0: 1.36, dv: 0.0313, corr: 0.55, dr: 5e-6, c: "#A9BCE0" },
     /* Added in 1.10.0: fifth by 24h volume among non-stablecoins (search
        snippets, Oct 2026), so a list sorted by volume without it looked wrong.
        Measured on Binance daily closes, 1 Oct 2025 to 1 Oct 2026 (365 log
@@ -993,7 +995,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         marks[c.s] = lv;
         return;
       }
-      while (m !== 0 && (m > 0 ? x < m - 0.5 : x > m + 0.5)) m += m > 0 ? -1 : 1;
+      while (m !== 0 && (m > 0 ? x < m - 1 : x > m + 1)) m += m > 0 ? -1 : 1;
       if (lv !== 0 && (lv * m < 0 || Math.abs(lv) > Math.abs(m))) {
         m = lv;
         out.push({ s: c.s, x: headline(c, x, low, high, st) });
@@ -1002,7 +1004,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     });
     if (!seeded && biggest !== null) {
       var b = chg[biggest];
-      pushNews(st, "Live prices are in. The biggest move today is " + biggest + ", " + (b >= 0 ? "up " : "down ") + Math.abs(b).toFixed(1) + "%.", biggest, at);
+      pushNews(st, "Live prices are in. The biggest move in 24 hours is " + biggest + ", " + (b >= 0 ? "up " : "down ") + Math.abs(b).toFixed(1) + "%.", biggest, at);
       return 1;
     }
     out.forEach(function(h) {
@@ -1013,7 +1015,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   function headline(c, x, low, high, st) {
     var a = Math.abs(x).toFixed(1) + "%", up = x > 0;
     var verb = Math.abs(x) >= 4 ? up ? "jumps " : "drops " : Math.abs(x) >= 2 ? up ? "rises " : "falls " : up ? "edges up " : "slips ";
-    var t = c.n + " " + verb + a + " today";
+    var t = c.n + " " + verb + a + " in 24 hours";
     if (c.s === low && !up) t += ", the biggest drop on the board";
     else if (c.s === high && up) t += ", the biggest gain on the board";
     var dip = (st.quests || []).filter(function(q) {
@@ -1151,12 +1153,20 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   var LIVE_TUNE = { quickReward: 5e-3, marketReward: 0.01, rewardFloor: 10, profitScale: 0.5, winnerPct: 0.5 };
   var QUEST_TIER = 0;
   var QUEST_POOL = [
+    /* round trips (1.20, own): a trade counts when it is sold, if it was
+       bought after the quest was drawn and held ROUND_HOLD (roundTrip). Before,
+       every buy and sale counted at once, so holding every coin (no coins held
+       quest left to deal) the one quick slot dealt trades and volume in turn,
+       each done by a $750 sell and rebuy: about 17 claims in 10 minutes for the
+       owner (17 Oct 2026), all of their net worth growth. A trades quest also
+       needs each trade worth TRADE_MIN of net worth: a cent used to count */
     {
       t: "trades",
       n: "Trades",
       vals: [3, 5, 8, 12],
+      own: true,
       txt: function(x) {
-        return "Place " + x + " trades";
+        return "Buy and sell " + x + " trades, each held " + ROUND_HOLD / 6e4 + " minutes";
       }
     },
     {
@@ -1164,8 +1174,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       n: "Volume",
       vals: [1500, 5e3, 15e3, 4e4],
       money: true,
+      own: true,
       txt: function(x) {
-        return "Trade " + money(x) + " in total volume";
+        return "Trade " + money(x) + " in volume, each trade held " + ROUND_HOLD / 6e4 + " minutes";
       }
     },
     /* liveOff: real prices do not bank dollars of profit within a session at
@@ -1219,8 +1230,10 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       vals: [1, 2, 3, 4],
       own: true,
       pct: { sim: 3, live: 1 },
-      txt: function(x, p) {
-        return x === 1 ? "Buy a coin that is down " + p + "% or more today" : "Buy coins that are down " + p + "% or more today, " + x + " times";
+      /* live: the providers' change is over a rolling 24 hours, not a calendar day */
+      txt: function(x, p, live) {
+        var w = live ? "in 24 hours" : "today";
+        return x === 1 ? "Buy a coin that is down " + p + "% or more " + w : "Buy coins that are down " + p + "% or more " + w + ", " + x + " times";
       }
     },
     {
@@ -1278,6 +1291,11 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     return low;
   }
   var SPREAD_HOLD = 5 * 60 * 1e3;
+  var ROUND_HOLD = SPREAD_HOLD;
+  var TRADE_MIN = 0.01;
+  function roundTrip(l, q, now) {
+    return l.at > 0 && l.at >= (q.drawnAt || 0) && now - l.at >= ROUND_HOLD;
+  }
   var RECENT_KINDS = 2;
   var QUEST_DEF = {};
   QUEST_POOL.forEach(function(d) {
@@ -1356,7 +1374,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       money: !!def.money,
       abs: !!def.abs,
       live,
-      txt: def.txt(target, pct),
+      txt: def.txt(target, pct, live),
       base: questCounter(st, def.t),
       reward,
       xp: questXP(def.t),
@@ -1676,8 +1694,15 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       return e && typeof e.txt === "string" && typeof e.reward === "number" && isFinite(e.reward);
     }).slice(0, QUEST_LOG_MAX);
     o.quests.forEach(function(q) {
+      if ((q.t === "trades" || q.t === "volume") && !q.own) {
+        var had = (q.t === "trades" ? o.tradeCount : o.volume) - (q.base || 0);
+        q.own = true;
+        q.n = had > 0 && isFinite(had) ? Math.min(had, q.target) : 0;
+        q.txt = QUEST_DEF[q.t].txt(q.target);
+      }
       if (q.own && !(typeof q.n === "number" && isFinite(q.n))) q.n = 0;
       if (q.own && QUEST_DEF[q.t] && QUEST_DEF[q.t].pct && !(q.pct > 0)) q.pct = 3;
+      if (q.t === "dip" && q.own) q.txt = QUEST_DEF.dip.txt(q.target, q.pct, !!q.live);
       if (q.t === "guard" && !Array.isArray(q.ids)) q.ids = [];
       if (q.t === "guard" && !Array.isArray(q.of)) q.of = o.lots.filter(function(l) {
         return !l.sl;
@@ -2011,9 +2036,14 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     var gross = q * p, fee = gross * S.fee, net = gross - fee;
     var cost = costOf(lots, q);
     var pnl = net - cost;
-    var left = q;
+    var left = q, nw = netWorthOf(S), now = Date.now();
     lots.forEach(function(l) {
-      var take = Math.min(l.q, left);
+      var take = Math.min(l.q, left), paid = take * (l.b || l.p);
+      if (take > 0) S.quests.forEach(function(qq) {
+        if (qq.claimed || !qq.own || !roundTrip(l, qq, now)) return;
+        if (qq.t === "trades" && paid >= nw * TRADE_MIN) qq.n++;
+        else if (qq.t === "volume") qq.n += paid + take * p;
+      });
       l.q -= take;
       left -= take;
     });
@@ -2033,7 +2063,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     S.quests.forEach(function(qq) {
       if (qq.own && qq.t === "cut" && pnl <= -cost * qq.pct / 100) qq.n++;
     });
-    var now = Date.now(), live = Feed.mode === "live";
+    var live = Feed.mode === "live";
     var trade = { t: S.tick, s: sym, side: "sell", q, p, usd: net, pnl, at: now, live };
     if (rule) {
       trade.why = rule.why;
@@ -2784,7 +2814,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     var sym = view.sheetCtx.sym, n = view.sheetCtx.nodes;
     n.price.textContent = priceStr(S.prices[sym]);
     var d = dayChange(sym), gone = noLive(sym);
-    n.chg.textContent = gone ? "No live price" : pctStr(d) + " today";
+    n.chg.textContent = gone ? "No live price" : pctStr(d) + (Feed.mode === "live" ? " in 24 hours" : " today");
     n.chg.className = gone ? "flat" : cls(d);
     var mine = lotsOf(sym), marks = [];
     var one = view.sheetCtx.lot && lotById(view.sheetCtx.lot) || (mine.length === 1 ? mine[0] : null);
@@ -3099,7 +3129,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.19.1");
+    var ver = el("p", "note", "Shallow Whale 1.20.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3186,7 +3216,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     m.appendChild(attr);
     m.appendChild(el("h2", "sec", "Headlines"));
     if (Feed.mode === "live") {
-      var hn = el("p", "listnote", "With live prices, a headline marks each coin that moves another 1% today. Tap one to trade it.");
+      var hn = el("p", "listnote", "With live prices, a headline marks each coin that moves another 1% in 24 hours. Tap one to trade it.");
       m.appendChild(hn);
     }
     var nl = el("div", "list");
@@ -3267,7 +3297,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       bar2.appendChild(f2);
       d.appendChild(bar2);
       var hint = null;
-      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard" || q.t === "spread") {
+      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard" || q.t === "spread" || q.t === "trades" || q.t === "volume") {
         hint = el("p", "note qhint");
         hint.style.margin = "7px 0 0";
         d.appendChild(hint);
@@ -3375,6 +3405,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         else if (q.t === "cut") r.hint.textContent = cutHint(q);
         else if (q.t === "guard") r.hint.textContent = guardHint(q);
         else if (q.t === "spread") r.hint.textContent = spreadHint();
+        else if (q.t === "trades" || q.t === "volume") r.hint.textContent = roundHint(q);
         else r.hint.textContent = profitHint(q, q.target - prog);
       } else if (r.hint && r.hint.textContent) r.hint.textContent = "";
       var mode = prog >= q.target ? "claim" : "swap";
@@ -3408,19 +3439,19 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     });
   }
   function paintDipHint(r) {
-    var pct = r.q.own ? r.q.pct : 4, a = dipCoins(pct), h = r.hint, sig = a.map(function(x) {
+    var pct = r.q.own ? r.q.pct : 4, a = dipCoins(pct), w = r.q.live ? "in 24 hours" : "today", h = r.hint, sig = a.map(function(x) {
       return x.s;
     }).join();
     if (h._sig !== sig) {
       h._sig = sig;
       h.textContent = "";
       h._chips = {};
-      if (!a.length) h.appendChild(document.createTextNode("Nothing is down " + pct + "% yet. The market list shows each coin's change today, or swap this quest below."));
+      if (!a.length) h.appendChild(document.createTextNode("Nothing is down " + pct + "% yet. The market list shows each coin's change " + w + ", or swap this quest below."));
       else if (a.length === 1) h.appendChild(document.createTextNode(""));
       else {
         h.appendChild(document.createTextNode(andList(a.map(function(x) {
           return x.s;
-        })) + " are down " + pct + "% or more today, so a buy of any of them counts. Pick one:"));
+        })) + " are down " + pct + "% or more " + w + ", so a buy of any of them counts. Pick one:"));
         var row = el("span", "coinchips");
         a.forEach(function(x) {
           var b = el("button", "coinchip");
@@ -3435,7 +3466,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         h.appendChild(row);
       }
     }
-    if (a.length === 1) h.firstChild.textContent = a[0].s + " is down " + Math.abs(a[0].ch).toFixed(1) + "% today, so a buy counts now.";
+    if (a.length === 1) h.firstChild.textContent = a[0].s + " is down " + Math.abs(a[0].ch).toFixed(1) + "% " + w + ", so a buy counts now.";
     a.forEach(function(x) {
       var b = h._chips[x.s];
       if (b) {
@@ -3503,6 +3534,35 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     })), mins = Math.max(1, Math.ceil((first + SPREAD_HOLD - now) / 6e4));
     return andList(syms) + (syms.length === 1 ? " counts" : " count") + " once held " + SPREAD_HOLD / 6e4 + " minutes; the next in about " + mins + " min.";
   }
+  function roundLots(q) {
+    var now = Date.now(), min = q.t === "trades" ? netWorthOf(S) * TRADE_MIN : 0;
+    return S.lots.filter(function(l) {
+      return l.at > 0 && l.at >= (q.drawnAt || 0) && l.q * (l.b || l.p) >= min;
+    }).map(function(l) {
+      return { l, ready: roundTrip(l, q, now), wait: l.at + ROUND_HOLD - now };
+    });
+  }
+  function roundHint(q) {
+    var a = roundLots(q), mins = ROUND_HOLD / 6e4;
+    var size = q.t === "trades" ? " of at least " + money(Math.max(0.01, netWorthOf(S) * TRADE_MIN)) : "";
+    if (!a.length) return "Buy a coin" + size + ", hold it " + mins + " minutes, then sell it. Trades bought before this quest appeared do not count.";
+    var ready = a.filter(function(x) {
+      return x.ready;
+    });
+    if (ready.length === 1) return "Your " + ready[0].l.s + " trade from " + whenStr(ready[0].l) + " has been held " + mins + " minutes. Sell it and it counts.";
+    if (ready.length) {
+      var syms = ready.map(function(x) {
+        return x.l.s;
+      }).filter(function(s, i, all) {
+        return all.indexOf(s) === i;
+      });
+      return ready.length + " of your trades bought since this quest appeared (" + andList(syms) + ") have been held " + mins + " minutes. Selling them counts.";
+    }
+    var next = a.slice().sort(function(x, y) {
+      return x.wait - y.wait;
+    })[0];
+    return "Your " + next.l.s + " trade from " + whenStr(next.l) + " counts once held " + mins + " minutes, in about " + Math.max(1, Math.ceil(next.wait / 6e4)) + " min. Sell it then.";
+  }
   function profitHint(q, left) {
     var open = 0;
     S.lots.forEach(function(l) {
@@ -3527,6 +3587,12 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     if (q.t === "guard") {
       var u = unguarded(q);
       if (u) return { sym: u.s, side: "sell", lot: u.id };
+    }
+    if (q.t === "trades" || q.t === "volume") {
+      var rt = roundLots(q).filter(function(x) {
+        return x.ready;
+      })[0];
+      if (rt) return { sym: rt.l.s, side: "sell", lot: rt.l.id };
     }
     if (q.t === "spread") {
       var held = heldSyms(S);
@@ -4033,8 +4099,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.19.1");
-    setItem(SEEN_KEY, "1.19.1");
+    var seen = getItem(SEEN_KEY, "1.20.0");
+    setItem(SEEN_KEY, "1.20.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -4042,7 +4108,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.19.1");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.20.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -4051,7 +4117,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.19.1"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.20.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
