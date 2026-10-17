@@ -2,7 +2,7 @@ require_relative "test_helper"
 
 class MetaTest < Minitest::Test
   def test_titles
-    assert_equal "Ilya Paskhover | Senior software developer", page("/").at("title").text.strip
+    assert_equal "Ilya Paskhover | Principal software architect", page("/").at("title").text.strip
     assert page("/about/").at("title").text.strip.start_with?("About")
     assert page("/projects/").at("title").text.strip.start_with?("Projects")
   end

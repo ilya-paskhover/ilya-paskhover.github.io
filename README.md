@@ -1,6 +1,6 @@
 # ilya-paskhover.github.io
 
-Personal blog and project showcase by [Ilya Paskhover](https://www.linkedin.com/in/ilyapaskhover/), senior software developer with 15+ years of experience.
+Personal blog and project showcase by [Ilya Paskhover](https://www.linkedin.com/in/ilyapaskhover/), principal software architect with 16+ years of experience.
 
 ## Run with Docker
 

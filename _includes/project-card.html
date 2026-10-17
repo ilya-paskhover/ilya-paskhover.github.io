@@ -2,4 +2,5 @@
   <p class="project-kind label">{{ include.project.kind }}</p>
   <h3 class="project-title">{% include project-link.html project=include.project %}</h3>
   <p class="project-description">{{ include.project.description }}</p>
+  {% include project-post-link.html project=include.project %}
 </article>

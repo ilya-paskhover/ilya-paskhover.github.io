@@ -102,6 +102,50 @@ class PostTest < Minitest::Test
     assert_equal "Public the blog on github.io!", page(link["href"]).at_css("h1.post-title").text.strip
   end
 
+  NEW_POSTS = {
+    "/2019/11/28/phone-apps-that-talk-to-hardware.html" => ["Phone apps that talk to hardware", "Apps", "Nov 28, 2019"],
+    "/2023/12/28/a-proof-of-concept-should-answer-one-question.html" => ["A proof of concept should answer one question", "Notes", "Dec 28, 2023"],
+    "/2026/01/20/from-managing-people-to-managing-agents.html" => ["From managing people to managing agents", "AI agents", "Jan 20, 2026"],
+    "/2026/06/25/evaluating-ai-agents-before-you-trust-them.html" => ["Evaluating AI agents before you trust them", "AI agents", "Jun 25, 2026"],
+    "/2026/10/02/shallow-whale.html" => ["Shallow Whale", "Apps", "Oct 2, 2026"],
+    "/2026/10/17/fresh-design-and-content-with-ai-agents.html" => ["Fresh design and content with AI agents", "AI agents", "Oct 17, 2026"]
+  }.freeze
+
+  def test_new_posts
+    NEW_POSTS.each do |url, (title, topic, date)|
+      d = page(url)
+      assert_equal title, d.at_css("h1.post-title").text.strip, url
+      assert_equal topic, d.at_css(".post-topic").text.strip, url
+      assert_equal date, d.at_css("dl.post-meta-grid time").text.strip, url
+      refute_empty d.at_css("p.post-lead").text.strip, url
+      assert_nil d.at_css(".post-archived-note"), url
+      assert_operator d.css("nav.post-tree ul#markdown-toc a").size, :>=, 2, url
+      assert_nil d.at_css(".reading-time"), "#{url}: short post, no reading time"
+      refute_match(/TODO/, File.read(site_file(url), encoding: "UTF-8"), url)
+      refute_includes d.text, "Augury", url
+    end
+  end
+
+  def test_looking_back_posts
+    %w[/2019/11/28/phone-apps-that-talk-to-hardware.html /2023/12/28/a-proof-of-concept-should-answer-one-question.html].each do |url|
+      assert page(url).at_css(".post-content p").text.strip.start_with?("Looking back at"), url
+    end
+  end
+
+  def test_shallow_whale_post_links_the_game
+    d = page("/2026/10/02/shallow-whale.html")
+    hrefs = d.css(".post-content a").map { |a| a["href"] }
+    assert_includes hrefs, "/shallow-whale/"
+    assert_includes hrefs, "/shallow-whale/privacy.html"
+  end
+
+  def test_gem_link_notes_google_account
+    p = doc.css(".post-content p").find { |e| e.at_css("a[href*='gemini.google.com']") }
+    refute_nil p
+    assert_equal "Open the YouTube Videos Summarizer", p.at_css("a").text.strip
+    assert_includes p.text, "(needs a Google account)"
+  end
+
   def test_restored_2016_post
     url = "/jekyll/update/2016/03/17/public-the-blog-on-github-io.html"
     d = page(url)
