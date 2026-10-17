@@ -169,16 +169,19 @@ nav#tabs .badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;he
   font-size:11px;font-weight:750;line-height:15px;font-variant-numeric:tabular-nums;text-align:center}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) nav#tabs .badge{color:#8FB8E6} }
 :root[data-theme="dark"] nav#tabs .badge{color:#8FB8E6}
-/* action pill: floats just under the header, and over the scrim above an open
+/* action pill: floats just above the tab bar, and over the scrim above an open
    sheet, so a finished quest is never hidden. Above the sheet (50), under the
-   toast (60). No padding is added for it: content would jump under a finger */
-#action{position:fixed;left:50%;top:calc(var(--hdr-b,calc(env(safe-area-inset-top,0px) + 88px)) + 10px);transform:translateX(-50%);z-index:55;
+   toast (60). Under the header (1.12 to 1.17.0) it covered the first market row
+   at 360px, and a tap meant for that coin claimed instead. The page gets room
+   at its end for it; nothing above moves */
+#action{position:fixed;left:50%;bottom:calc(var(--tab-h) + 14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:55;
   background:var(--navy);color:var(--on-navy);border:2px solid var(--edge);box-shadow:0 3px 0 var(--hard);
   padding:10px 20px;border-radius:9px;font-size:14px;font-weight:700;font-stretch:92%;white-space:nowrap;transition:transform .06s,box-shadow .06s;
   animation:pill-in .2s cubic-bezier(.2,.8,.2,1)}
-body.sheet-open #action{top:calc(env(safe-area-inset-top,0px) + 8px)}
+body.sheet-open #action{top:calc(env(safe-area-inset-top,0px) + 8px);bottom:auto}
+body.has-action main{padding-bottom:calc(var(--tab-h) + 84px)}
 #action:active{transform:translate(-50%,3px);box-shadow:0 0 0 var(--hard)}
-@keyframes pill-in{from{opacity:0;transform:translate(-50%,-10px)}}
+@keyframes pill-in{from{opacity:0;transform:translate(-50%,10px)}}
 @media (prefers-reduced-motion:reduce){ #action{animation:none} }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) nav#tabs button[aria-current="page"]{color:#8FB8E6} :root:not([data-theme="light"]) nav#tabs button[aria-current="page"]::before{background:#8FB8E6} }
 :root[data-theme="dark"] nav#tabs button[aria-current="page"]{color:#8FB8E6}
@@ -350,6 +353,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   padding:9px 16px;border-radius:999px;font-size:14px;font-weight:650;
   opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;width:max-content;max-width:88%;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+/* above the claim pill while it shows */
+body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(safe-area-inset-bottom,0px))}
 </style>
 </head>
 <body>
@@ -404,7 +409,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }, { v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }, { v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }, { v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }, { v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }, { v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1174,7 +1179,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       vals: [2, 3, 4, 5],
       abs: true,
       txt: function(x) {
-        return "Hold " + x + " different coins, each for 10 minutes";
+        return "Hold " + x + " different coins, each for " + SPREAD_HOLD / 6e4 + " minutes";
       }
     },
     {
@@ -1232,7 +1237,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     }
   ];
   var GUARD_GAP = 24 * 3600 * 1e3;
-  var SPREAD_HOLD = 10 * 60 * 1e3;
+  var SPREAD_HOLD = 5 * 60 * 1e3;
   var RECENT_KINDS = 2;
   var QUEST_DEF = {};
   QUEST_POOL.forEach(function(d) {
@@ -2316,11 +2321,6 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (show) {
       var txt = "Claim " + n + " reward" + (n > 1 ? "s" : "");
       if (a.textContent !== txt) a.textContent = txt;
-      var hb = Math.round($("#top").getBoundingClientRect().bottom) + "px";
-      if (hb !== "0px" && a._hb !== hb) {
-        a._hb = hb;
-        document.documentElement.style.setProperty("--hdr-b", hb);
-      }
     }
     if (a.hidden === show) a.hidden = !show;
     document.body.classList.toggle("has-action", show);
@@ -2902,7 +2902,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.17.0");
+    var ver = el("p", "note", "Shallow Whale 1.17.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3076,7 +3076,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         d.appendChild(hint);
       }
       if (q.live && isDayQuest(q)) {
-        var slow = el("p", "note", "With live prices this usually takes a day or more. Keep it for a later visit, or swap it.");
+        var slow = el("p", "note", "With live prices this can take an hour or more, less with several trades open. Keep it, or swap it.");
         slow.className = "note dayhint";
         slow.style.margin = "7px 0 0";
         d.appendChild(slow);
@@ -3300,11 +3300,11 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       if (!(l.at > 0 && now - l.at < SPREAD_HOLD)) delete wait[l.s];
     });
     var syms = Object.keys(wait);
-    if (!syms.length) return "A coin counts once you have held it for 10 minutes. Selling it and buying it back starts the clock again.";
+    if (!syms.length) return "A coin counts once you have held it for " + SPREAD_HOLD / 6e4 + " minutes. Selling it and buying it back starts the clock again.";
     var first = Math.min.apply(null, syms.map(function(s) {
       return wait[s];
     })), mins = Math.max(1, Math.ceil((first + SPREAD_HOLD - now) / 6e4));
-    return andList(syms) + (syms.length === 1 ? " counts" : " count") + " once held 10 minutes; the next in about " + mins + " min.";
+    return andList(syms) + (syms.length === 1 ? " counts" : " count") + " once held " + SPREAD_HOLD / 6e4 + " minutes; the next in about " + mins + " min.";
   }
   function profitHint(q, left) {
     var open = 0;
@@ -3762,8 +3762,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.17.0");
-    setItem(SEEN_KEY, "1.17.0");
+    var seen = getItem(SEEN_KEY, "1.17.1");
+    setItem(SEEN_KEY, "1.17.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3771,7 +3771,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.17.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.17.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3780,7 +3780,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.17.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.17.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
