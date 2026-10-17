@@ -404,7 +404,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }, { v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }, { v: "1.14.0", items: ['"Time to finish" under Quests now counts only the time the game was open, so hours with the app closed no longer inflate it.', "Quest rewards are now a share of your $3,000 starting stake, not of your current net worth."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }, { v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }, { v: "1.16.0", items: ["The buy panel offers the amount you last bought as a one-tap button, beside 25%, 50%, 75% and Max.", "Stop loss and take profit each have 0.2% and 0.7% buttons under their fields.", "The note under them is shorter and works out the take profit you typed, after both fees, in percent and in dollars, or says when the fees take all of it.", "Coins held quests count a coin only once you have held it for 10 minutes.", "A quest kind you just finished is not dealt again for the next two quests, when another kind fits."] }, { v: "1.15.0", items: ['With live prices, "sell a winner" now needs a 0.5% gain after fees (was 1%), so it can finish in a session rather than over days.', "Profit quests no longer appear with live prices."] }, { v: "1.14.1", items: ["The Claim reward button at the top now closes any open panel and takes you to Quests, so you see the new quests right away."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1081,6 +1081,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   function xpNeeded(lv) {
     return 120 + (lv - 1) * 95;
   }
+  var QUEST_XP = { quick: 40, market: 60 };
+  var TRADE_XP = 5;
 
   // src/core/trading.js
   function netWorthOf(st) {
@@ -1310,7 +1312,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       txt: def.txt(target, pct),
       base: questCounter(st, def.t),
       reward,
-      xp: Math.round(xpNeeded(st.level) * 0.35),
+      xp: questXP(def.t),
       claimed: false,
       drawnAt: Date.now(),
       act: 0
@@ -1380,6 +1382,9 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     if (q.own) return q.n || 0;
     var cur = questCounter(st, q.t);
     return q.abs ? cur : cur - q.base;
+  }
+  function questXP(t) {
+    return QUEST_DEF[t] && QUEST_DEF[t].market ? QUEST_XP.market : QUEST_XP.quick;
   }
   function swapFee(q) {
     return Math.max(10, Math.round(q.reward / 20) * 10);
@@ -1541,6 +1546,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
         q.base = o.realisedGain;
       }
       if (q.t === "spread") q.txt = QUEST_DEF.spread.txt(q.target);
+      q.xp = questXP(q.t);
       if (!(typeof q.drawnAt === "number" && isFinite(q.drawnAt) && q.drawnAt > 0)) q.drawnAt = Date.now();
       if (!(typeof q.act === "number" && isFinite(q.act) && q.act >= 0)) q.act = 0;
     });
@@ -1696,7 +1702,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     return f;
   }
   function tradeXP() {
-    return Math.max(4, Math.round(xpNeeded(S.level) * 0.02));
+    return TRADE_XP;
   }
   function title() {
     var lv = S.level;
@@ -2896,7 +2902,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.16.1");
+    var ver = el("p", "note", "Shallow Whale 1.17.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3756,8 +3762,8 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.16.1");
-    setItem(SEEN_KEY, "1.16.1");
+    var seen = getItem(SEEN_KEY, "1.17.0");
+    setItem(SEEN_KEY, "1.17.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3765,7 +3771,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.16.1");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.17.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3774,7 +3780,7 @@ textarea.io{width:100%;height:84px;border:2px solid var(--edge);border-radius:9p
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.16.1"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.17.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
