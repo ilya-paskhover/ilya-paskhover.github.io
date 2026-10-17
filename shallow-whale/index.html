@@ -413,7 +413,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }, { v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }, { v: "1.16.1", items: ["The trade panel is shorter, so Save exit rules shows on a phone without scrolling.", "A coins held quest drawn before 1.16 now says each coin must be held 10 minutes, as it already counted."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }, { v: "1.17.1", items: ["Coins held quests now count a coin after 5 minutes held, not 10.", "The Claim reward button now floats just above the tab bar instead of under the header, so it no longer covers the first coin in the market list.", 'The note on a live "sell a winner" quest now says it can take an hour or more, not a day.'] }, { v: "1.17.0", items: ["Quests now give a flat 40 XP (60 for market quests) and trades 5 XP, whatever your level, so each level takes longer than the last instead of every three quests making one."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -891,10 +891,12 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       return o;
     });
   }
-  function stepBot(b, st) {
+  var LIVE_SKILL_MS = 4 * 864e5 / 240;
+  function stepBot(b, st, ticks) {
     if (b.skill) {
-      b.cash *= 1 + b.skill;
-      for (var s0 in b.h) b.h[s0] *= 1 + b.skill;
+      var f = Math.pow(1 + b.skill, ticks === void 0 ? 1 : ticks);
+      b.cash *= f;
+      for (var s0 in b.h) b.h[s0] *= f;
     }
     if (Math.random() > 1 / 110) return;
     var syms = Object.keys(b.h).filter(function(s) {
@@ -1457,7 +1459,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     realisedGain: 0,
     losersCut: 0,
     guardAt: 0,
-    lastBuy: 0
+    lastBuy: 0,
+    botsAt: 0
   };
   var ARR_FIELDS = { trades: 1, news: 1, owned: 1, quests: 1, questLog: 1, bots: 1, pending: 1, reviews: 1, lots: 1 };
   var RENAMED = { TON: "GRAM" };
@@ -1610,6 +1613,11 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       });
     });
     if (!o.bots.length) o.bots = defaultBots(o.prices);
+    if (o.rivalsV !== 1) {
+      o.bots = defaultBots(o.prices);
+      o.rivalsV = 1;
+      o.botsAt = 0;
+    }
     o.bots = o.bots.filter(function(b) {
       return b && typeof b.cash === "number" && isFinite(b.cash) && b.h;
     });
@@ -1771,6 +1779,14 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     return Feed.status === "error" ? null : {};
   }
   var ACTIVE_STEP_MAX = 2e3;
+  var RIVAL_GAP_MAX = 60 * 864e5;
+  function rivalSteps(now) {
+    var last = S.botsAt;
+    S.botsAt = now;
+    if (Feed.mode !== "live") return 1;
+    if (!(last > 0) || now <= last) return 0;
+    return Math.min(now - last, RIVAL_GAP_MAX) / LIVE_SKILL_MS;
+  }
   var lastStep = 0;
   function step() {
     var now = Date.now(), dt = lastStep ? Math.min(Math.max(0, now - lastStep), ACTIVE_STEP_MAX) : 0;
@@ -1780,8 +1796,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     });
     var r = marketTick(S, tickAnchors());
     if (r.fired || liveNews()) ui.news();
+    var rivalTicks = rivalSteps(now);
     S.bots.forEach(function(b) {
-      stepBot(b, S);
+      stepBot(b, S, rivalTicks);
     });
     checkOrders();
     checkReviews();
@@ -2067,6 +2084,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       recentKinds: [],
       lastBuy: 0,
       posSort: "coin",
+      rivalsV: 1,
+      botsAt: 0,
       level: 1,
       xp: 0,
       owned: [],
@@ -2950,7 +2969,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.18.1");
+    var ver = el("p", "note", "Shallow Whale 1.18.2");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3848,8 +3867,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.18.1");
-    setItem(SEEN_KEY, "1.18.1");
+    var seen = getItem(SEEN_KEY, "1.18.2");
+    setItem(SEEN_KEY, "1.18.2");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -3857,7 +3876,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.1");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.18.2");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -3866,7 +3885,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.18.1"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.18.2"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
