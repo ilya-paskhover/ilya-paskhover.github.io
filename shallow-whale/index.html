@@ -415,7 +415,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }, { v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }, { v: "1.18.0", items: ["Open positions in the Wallet can now be sorted by coin, gain, value or newest: tap the chips above the list."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }, { v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }, { v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }, { v: "1.18.2", items: ["With live prices, rivals on Ranks no longer race away or collapse while you play."] }, { v: "1.18.1", items: ['With live prices, a new "buy the dip" quest now fits the day.', "Since a dip quest can now always be done right away, it pays like the other quick quests."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -2813,8 +2813,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     },
     {
       t: "The coins do not carry equal risk",
-      p: ["Each one is tuned to its real-world volatility, so the same dollar in each is not the same bet. That is the main thing worth taking away from a game like this."],
-      table: true
+      p: [riskLine],
+      table: true,
+      after: [ownWayLine]
     },
     {
       t: "Decide your exit before you need it",
@@ -2824,6 +2825,27 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       ]
     }
   ];
+  function dayUsd(c) {
+    return Math.round(c.dv * 1e3);
+  }
+  function riskLine() {
+    var lo = COINS[0], hi = COINS[0];
+    COINS.forEach(function(c) {
+      if (c.dv < lo.dv) lo = c;
+      if (c.dv > hi.dv) hi = c;
+    });
+    return "On a typical day $1,000 in " + lo.n + " moves about $" + dayUsd(lo) + ", the same in " + hi.n + " about $" + dayUsd(hi) + ", and a rough day twice that. Size each trade to the coin, not just to the dollar.";
+  }
+  var OWN_WAY = 0.4;
+  function ownWayLine() {
+    var own = COINS.filter(function(c) {
+      return c.corr < OWN_WAY;
+    }).map(function(c) {
+      return c.n.replace(/ \(.*\)/, "");
+    });
+    if (!own.length) return "";
+    return "Most of them rise and fall with Bitcoin. " + own.join(" and ") + (own.length > 1 ? " often go their" : " often goes its") + " own way, so on a day the market is up one of them may still be down.";
+  }
   function introSeen() {
     return getItem("pw.intro", "1") === "1";
   }
@@ -2841,11 +2863,14 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     nm.appendChild(el("small", null, "Step " + (i + 1) + " of " + INTRO.length));
     head.appendChild(nm);
     b.appendChild(head);
-    st.p.forEach(function(txt) {
+    function para(txt) {
+      if (typeof txt === "function") txt = txt();
+      if (!txt) return;
       var pp = el("p", "note", txt);
       pp.style.margin = "0 0 10px";
       b.appendChild(pp);
-    });
+    }
+    st.p.forEach(para);
     if (st.table) {
       var box = el("div", "card");
       box.style.padding = "4px 13px 8px";
@@ -2856,6 +2881,10 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         box.appendChild(k);
       });
       b.appendChild(box);
+    }
+    if (st.after) {
+      b.lastChild.style.marginBottom = "10px";
+      st.after.forEach(para);
     }
     var go2 = el("button", "btn", i === INTRO.length - 1 ? "Start trading" : "Next");
     go2.style.marginTop = "16px";
@@ -3070,7 +3099,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.19.0");
+    var ver = el("p", "note", "Shallow Whale 1.19.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -4004,8 +4033,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.19.0");
-    setItem(SEEN_KEY, "1.19.0");
+    var seen = getItem(SEEN_KEY, "1.19.1");
+    setItem(SEEN_KEY, "1.19.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -4013,7 +4042,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.19.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.19.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -4022,7 +4051,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.19.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.19.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
