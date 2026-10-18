@@ -108,7 +108,7 @@ class PostTest < Minitest::Test
     "/2026/01/20/from-managing-people-to-managing-agents.html" => ["From managing people to managing agents", "AI agents", "Jan 20, 2026"],
     "/2026/06/25/evaluating-ai-agents-before-you-trust-them.html" => ["Evaluating AI agents before you trust them", "AI agents", "Jun 25, 2026"],
     "/2026/10/02/shallow-whale.html" => ["Shallow Whale", "Apps", "Oct 2, 2026"],
-    "/2026/10/17/fresh-design-and-content-with-ai-agents.html" => ["Fresh design and content with AI agents", "AI agents", "Oct 17, 2026"]
+    "/2026/10/16/fresh-design-and-content-with-ai-agents.html" => ["Fresh design and content with AI agents", "AI agents", "Oct 16, 2026"]
   }.freeze
 
   def test_new_posts
