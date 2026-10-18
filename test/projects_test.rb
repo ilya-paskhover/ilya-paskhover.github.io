@@ -1,7 +1,7 @@
 require_relative "test_helper"
 
 class ProjectsTest < Minitest::Test
-  TITLES = ["Shallow Whale", "Interactive AI CV", "YouTube Videos Summarizer", "Epoch Converter", "Math Bubbles", "Claude Code mods", "Invoice Reminders", "ETH Monitor"].freeze
+  TITLES = ["Shallow Whale", "Claude Code mods", "YouTube Videos Summarizer", "Epoch Converter", "Math Bubbles", "Interactive AI CV", "Invoice Reminders", "ETH Monitor"].freeze
   POSTS = {
     "Shallow Whale" => ["/2026/10/02/shallow-whale.html", "Shallow Whale"],
     "Interactive AI CV" => ["/2025/05/23/base44-projects.html", "Base44 projects"],
