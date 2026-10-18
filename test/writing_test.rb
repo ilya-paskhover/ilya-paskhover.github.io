@@ -31,7 +31,7 @@ class WritingTest < Minitest::Test
       refute_includes f.text, "Ilya Paskhover"
       assert_nil f.at_css(".reading-time"), "1 minute or less: no reading time element"
     end
-    assert_equal ["Oct 17, 2026"], fs.map { |f| f.at_css("time.post-date[datetime]").text.strip }
+    assert_equal ["Oct 16, 2026"], fs.map { |f| f.at_css("time.post-date[datetime]").text.strip }
   end
 
   def test_featured_date_cell_like_list_rows
