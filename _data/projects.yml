@@ -6,14 +6,14 @@
   tags: [Game, PWA]
   featured: true
   post: 2026-10-02-shallow-whale
-- title: Interactive AI CV
-  kind: Web app
-  description: "My CV as an interactive, AI-assisted app, built with Base44."
-  url: https://ilyas-ai-cv.base44.app
+- title: Claude Code mods
+  kind: Plugins
+  description: "Three small Claude Code mods: a last-turn summary band, a notes pane shared across projects, and a pane of running sessions."
+  url: https://github.com/ilya-paskhover/claude-code-mods
   external: true
-  tags: [Base44, AI]
+  tags: [Claude Code, TypeScript]
   featured: true
-  post: 2025-05-23-base44-projects
+  post: 2026-10-17-claude-code-mods
 - title: YouTube Videos Summarizer
   kind: AI agent
   description: "A Gemini gem that summarizes YouTube videos. Needs a Google account."
@@ -38,14 +38,14 @@
   tags: [Game, Vibe coding]
   featured: false
   post: 2025-11-22-vibe-coding-apps
-- title: Claude Code mods
-  kind: Plugins
-  description: "Three small Claude Code mods: a last-turn summary band, a notes pane shared across projects, and a pane of running sessions."
-  url: https://github.com/ilya-paskhover/claude-code-mods
+- title: Interactive AI CV
+  kind: Web app
+  description: "My CV as an interactive, AI-assisted app, built with Base44."
+  url: https://ilyas-ai-cv.base44.app
   external: true
-  tags: [Claude Code, TypeScript]
+  tags: [Base44, AI]
   featured: false
-  post: 2026-10-17-claude-code-mods
+  post: 2025-05-23-base44-projects
 - title: Invoice Reminders
   kind: Web app
   description: "Chases late invoices with escalating reminder emails and a pay link. A proof of concept with a live demo."
