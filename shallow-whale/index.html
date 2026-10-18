@@ -425,7 +425,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.22.0", items: ['A new quest, "Close a trade with a stop loss or take profit", replaces "Buy and sell 3 trades".', "A trades quest already on your board still finishes, but each trade now counts once.", 'A new quest, "Keep no coin above 40% of your holdings", replaces "Hold 8 different coins".'] }, { v: "1.21.0", items: ["The Market tab now shows how wild each coin is.", 'Gram and Bitcoin Cash are marked "own way" in the list, since they often move apart from Bitcoin.', "The intro's coin risk step shows the same bars and explains both marks."] }, { v: "1.20.0", items: ["Trades and volume quests now count round trips.", "Headlines no longer repeat a coin that wobbles around a whole percent.", 'With live prices, changes now say "in 24 hours" instead of "today", since that is what the price providers measure.', "XRP is now called XRP Ledger in the market list and headlines; Ripple is the company behind it, not the coin."] }, { v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }, { v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.22.1", items: ["On a trades or volume quest, Trade now opens the trade you bought for it even while it is still waiting out its 5 minutes, so you can watch it and sell it there once it counts."] }, { v: "1.22.0", items: ['A new quest, "Close a trade with a stop loss or take profit", replaces "Buy and sell 3 trades".', "A trades quest already on your board still finishes, but each trade now counts once.", 'A new quest, "Keep no coin above 40% of your holdings", replaces "Hold 8 different coins".'] }, { v: "1.21.0", items: ["The Market tab now shows how wild each coin is.", 'Gram and Bitcoin Cash are marked "own way" in the list, since they often move apart from Bitcoin.', "The intro's coin risk step shows the same bars and explains both marks."] }, { v: "1.20.0", items: ["Trades and volume quests now count round trips.", "Headlines no longer repeat a coin that wobbles around a whole percent.", 'With live prices, changes now say "in 24 hours" instead of "today", since that is what the price providers measure.', "XRP is now called XRP Ledger in the market list and headlines; Ripple is the company behind it, not the coin."] }, { v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -3236,7 +3236,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.22.0");
+    var ver = el("p", "note", "Shallow Whale 1.22.1");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3734,8 +3734,10 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       if (u) return { sym: u.s, side: "sell", lot: u.id };
     }
     if (q.t === "trades" || q.t === "volume") {
-      var rt = roundLots(q).filter(function(x) {
+      var rl = roundLots(q), rt = rl.filter(function(x) {
         return x.ready;
+      })[0] || rl.slice().sort(function(x, y) {
+        return x.wait - y.wait;
       })[0];
       if (rt) return { sym: rt.l.s, side: "sell", lot: rt.l.id };
     }
@@ -4252,8 +4254,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.22.0");
-    setItem(SEEN_KEY, "1.22.0");
+    var seen = getItem(SEEN_KEY, "1.22.1");
+    setItem(SEEN_KEY, "1.22.1");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -4261,7 +4263,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.22.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.22.1");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -4270,7 +4272,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.22.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.22.1"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
