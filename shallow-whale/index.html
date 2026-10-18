@@ -425,7 +425,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   };
 
   // <define:RELEASE_NOTES>
-  var define_RELEASE_NOTES_default = [{ v: "1.21.0", items: ["The Market tab now shows how wild each coin is.", 'Gram and Bitcoin Cash are marked "own way" in the list, since they often move apart from Bitcoin.', "The intro's coin risk step shows the same bars and explains both marks."] }, { v: "1.20.0", items: ["Trades and volume quests now count round trips.", "Headlines no longer repeat a coin that wobbles around a whole percent.", 'With live prices, changes now say "in 24 hours" instead of "today", since that is what the price providers measure.', "XRP is now called XRP Ledger in the market list and headlines; Ripple is the company behind it, not the coin."] }, { v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }, { v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }, { v: "1.18.3", items: ["Each new version's Android app (APK) is now attached to its release on the project's GitHub Releases page, so you can download it there instead of from a CI run."] }];
+  var define_RELEASE_NOTES_default = [{ v: "1.22.0", items: ['A new quest, "Close a trade with a stop loss or take profit", replaces "Buy and sell 3 trades".', "A trades quest already on your board still finishes, but each trade now counts once.", 'A new quest, "Keep no coin above 40% of your holdings", replaces "Hold 8 different coins".'] }, { v: "1.21.0", items: ["The Market tab now shows how wild each coin is.", 'Gram and Bitcoin Cash are marked "own way" in the list, since they often move apart from Bitcoin.', "The intro's coin risk step shows the same bars and explains both marks."] }, { v: "1.20.0", items: ["Trades and volume quests now count round trips.", "Headlines no longer repeat a coin that wobbles around a whole percent.", 'With live prices, changes now say "in 24 hours" instead of "today", since that is what the price providers measure.', "XRP is now called XRP Ledger in the market list and headlines; Ripple is the company behind it, not the coin."] }, { v: "1.19.1", items: ["The intro's coin risk step now shows what a typical day means in dollars.", "It also says why Gram and Bitcoin Cash are there: they often go their own way while the rest follow Bitcoin."] }, { v: "1.19.0", items: ["Ranks is now a monthly season: you and the rivals are ranked by trading return since the month began, not by net worth.", "When a month ends, the season closes with your place and return, and Ranks keeps a list of past seasons."] }];
 
   // src/core/coins.js
   var TICKS_PER_DAY = 240;
@@ -1178,12 +1178,17 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
        quest left to deal) the one quick slot dealt trades and volume in turn,
        each done by a $750 sell and rebuy: about 17 claims in 10 minutes for the
        owner (17 Oct 2026), all of their net worth growth. A trades quest also
-       needs each trade worth TRADE_MIN of net worth: a cent used to count */
+       needs each trade worth TRADE_MIN of net worth: a cent used to count.
+       Retired in 1.22 for exit (owner): the 5 minute wait stopped the loop
+       but taught nothing, and short round trips mostly pay the fees. One on a
+       board still counts, each trade once (q.ids): before, one trade sold in
+       three pieces finished "3 trades" */
     {
       t: "trades",
       n: "Trades",
       vals: [3, 5, 8, 12],
       own: true,
+      retired: true,
       txt: function(x) {
         return "Buy and sell " + x + " trades, each held " + ROUND_HOLD / 6e4 + " minutes";
       }
@@ -1229,12 +1234,15 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     },
     /* a coin counts once held SPREAD_HOLD (heldLong): before 1.16 selling a
        coin and buying it back finished this and a trades quest together, and
-       a claimed slot refills at once (owner rule), so it looped */
+       a claimed slot refills at once (owner rule), so it looped. Retired in
+       1.22 for balance (owner): without the wait a sell and rebuy finished it,
+       and the wait taught nothing. One on a board still counts */
     {
       t: "spread",
       n: "Coins held",
       vals: [2, 3, 4, 5],
       abs: true,
+      retired: true,
       txt: function(x) {
         return "Hold " + x + " different coins, each for " + SPREAD_HOLD / 6e4 + " minutes";
       }
@@ -1296,6 +1304,34 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       txt: function(x) {
         return x === 1 ? "Set a stop loss on your open trade that has none" : "Set a stop loss on " + x + " of your open trades";
       }
+    },
+    /* 1.22, instead of trades (owner): a trade closed by its own stop loss or
+       take profit. Counts a trade bought after the draw, worth TRADE_MIN of
+       net worth, whose rule sat EXIT_MIN or more from entry (exitTrip). The
+       market picks the moment, so a sell and rebuy cannot finish it, and it
+       practises deciding the exit first (intro step 3) */
+    {
+      t: "exit",
+      n: "Exit rules",
+      vals: [1, 2, 3, 4],
+      own: true,
+      txt: function(x) {
+        return x === 1 ? "Close a trade with a stop loss or take profit" : "Close " + x + " trades with a stop loss or take profit";
+      }
+    },
+    /* 1.22, instead of coins held (owner): no coin over BAL_MAX of the coins
+       you hold, with at least BAL_MIN of net worth in coins (balanced). Dealt
+       only when that is not true now, so finishing it means really spreading
+       the money; undoing it to be dealt it again costs fees on a large slice
+       of the portfolio, more than the reward. Teaches concentration risk */
+    {
+      t: "balance",
+      n: "Balance",
+      vals: [1, 1, 1, 1],
+      abs: true,
+      txt: function() {
+        return "Keep no coin above " + Math.round(BAL_MAX * 100) + "% of your holdings";
+      }
     }
   ];
   var GUARD_GAP = 24 * 3600 * 1e3;
@@ -1315,7 +1351,32 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   function roundTrip(l, q, now) {
     return l.at > 0 && l.at >= (q.drawnAt || 0) && now - l.at >= ROUND_HOLD;
   }
+  var EXIT_MIN = 2e-3;
+  function exitTrip(l, q, why) {
+    if (!(l.at > 0 && l.at >= (q.drawnAt || 0))) return false;
+    var r = why === "tp" && l.tp > 0 ? l.tp / l.p - 1 : why === "sl" && l.sl > 0 ? 1 - l.sl / l.p : 0;
+    return r >= EXIT_MIN - 1e-9;
+  }
   var RECENT_KINDS = 2;
+  var BAL_MAX = 0.4;
+  var BAL_MIN = 0.25;
+  function topCoin(st) {
+    var by = {}, total = 0, top = null;
+    st.lots.forEach(function(l) {
+      var v = l.q * st.prices[l.s];
+      by[l.s] = (by[l.s] || 0) + v;
+      total += v;
+    });
+    if (!(total > 0)) return null;
+    Object.keys(by).forEach(function(s) {
+      if (!top || by[s] > by[top]) top = s;
+    });
+    return { s: top, share: by[top] / total, held: total / netWorthOf(st) };
+  }
+  function balanced(st) {
+    var t = topCoin(st);
+    return !!t && t.held >= BAL_MIN && t.share <= BAL_MAX + 1e-9;
+  }
   var QUEST_DEF = {};
   QUEST_POOL.forEach(function(d) {
     QUEST_DEF[d.t] = d;
@@ -1344,7 +1405,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     var guardOk = bare.length && !(st.guardAt > 0 && Date.now() - st.guardAt < GUARD_GAP);
     var low = dipLow(live, moves);
     var fits = function(d) {
-      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk) && !(d.t === "dip" && low !== null && low > -DIP_SOFT);
+      return !d.retired && !(live && d.liveOff) && !(d.t === "spread" && held >= COINS.length) && !(d.t === "balance" && balanced(st)) && !(d.t === "cut" && !loser) && !(d.t === "guard" && !guardOk) && !(d.t === "dip" && low !== null && low > -DIP_SOFT);
     };
     var pool = QUEST_POOL.filter(function(d) {
       return taken.indexOf(d.t) < 0 && fits(d);
@@ -1413,6 +1474,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       q.ids = [];
       st.guardAt = Date.now();
     }
+    if (def.t === "trades" || def.t === "exit") q.ids = [];
     return q;
   }
   function refreshQuests(st, all, live, moves) {
@@ -1450,6 +1512,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         return netWorthOf(st);
       case "spread":
         return heldLong(st);
+      case "balance":
+        return balanced(st) ? 1 : 0;
       case "cut":
         return st.losersCut || 0;
     }
@@ -1722,7 +1786,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       if (q.own && !(typeof q.n === "number" && isFinite(q.n))) q.n = 0;
       if (q.own && QUEST_DEF[q.t] && QUEST_DEF[q.t].pct && !(q.pct > 0)) q.pct = 3;
       if (q.t === "dip" && q.own) q.txt = QUEST_DEF.dip.txt(q.target, q.pct, !!q.live);
-      if (q.t === "guard" && !Array.isArray(q.ids)) q.ids = [];
+      if ((q.t === "guard" || q.t === "trades" || q.t === "exit") && !Array.isArray(q.ids)) q.ids = [];
       if (q.t === "guard" && !Array.isArray(q.of)) q.of = o.lots.filter(function(l) {
         return !l.sl;
       }).map(function(l) {
@@ -2056,11 +2120,22 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     var cost = costOf(lots, q);
     var pnl = net - cost;
     var left = q, nw = netWorthOf(S), now = Date.now();
+    var once = function(qq, l) {
+      if (!Array.isArray(qq.ids)) qq.ids = [];
+      if (qq.ids.indexOf(l.id) >= 0) return;
+      qq.ids.push(l.id);
+      qq.n++;
+    };
     lots.forEach(function(l) {
       var take = Math.min(l.q, left), paid = take * (l.b || l.p);
       if (take > 0) S.quests.forEach(function(qq) {
-        if (qq.claimed || !qq.own || !roundTrip(l, qq, now)) return;
-        if (qq.t === "trades" && paid >= nw * TRADE_MIN) qq.n++;
+        if (qq.claimed || !qq.own) return;
+        if (qq.t === "exit") {
+          if (rule && paid >= nw * TRADE_MIN && exitTrip(l, qq, rule.why)) once(qq, l);
+          return;
+        }
+        if (!roundTrip(l, qq, now)) return;
+        if (qq.t === "trades" && paid >= nw * TRADE_MIN) once(qq, l);
         else if (qq.t === "volume") qq.n += paid + take * p;
       });
       l.q -= take;
@@ -3161,7 +3236,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       toast("Fresh start, " + money(S.cash) + " in cash");
     });
     b.appendChild(rs);
-    var ver = el("p", "note", "Shallow Whale 1.21.0");
+    var ver = el("p", "note", "Shallow Whale 1.22.0");
     ver.id = "appVersion";
     ver.style.margin = "14px 0 0";
     b.appendChild(ver);
@@ -3330,7 +3405,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       bar2.appendChild(f2);
       d.appendChild(bar2);
       var hint = null;
-      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard" || q.t === "spread" || q.t === "trades" || q.t === "volume") {
+      if (q.t === "dip" || q.t === "winner" || q.t === "profit" || q.t === "cut" || q.t === "guard" || q.t === "spread" || q.t === "trades" || q.t === "volume" || q.t === "exit" || q.t === "balance") {
         hint = el("p", "note qhint");
         hint.style.margin = "7px 0 0";
         d.appendChild(hint);
@@ -3432,6 +3507,11 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       var frac = q.t === "nw" && q.base < q.target ? clamp((prog - q.base) / (q.target - q.base), 0, 1) : prog / q.target;
       r.pc.textContent = Math.round(100 * frac) + "%";
       r.fill.style.width = 100 * frac + "%";
+      if (q.t === "balance" && prog < q.target) {
+        var tc = topCoin(S);
+        r.lbl.textContent = tc ? "Largest: " + tc.s + ", " + Math.round(tc.share * 100) + "% of your coins" : "No coins yet";
+        r.pc.textContent = Math.round(BAL_MAX * 100) + "% or less";
+      }
       if (r.hint && prog < q.target) {
         if (q.t === "dip") paintDipHint(r);
         else if (q.t === "winner") r.hint.textContent = winnerHint(q);
@@ -3439,6 +3519,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         else if (q.t === "guard") r.hint.textContent = guardHint(q);
         else if (q.t === "spread") r.hint.textContent = spreadHint();
         else if (q.t === "trades" || q.t === "volume") r.hint.textContent = roundHint(q);
+        else if (q.t === "exit") r.hint.textContent = exitHint(q);
+        else if (q.t === "balance") r.hint.textContent = balanceHint();
         else r.hint.textContent = profitHint(q, q.target - prog);
       } else if (r.hint && r.hint.textContent) r.hint.textContent = "";
       var mode = prog >= q.target ? "claim" : "swap";
@@ -3568,9 +3650,9 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     return andList(syms) + (syms.length === 1 ? " counts" : " count") + " once held " + SPREAD_HOLD / 6e4 + " minutes; the next in about " + mins + " min.";
   }
   function roundLots(q) {
-    var now = Date.now(), min = q.t === "trades" ? netWorthOf(S) * TRADE_MIN : 0;
+    var now = Date.now(), min = q.t === "trades" ? netWorthOf(S) * TRADE_MIN : 0, done = q.ids || [];
     return S.lots.filter(function(l) {
-      return l.at > 0 && l.at >= (q.drawnAt || 0) && l.q * (l.b || l.p) >= min;
+      return l.at > 0 && l.at >= (q.drawnAt || 0) && l.q * (l.b || l.p) >= min && done.indexOf(l.id) < 0;
     }).map(function(l) {
       return { l, ready: roundTrip(l, q, now), wait: l.at + ROUND_HOLD - now };
     });
@@ -3579,6 +3661,10 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     var a = roundLots(q), mins = ROUND_HOLD / 6e4;
     var size = q.t === "trades" ? " of at least " + money(Math.max(0.01, netWorthOf(S) * TRADE_MIN)) : "";
     if (!a.length) return "Buy a coin" + size + ", hold it " + mins + " minutes, then sell it. Trades bought before this quest appeared do not count.";
+    var need = q.target - questProgress(q), more = q.t === "trades" && a.length < need ? " Each trade counts once: buy " + (need - a.length) + " more" + size + "." : "";
+    return roundNext(a, mins) + more;
+  }
+  function roundNext(a, mins) {
     var ready = a.filter(function(x) {
       return x.ready;
     });
@@ -3595,6 +3681,32 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       return x.wait - y.wait;
     })[0];
     return "Your " + next.l.s + " trade from " + whenStr(next.l) + " counts once held " + mins + " minutes, in about " + Math.max(1, Math.ceil(next.wait / 6e4)) + " min. Sell it then.";
+  }
+  function exitLots(q) {
+    var min = netWorthOf(S) * TRADE_MIN;
+    return S.lots.filter(function(l) {
+      return l.at > 0 && l.at >= (q.drawnAt || 0) && l.q * (l.b || l.p) >= min;
+    });
+  }
+  function exitHint(q) {
+    var a = exitLots(q), pct = (EXIT_MIN * 100).toFixed(1) + "%";
+    var set = a.filter(function(l2) {
+      return exitTrip(l2, q, "tp") || exitTrip(l2, q, "sl");
+    });
+    if (set.length) {
+      var l = set[set.length - 1], at = [];
+      if (exitTrip(l, q, "tp")) at.push(priceStr(l.tp) + " (take profit)");
+      if (exitTrip(l, q, "sl")) at.push(priceStr(l.sl) + " (stop loss)");
+      return "Your " + l.s + " trade from " + whenStr(l) + " closes at " + at.join(" or ") + ". The game sells it when the price gets there.";
+    }
+    if (a.length) return "Your " + a[a.length - 1].s + " trade from " + whenStr(a[a.length - 1]) + " has no exit rule " + pct + " or more from entry. Trade opens it: set a stop loss or take profit under Automatic exit.";
+    return "Buy a coin of at least " + money(Math.max(0.01, netWorthOf(S) * TRADE_MIN)) + " and set a stop loss or take profit " + pct + " or more from entry. The game closes the trade when the price gets there; selling it yourself does not count.";
+  }
+  function balanceHint() {
+    var t = topCoin(S), max = Math.round(BAL_MAX * 100) + "%", min = money(netWorthOf(S) * BAL_MIN);
+    if (!t) return "Buy at least three coins, worth " + min + " or more together, with none above " + max + " of them. Spreading your money keeps one coin's bad day from sinking you.";
+    if (t.held < BAL_MIN) return "Your coins are worth " + Math.round(t.held * 100) + "% of your net worth. Hold at least " + min + " in coins, with none above " + max + " of them.";
+    return t.s + " is " + Math.round(t.share * 100) + "% of your coins. Sell some, or buy other coins, until none is above " + max + ". If " + t.s + " has a bad day, it takes the rest of your coins with it.";
   }
   function profitHint(q, left) {
     var open = 0;
@@ -3626,6 +3738,14 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
         return x.ready;
       })[0];
       if (rt) return { sym: rt.l.s, side: "sell", lot: rt.l.id };
+    }
+    if (q.t === "exit") {
+      var el2 = exitLots(q);
+      if (el2.length) return { sym: el2[el2.length - 1].s, side: "sell", lot: el2[el2.length - 1].id };
+    }
+    if (q.t === "balance") {
+      var tc = topCoin(S);
+      if (tc && tc.held >= BAL_MIN) return { sym: tc.s, side: "sell" };
     }
     if (q.t === "spread") {
       var held = heldSyms(S);
@@ -4132,8 +4252,8 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
   // src/ui/sheets/whatsnew.js
   var SEEN_KEY = "pw.seen";
   function greet(returning) {
-    var seen = getItem(SEEN_KEY, "1.21.0");
-    setItem(SEEN_KEY, "1.21.0");
+    var seen = getItem(SEEN_KEY, "1.22.0");
+    setItem(SEEN_KEY, "1.22.0");
     if (!introSeen()) {
       if (!returning) {
         renderIntro(0);
@@ -4141,7 +4261,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
       }
       markIntro();
     }
-    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.21.0");
+    var list = notesSince(define_RELEASE_NOTES_default, seen, "1.22.0");
     if (list.length) renderWhatsNew(list);
   }
   function renderWhatsNew(list) {
@@ -4150,7 +4270,7 @@ body.has-action:not(.sheet-open) #toast{bottom:calc(var(--tab-h) + 72px + env(sa
     b.textContent = "";
     var head = el("div", "sheeth"), nm = el("div", "nm");
     nm.appendChild(el("b", null, "What's new"));
-    nm.appendChild(el("small", null, "Shallow Whale 1.21.0"));
+    nm.appendChild(el("small", null, "Shallow Whale 1.22.0"));
     head.appendChild(nm);
     b.appendChild(head);
     list.forEach(function(n) {
