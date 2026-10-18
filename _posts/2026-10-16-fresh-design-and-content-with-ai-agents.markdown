@@ -1,6 +1,6 @@
 ---
 title: "Fresh design and content with AI agents"
-date: 2026-10-17 10:00:00
+date: 2026-10-16 10:00:00
 topic: AI agents
 description: "How this site got a fresh design and new content from AI agents: a small agent team, written plans, tests as the contract, and a human approving each step."
 featured: true
