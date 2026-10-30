@@ -42,7 +42,7 @@ class AboutTest < Minitest::Test
     cards = doc.css("section.about-projects article.project-card")
     assert_equal 3, cards.size
     assert_equal ["Shallow Whale", "Claude Code mods", "YouTube Videos Summarizer"], cards.map { |c| clean(c.at_css(".project-title")) }
-    assert_equal ["/2026/10/02/shallow-whale.html", "/2025/05/23/base44-projects.html", "/2025/06/24/ai-agents.html"],
+    assert_equal ["/2026/10/02/shallow-whale.html", "/2026/10/17/claude-code-mods.html", "/2025/06/24/ai-agents.html"],
                  cards.map { |c| c.at_css(".project-post a")["href"] }
   end
 
