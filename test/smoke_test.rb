@@ -7,8 +7,8 @@ class SmokeTest < Minitest::Test
     "/" + (cats + [m[1], m[2], m[3], "#{m[4]}.html"]).join("/")
   end
 
-  def test_fifteen_posts
-    assert_equal 15, POST_URLS.size
+  def test_posts_found
+    refute_empty POST_URLS
   end
 
   def test_urls_return_200

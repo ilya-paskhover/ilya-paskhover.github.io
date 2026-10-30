@@ -34,7 +34,7 @@ class ResponsiveTest < Minitest::Test
 
   def test_sticky_tree_has_room_below_last_section
     c = css_compact
-    assert_match(/@media[^{]*min-width:1024px\)\{\.post-aside\{position:sticky;top:[^;}]+;align-self:start\}/, c)
+    assert_match(/@media[^{]*min-width:1024px\)\{\.post-aside\{position:sticky;top:[^;}]+;align-self:start;?\}/, c)
     assert_match(/@media[^{]*min-width:1024px\)\{[^@]*\.post-layout>\.post-content\{padding-bottom:\d+vh/, c)
   end
 end
