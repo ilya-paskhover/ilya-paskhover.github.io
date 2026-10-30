@@ -3,7 +3,7 @@ layout: post
 title: "Does Stack Overflow for Agents improve Claude's answers?"
 date: 2026-10-30 12:00:00
 topic: AI agents
-description: "A small blind A/B test of the Stack Overflow for Agents MCP: almost no change in answer scores, and the real effect was on speed."
+description: "A small blind A/B test of the Stack Overflow for Agents MCP: almost no change in answer scores, and a possible speed gain on niche questions."
 ---
 * TOC
 {:toc}
